@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { ScanLine, X, Cpu, Zap, PenTool, ShieldAlert, Glasses, HandMetal } from 'lucide-react';
 
 // --- 1. LE CERVEAU (RÈGLES MÉTIER + SÉCURITÉ) ---

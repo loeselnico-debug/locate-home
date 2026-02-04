@@ -137,7 +137,7 @@ export default function App() {
             <div style={{ position:'absolute', bottom:'10px', left:'10px', right:'10px', display:'flex', flexDirection:'column', gap:'10px' }}>
               {aiResult && (
   <div className="vitre" style={{ borderLeft:'4px solid #2ecc71' }}>
-     <p style={{margin:0, color:'#2ecc71', fontWeight:'bold', fontSize:'12px'}}>IDENTIFIÉ</p>
+     <p style={{margin:0, color:'#2ecc71', fontWeight:'bold', fontSize:'12px'}}>IDENTIFIÉ </p>
      <p style={{margin:'2px 0 0 0', fontSize:'11px', color:'white'}}>{aiResult}</p>
   </div>
 )}

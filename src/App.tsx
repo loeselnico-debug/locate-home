@@ -42,9 +42,11 @@ export default function App() {
     { id: 3, nom: "Perceuse", marque: "Makita", etat: "LXT", loc: "Chantier" },
   ]);
 
-  const simulerReconnaissance = (type: 'screwdriver' | 'powertool') => {
+  // --- FONCTION DE SIMULATION INTELLIGENTE ---
+  const simulerReconnaissance = (type: 'screwdriver' | 'powertool', forceMarque?: string) => {
     setLoadingAnalysis(true);
-    setAiResult(null);
+    // On garde le résultat précédent visible un court instant pour la transition
+    if (!aiResult) setAiResult(null); 
     setSafetyAlert(null);
 
     setTimeout(() => {
@@ -58,7 +60,9 @@ export default function App() {
       } 
       else if (type === 'powertool') {
         const detectedChuck = 'hexagonal';
-        const detectedConnector = 'slide_flat_red';
+        // SCENARIO DEMO : Si on demande 'bosch', on force le connecteur Bosch
+        const detectedConnector = forceMarque === 'bosch' ? 'slide_curved' : 'slide_flat_red';
+        
         // @ts-ignore
         const toolType = RULES_ENGINE.powerTools.chucks[detectedChuck];
         // @ts-ignore
@@ -73,17 +77,30 @@ export default function App() {
         setSafetyAlert(securityCheck);
       }
       setLoadingAnalysis(false);
-    }, 1500); 
+    }, 1000); 
   };
 
+  // --- DEMARRAGE CAMERA + SCENARIO AUTOMATIQUE ---
   const demarrerCamera = async () => {
     setShowCamera(true);
     setAiResult(null);
     setSafetyAlert(null);
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       if (videoRef.current) videoRef.current.srcObject = stream;
     } catch (err) { console.log("Mode Simulation Force"); }
+
+    // SCENARIO HOLLYWOOD (TIMELINE)
+    // 1. A 2 secondes : BOSCH
+    setTimeout(() => {
+        simulerReconnaissance('powertool', 'bosch');
+    }, 2500);
+
+    // 2. A 6 secondes : MILWAUKEE (Transition)
+    setTimeout(() => {
+        simulerReconnaissance('powertool', 'milwaukee');
+    }, 6000);
   };
 
   const fermerCamera = () => {
@@ -97,14 +114,11 @@ export default function App() {
   return (
     <div style={{ backgroundColor: '#111', minHeight: '100vh', color: 'white', fontFamily: 'sans-serif', padding: '20px' }}>
       
-      {/* HEADER AVEC LOGO INTÉGRÉ */}
+      {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{display:'flex', alignItems:'center', gap:'15px'}}>
-           {/* LOGO DE L'APP */}
            <img src="/logo.png" alt="Locate Home" style={{height: '45px', width: 'auto', objectFit: 'contain'}} />
-           
-           {/* Badge R&D Discret */}
-           <span style={{fontSize:'10px', border:'1px solid #7f8c8d', padding:'2px 4px', borderRadius:'4px', color:'#7f8c8d', letterSpacing:'1px'}}>BETA 1.2</span>
+           <span style={{fontSize:'10px', border:'1px solid #7f8c8d', padding:'2px 4px', borderRadius:'4px', color:'#7f8c8d', letterSpacing:'1px'}}>BETA 2.0</span>
         </div>
         <button onClick={demarrerCamera} style={{background: '#e67e22', border: 'none', color: 'white', padding: '10px', borderRadius: '50%'}}>
           <ScanLine size={24} />
@@ -125,6 +139,7 @@ export default function App() {
           <div style={{ position: 'relative', flex: 1, overflow: 'hidden', backgroundColor: '#222' }}>
             <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }} />
             
+            {/* Viseur central */}
             <div style={{
               position:'absolute', top:'50%', left:'50%', transform:'translate(-50%, -50%)', 
               width:'200px', height:'200px', 
@@ -135,15 +150,18 @@ export default function App() {
             </div>
 
             <div style={{ position:'absolute', bottom:'10px', left:'10px', right:'10px', display:'flex', flexDirection:'column', gap:'10px' }}>
+              
+              {/* RESULTAT ANALYSE (VERT) - STYLE VITRE */}
               {aiResult && (
-  <div className="vitre" style={{ borderLeft:'4px solid #2ecc71' }}>
-     <p style={{margin:0, color:'#2ecc71', fontWeight:'bold', fontSize:'12px'}}>IDENTIFIÉ </p>
-     <p style={{margin:'2px 0 0 0', fontSize:'11px', color:'white'}}>{aiResult}</p>
-  </div>
-)}
+                 <div className="vitre" style={{ borderLeft:'4px solid #2ecc71' }}>
+                    <p style={{margin:0, color:'#2ecc71', fontWeight:'bold', fontSize:'12px'}}>IDENTIFIÉ</p>
+                    <p style={{margin:'2px 0 0 0', fontSize:'11px', color:'white'}}>{aiResult}</p>
+                 </div>
+              )}
 
+              {/* ALERTE SECURITE (ROUGE) - STYLE VITRE */}
               {safetyAlert && (
-                <div style={{ backgroundColor:'rgba(231, 76, 60, 0.95)', padding:'10px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'space-between', animation: 'pulse 2s infinite' }}>
+                <div className="vitre" style={{ backgroundColor:'rgba(231, 76, 60, 0.3)', display:'flex', alignItems:'center', justifyContent:'space-between', animation: 'pulse 2s infinite' }}>
                    <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                       <ShieldAlert color="white" size={24} />
                       <div><p style={{margin:0, color:'white', fontWeight:'bold', fontSize:'12px'}}>EPI REQUIS</p><p style={{margin:0, color:'white', fontSize:'10px'}}>{safetyAlert.msg}</p></div>

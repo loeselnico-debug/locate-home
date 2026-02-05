@@ -1,202 +1,181 @@
-import { useState, useRef } from 'react'
-import { ScanLine, X, Cpu, Zap, PenTool, ShieldAlert, Glasses, HandMetal } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { 
+  ScanLine, 
+  X, 
+  Cpu, 
+  Zap, 
+  TriangleAlert, 
+  Hammer, 
+  Wrench, 
+  ListFilter, 
+  CheckCircle2, 
+  Eye, 
+  ShieldCheck 
+} from 'lucide-react';
 
-// --- 1. LE CERVEAU (RÈGLES MÉTIER + SÉCURITÉ) ---
+// --- 1. ARCHITECTURE DES DONNÉES (LE SAVOIR MÉTIER) ---
+
+// Les 8 Catégories "Sacrées" (Issues du Prompt Engineering)
+const CATEGORIES = {
+  POWER:    { id: 'power',    label: '⚡ Électroportatif', color: '#e67e22', icon: Zap },
+  HAND:     { id: 'hand',     label: '🔨 Outillage à main', color: '#3498db', icon: Hammer },
+  KEY:      { id: 'key',      label: '🔧 Serrage & Clés',   color: '#9b59b6', icon: Wrench },
+  HARDWARE: { id: 'hardware', label: '🔩 Quincaillerie',    color: '#95a5a6', icon: ListFilter },
+  ELEC:     { id: 'elec',     label: '💡 Électricité',      color: '#f1c40f', icon: Zap },
+  PAINT:    { id: 'paint',    label: '🖌️ Peinture',         color: '#e74c3c', icon: Eye },
+  MEASURE:  { id: 'measure',  label: '📏 Mesure',           color: '#2ecc71', icon: ListFilter },
+  GARDEN:   { id: 'garden',   label: '🌱 Jardin',           color: '#27ae60', icon: ListFilter }
+};
+
+// --- 2. MOTEUR DE RÈGLES (LE CERVEAU) ---
+// C'est ici que l'on code ton expertise technique
 const RULES_ENGINE = {
-  screwdrivers: {
-    colors: {
-      'rouge': { type: 'Phillips', code: 'PH' },
+  
+  // Règle FACOM : La couleur définit l'empreinte
+  analyzeFacom: (color: string) => {
+    const map: any = {
+      'rouge': { type: 'Phillips (PH)', code: 'PH' },
       'jaune': { type: 'Plat (Fente)', code: 'FL' },
-      'bleu':  { type: 'Pozidriv', code: 'PZ' },
-      'vert':  { type: 'Torx', code: 'TX' },
-      'gris':  { type: 'Hexagonal', code: 'HEX' }
-    }
+      'bleu':  { type: 'Pozidriv (PZ)', code: 'PZ' },
+      'vert':  { type: 'Torx (TX)', code: 'TX' }
+    };
+    const detected = map[color] || { type: 'Standard', code: 'STD' };
+    return {
+      name: `Tournevis ProTwist ${detected.type}`,
+      brand: 'Facom',
+      cat: CATEGORIES.HAND,
+      safety: null // Pas de danger sur un tournevis
+    };
   },
-  powerTools: {
-    chucks: {
-      'hexagonal': 'Visseuse à Chocs (Impact Driver)',
-      'rond': 'Perceuse-Visseuse (Drill)'
-    },
-    connectors: {
-      'slide_curved': 'Bosch 18V',
-      'slide_flat_red': 'Milwaukee M18',
-      'slide_star': 'Makita LXT'
+
+  // Règle BOSCH & MILWAUKEE : Analyse technique fine
+  analyzePowerTool: (brand: string, variant: string) => {
+    // BOSCH PROFESSIONAL
+    if (brand === 'bosch') {
+      if (variant === 'flexiclick') {
+        return {
+          name: 'Bosch GSR 12V-15 FC (FlexiClick)',
+          brand: 'Bosch Professional',
+          cat: CATEGORIES.POWER,
+          safety: { 
+            level: 'medium', 
+            msg: "⚠️ Système Modulaire : Vérifier verrouillage tête (Twist-Lock)" 
+          }
+        };
+      }
+      if (variant === 'gsb') {
+        return {
+          name: 'Bosch GSB 10.8-2-LI (Percussion)',
+          brand: 'Bosch Professional',
+          cat: CATEGORIES.POWER,
+          safety: { level: 'high', msg: "✅ Percussion active : OK pour Brique/Parpaing" }
+        };
+      }
     }
-  },
-  safety: {
-    'powertool': { required: true, msg: "Projection & Coupure", gear: ["Lunettes", "Gants"] },
-    'screwdriver': { required: false, msg: "Risque faible", gear: [] }
+    
+    // MILWAUKEE
+    if (brand === 'milwaukee') {
+      return {
+        name: 'Milwaukee M18 FUEL',
+        brand: 'Milwaukee',
+        cat: CATEGORIES.POWER,
+        safety: { level: 'high', msg: "⚡ Moteur Brushless - Port des EPI obligatoire" }
+      };
+    }
+
+    return null;
   }
 };
 
 export default function App() {
-  const [showCamera, setShowCamera] = useState(false);
-  const [aiResult, setAiResult] = useState<string | null>(null);
-  const [safetyAlert, setSafetyAlert] = useState<any | null>(null);
-  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [view, setView] = useState<'home' | 'camera'>('home');
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState<any | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [stocks] = useState([
-    { id: 1, nom: "Visseuse Chocs", marque: "Milwaukee", etat: "M18", loc: "Établi" },
-    { id: 2, nom: "Tournevis Torx", marque: "Facom", etat: "Vert", loc: "Caisse 1" },
-    { id: 3, nom: "Perceuse", marque: "Makita", etat: "LXT", loc: "Chantier" },
+  // Inventaire de base (Mémoire persistante simulée)
+  const [inventory, setInventory] = useState([
+    { id: 1, name: "Pince Coupante", brand: "Knipex", cat: CATEGORIES.HAND },
+    { id: 2, name: "Multimètre", brand: "Fluke", cat: CATEGORIES.ELEC },
   ]);
 
-  // --- FONCTION DE SIMULATION INTELLIGENTE ---
-  const simulerReconnaissance = (type: 'screwdriver' | 'powertool', forceMarque?: string) => {
-    setLoadingAnalysis(true);
-    // On garde le résultat précédent visible un court instant pour la transition
-    if (!aiResult) setAiResult(null); 
-    setSafetyAlert(null);
-
-    setTimeout(() => {
-      let resultat = "";
-      
-      if (type === 'screwdriver') {
-        const detectedColor = 'vert'; 
-        // @ts-ignore
-        const analysis = RULES_ENGINE.screwdrivers.colors[detectedColor];
-        resultat = `Détection: Manche ${detectedColor.toUpperCase()} => FACOM ${analysis.type}`;
-      } 
-      else if (type === 'powertool') {
-        const detectedChuck = 'hexagonal';
-        // SCENARIO DEMO : Si on demande 'bosch', on force le connecteur Bosch
-        const detectedConnector = forceMarque === 'bosch' ? 'slide_curved' : 'slide_flat_red';
-        
-        // @ts-ignore
-        const toolType = RULES_ENGINE.powerTools.chucks[detectedChuck];
-        // @ts-ignore
-        const brand = RULES_ENGINE.powerTools.connectors[detectedConnector];
-        resultat = `Analyse Forme: ${toolType} | Système: ${brand}`;
-      }
-
-      // @ts-ignore
-      const securityCheck = RULES_ENGINE.safety[type];
-      setAiResult(resultat);
-      if (securityCheck.required) {
-        setSafetyAlert(securityCheck);
-      }
-      setLoadingAnalysis(false);
-    }, 1000); 
-  };
-
-  // --- DEMARRAGE CAMERA + SCENARIO AUTOMATIQUE ---
-  const demarrerCamera = async () => {
-    setShowCamera(true);
-    setAiResult(null);
-    setSafetyAlert(null);
-
+  // Démarrage de la caméra
+  const startCamera = async () => {
+    setView('camera');
+    setResult(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch (err) { console.log("Mode Simulation Force"); }
-
-    // SCENARIO HOLLYWOOD (TIMELINE)
-    // 1. A 2 secondes : BOSCH
-    setTimeout(() => {
-        simulerReconnaissance('powertool', 'bosch');
-    }, 2500);
-
-    // 2. A 6 secondes : MILWAUKEE (Transition)
-    setTimeout(() => {
-        simulerReconnaissance('powertool', 'milwaukee');
-    }, 6000);
+    } catch (e) { console.log("Mode simulation PC (Pas de caméra)"); }
   };
 
-  const fermerCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-    }
-    setShowCamera(false);
+  // --- COEUR DU SYSTÈME : SIMULATION DE L'IA ---
+  // Cette fonction remplace le backend Google Gemini pour les tests
+  const triggerArtificialIntelligence = (scenario: string) => {
+    setScanning(true);
+    setResult(null);
+
+    // On simule le temps de réflexion de l'IA (1.5s)
+    setTimeout(() => {
+      let analysis = null;
+
+      switch (scenario) {
+        case 'facom':
+          analysis = RULES_ENGINE.analyzeFacom('rouge');
+          break;
+        case 'flexiclick':
+          analysis = RULES_ENGINE.analyzePowerTool('bosch', 'flexiclick');
+          break;
+        case 'milwaukee':
+          analysis = RULES_ENGINE.analyzePowerTool('milwaukee', 'standard');
+          break;
+        default:
+          break;
+      }
+
+      if (analysis) {
+        // Ajout d'un ID unique et de la confiance IA
+        setResult({ ...analysis, confidence: '98%', id: Date.now() });
+        // Auto-ajout à l'inventaire (Optionnel)
+        // setInventory(prev => [analysis, ...prev]); 
+      }
+      setScanning(false);
+    }, 1500);
   };
 
   return (
-    <div style={{ backgroundColor: '#111', minHeight: '100vh', color: 'white', fontFamily: 'sans-serif', padding: '20px' }}>
+    <div style={{ backgroundColor: '#0f0f0f', minHeight: '100vh', color: '#ecf0f1', fontFamily: '"Inter", sans-serif', paddingBottom: '90px' }}>
       
-      {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div style={{display:'flex', alignItems:'center', gap:'15px'}}>
-           <img src="/logo.png" alt="Locate Home" style={{height: '45px', width: 'auto', objectFit: 'contain'}} />
-           <span style={{fontSize:'10px', border:'1px solid #7f8c8d', padding:'2px 4px', borderRadius:'4px', color:'#7f8c8d', letterSpacing:'1px'}}>BETA 2.0</span>
+      {/* --- HEADER --- */}
+      <header style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(20,20,20,0.9)', borderBottom: '1px solid #333', backdropFilter: 'blur(10px)', position:'sticky', top:0, zIndex:50 }}>
+        <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+           <div style={{width:'36px', height:'36px', background:'linear-gradient(135deg, #e67e22, #d35400)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 12px rgba(230, 126, 34, 0.3)'}}>
+             <ScanLine size={20} color="white" />
+           </div>
+           <div>
+             <h1 style={{margin:0, fontSize:'16px', fontWeight:'800', letterSpacing:'0.5px'}}>LOCATE HOME</h1>
+             <span style={{fontSize:'10px', color:'#7f8c8d', fontWeight:'500'}}>ARCHITECT V3</span>
+           </div>
         </div>
-        <button onClick={demarrerCamera} style={{background: '#e67e22', border: 'none', color: 'white', padding: '10px', borderRadius: '50%'}}>
-          <ScanLine size={24} />
-        </button>
-      </div>
+        {view === 'home' && (
+           <div style={{width:'10px', height:'10px', background:'#2ecc71', borderRadius:'50%', boxShadow:'0 0 10px #2ecc71'}}></div>
+        )}
+      </header>
 
-      {/* MODAL CAMÉRA */}
-      {showCamera && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'black', zIndex: 100, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* --- VUE CAMÉRA (L'INTELLIGENCE VISUELLE) --- */}
+      {view === 'camera' && (
+        <div style={{ position: 'fixed', top: '77px', left: 0, right: 0, bottom: 0, backgroundColor: '#000', zIndex: 100 }}>
           
-          <div style={{ padding: '15px', display: 'flex', justifyContent: 'space-between', backgroundColor: '#000', zIndex: 10 }}>
-            <span style={{color: '#e67e22', fontWeight: 'bold', display:'flex', alignItems:'center', gap:'10px'}}>
-              <Cpu size={18}/> ANALYSE SÉCURITÉ
-            </span>
-            <X onClick={fermerCamera} style={{cursor: 'pointer'}} />
-          </div>
+          {/* FLUX VIDEO */}
+          <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} />
           
-          <div style={{ position: 'relative', flex: 1, overflow: 'hidden', backgroundColor: '#222' }}>
-            <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }} />
+          {/* UI SUPERPOSÉE (HUD) */}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
             
-            {/* Viseur central */}
-            <div style={{
-              position:'absolute', top:'50%', left:'50%', transform:'translate(-50%, -50%)', 
-              width:'200px', height:'200px', 
-              border: safetyAlert ? '2px solid #e74c3c' : '2px solid rgba(230, 126, 34, 0.5)', 
-              borderRadius:'20px', transition: 'border 0.3s ease', boxShadow: '0 0 0 1000px rgba(0,0,0,0.5)'
-            }}>
-               {!aiResult && <div style={{position:'absolute', top:'-20px', left:'0', width:'100%', textAlign:'center', color:'rgba(255,255,255,0.7)', fontSize:'10px'}}>SCAN EN COURS...</div>}
-            </div>
-
-            <div style={{ position:'absolute', bottom:'10px', left:'10px', right:'10px', display:'flex', flexDirection:'column', gap:'10px' }}>
-              
-              {/* RESULTAT ANALYSE (VERT) - STYLE VITRE */}
-              {aiResult && (
-                 <div className="vitre" style={{ borderLeft:'4px solid #2ecc71' }}>
-                    <p style={{margin:0, color:'#2ecc71', fontWeight:'bold', fontSize:'12px'}}>IDENTIFIÉ</p>
-                    <p style={{margin:'2px 0 0 0', fontSize:'11px', color:'white'}}>{aiResult}</p>
-                 </div>
-              )}
-
-              {/* ALERTE SECURITE (ROUGE) - STYLE VITRE */}
-              {safetyAlert && (
-                <div className="vitre" style={{ backgroundColor:'rgba(231, 76, 60, 0.3)', display:'flex', alignItems:'center', justifyContent:'space-between', animation: 'pulse 2s infinite' }}>
-                   <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                      <ShieldAlert color="white" size={24} />
-                      <div><p style={{margin:0, color:'white', fontWeight:'bold', fontSize:'12px'}}>EPI REQUIS</p><p style={{margin:0, color:'white', fontSize:'10px'}}>{safetyAlert.msg}</p></div>
-                   </div>
-                   <div style={{display:'flex', gap:'5px'}}>
-                      <div style={{background:'white', borderRadius:'50%', padding:'5px', width:'24px', height:'24px', display:'flex', alignItems:'center', justifyContent:'center'}}><Glasses size={14} color="#e74c3c"/></div>
-                      <div style={{background:'white', borderRadius:'50%', padding:'5px', width:'24px', height:'24px', display:'flex', alignItems:'center', justifyContent:'center'}}><HandMetal size={14} color="#e74c3c"/></div>
-                   </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{ padding: '15px', backgroundColor: '#1e272e', borderTop: '1px solid #333' }}>
-            <p style={{fontSize:'10px', color:'#7f8c8d', marginBottom:'8px', marginTop:0}}>TEST PROTOCOLE SÉCURITÉ :</p>
-            <div style={{display:'flex', gap:'10px'}}>
-              <button onClick={() => simulerReconnaissance('powertool')} disabled={loadingAnalysis} style={{ flex:1, height: '40px', backgroundColor: '#333', border: '1px solid #7f8c8d', color: 'white', borderRadius: '8px', fontSize:'11px', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px', cursor:'pointer' }}>
-                {loadingAnalysis ? <Zap size={14} className="animate-spin"/> : <Zap size={14} color="#e67e22"/>} Test Machine
-              </button>
-              <button onClick={() => simulerReconnaissance('screwdriver')} disabled={loadingAnalysis} style={{ flex:1, height: '40px', backgroundColor: '#333', border: '1px solid #7f8c8d', color: 'white', borderRadius: '8px', fontSize:'11px', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px', cursor:'pointer' }}>
-                {loadingAnalysis ? <Zap size={14} className="animate-spin"/> : <PenTool size={14} color="#3498db"/>} Test Manuel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* LISTE STOCKS */}
-      <p style={{color: '#7f8c8d', fontSize: '14px', marginBottom: '15px'}}>Inventaire</p>
-      {stocks.map(item => (
-        <div key={item.id} style={{ backgroundColor: '#1e272e', borderRadius: '12px', padding: '15px', marginBottom: '10px', border: '1px solid #333', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div><h2 style={{margin: '0', fontSize: '16px'}}>{item.nom}</h2><span style={{fontSize:'12px', color:'#7f8c8d'}}>{item.marque}</span></div>
-          <div style={{fontSize:'12px', backgroundColor:'#333', padding:'4px 8px', borderRadius:'4px'}}>{item.loc}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
+            {/* Barre d'outils haute */}
+            <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between' }}>
+               <span style={{ background:'rgba(0,0,0,0.6)', padding:'6px 12px', borderRadius:'20px', fontSize:'12px', display:'flex', alignItems:'center', gap:'8px', border:'1px solid rgba(255,255,255,0.1)' }}>
+                 <Cpu size={14} color="#e67e22" className={scanning ? "animate-pulse" : ""} /> 
+                 {scanning ? "ANALYSE EN COURS..." : "IA PRÊTE"}
+               </span>
+               <button onClick={() => setView('home')} style={{background:'rgba(0,0,0,0.6)', border:'none', color:'white', borderRadius:'50%', width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center'}}><X size

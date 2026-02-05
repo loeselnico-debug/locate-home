@@ -1,1 +1,11 @@
 body { margin: 0; padding: 0; background-color: #111; }
+/* Effet Vitre Dépolie (Glassmorphism) */
+.vitre {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 20px;
+    color: white; /* Force le texte en blanc */
+}

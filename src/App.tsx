@@ -4,8 +4,8 @@ import {
   Lock, Unlock, ShieldCheck
 } from 'lucide-react';
 
-// --- 1. CONFIGURATION (Mode Camouflage Anti-Bug) ---
-// On coupe les strings en deux pour que VS Code ne détecte pas de "couleur"
+// --- CONFIGURATION (Mode TOTAL Camouflage) ---
+// Toutes les couleurs sont coupées en deux pour éviter le bug des carrés
 
 const CATEGORIES = {
   POWER:    { id: "power",    label: "⚡ Électroportatif", color: "rgb(" + "230, 126, 34)", icon: Cpu },
@@ -131,9 +131,9 @@ export default function App() {
   return (
     <div style={{ backgroundColor: "rgb(" + "15, 15, 15)", minHeight: "100vh", color: "#ecf0f1", fontFamily: "sans-serif", paddingBottom: "90px" }}>
       
-      {/* HEADER V5.3 CAMOUFLAGE */}
+      {/* HEADER V5.4 */}
       <header style={{ padding: "20px", background: "rgba(" + "20,20,20,0.9)", borderBottom: "1px solid rgb(" + "51,51,51)", position:"sticky", top:0, zIndex:50, backdropFilter:"blur(10px)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <div style={{fontWeight:"800", fontSize:"16px"}}>LOCATE HOME <span style={{fontSize:"10px", color:"rgb(" + "46, 204, 113)"}}>V5.3 FIX</span></div>
+        <div style={{fontWeight:"800", fontSize:"16px"}}>LOCATE HOME <span style={{fontSize:"10px", color:"rgb(" + "46, 204, 113)"}}>V5.4 FIXED</span></div>
         {view === "camera" && <button onClick={() => setView("home")}><X color="white" /></button>}
       </header>
 
@@ -206,7 +206,7 @@ export default function App() {
         </div>
       )}
 
-      {/* VUE HOME */}
+      {/* VUE HOME - TOUTES LES COULEURS SONT CAMOUFLÉES */}
       {view === "home" && (
         <div style={{ padding: "20px" }}>
           <div onClick={() => setView("camera")} style={{background:"rgb(" + "34, 34, 34)", padding:"30px", borderRadius:"20px", textAlign:"center", marginBottom:"30px", border:"1px solid rgb(" + "68, 68, 68)"}}>
@@ -218,8 +218,8 @@ export default function App() {
           {inventory.map((item: any) => (
              <div key={item.id} style={{background:"rgb(" + "26, 26, 26)", padding:"15px", marginBottom:"10px", borderRadius:"12px", borderLeft:`4px solid ${item.cat.color}`}}>
                <div style={{display:"flex", justifyContent:"space-between", marginBottom:"5px"}}>
-                 <span style={{fontSize:"10px", color:"#666", fontFamily:"monospace"}}>{item.sku}</span>
-                 <span style={{fontSize:"10px", color:"#888"}}>{item.brand}</span>
+                 <span style={{fontSize:"10px", color:"rgb(" + "102, 102, 102)", fontFamily:"monospace"}}>{item.sku}</span>
+                 <span style={{fontSize:"10px", color:"rgb(" + "136, 136, 136)"}}>{item.brand}</span>
                </div>
                <div style={{fontWeight:"bold", fontSize:"16px"}}>{item.name}</div>
              </div>
@@ -230,5 +230,5 @@ export default function App() {
   );
 }
 
-// Couleurs coupées aussi pour le bouton
+// Bouton camouflé aussi
 const btnTest = { background:"rgb(" + "51, 51, 51)", color:"white", border:"1px solid rgb(" + "85, 85, 85)", padding:"10px 15px", borderRadius:"20px", fontSize:"12px" };

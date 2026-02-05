@@ -1,11 +1,18 @@
+// ==========================================================
+// === ZONE DE PROTECTION CONTRE LE BUG DE COPIE ===
+// === (Si cette partie est coupée, ce n'est pas grave) ===
+// ==========================================================
+// ...
+// ...
+// ... DEBUT DU VRAI CODE CI-DESSOUS ...
+
 import { useState, useRef, useEffect } from 'react';
 import { 
   ScanLine, X, TriangleAlert, Hammer, Wrench, Cpu,
   Lock, Unlock, ShieldCheck
 } from 'lucide-react';
 
-// --- CONFIGURATION (Mode TOTAL Camouflage) ---
-// Toutes les couleurs sont coupées en deux pour éviter le bug des carrés
+// --- CONFIGURATION (Mode TOTAL Camouflage V5.5) ---
 
 const CATEGORIES = {
   POWER:    { id: "power",    label: "⚡ Électroportatif", color: "rgb(" + "230, 126, 34)", icon: Cpu },
@@ -131,9 +138,9 @@ export default function App() {
   return (
     <div style={{ backgroundColor: "rgb(" + "15, 15, 15)", minHeight: "100vh", color: "#ecf0f1", fontFamily: "sans-serif", paddingBottom: "90px" }}>
       
-      {/* HEADER V5.4 FIXED */}
+      {/* HEADER V5.5 FINAL */}
       <header style={{ padding: "20px", background: "rgba(" + "20,20,20,0.9)", borderBottom: "1px solid rgb(" + "51,51,51)", position:"sticky", top:0, zIndex:50, backdropFilter:"blur(10px)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <div style={{fontWeight:"800", fontSize:"16px"}}>LOCATE HOME <span style={{fontSize:"10px", color:"rgb(" + "46, 204, 113)"}}>V5.4 FIXED</span></div>
+        <div style={{fontWeight:"800", fontSize:"16px"}}>LOCATE HOME <span style={{fontSize:"10px", color:"rgb(" + "46, 204, 113)"}}>V5.5 FINAL</span></div>
         {view === "camera" && <button onClick={() => setView("home")}><X color="white" /></button>}
       </header>
 
@@ -218,7 +225,6 @@ export default function App() {
           {inventory.map((item: any) => (
              <div key={item.id} style={{background:"rgb(" + "26, 26, 26)", padding:"15px", marginBottom:"10px", borderRadius:"12px", borderLeft:`4px solid ${item.cat.color}`}}>
                <div style={{display:"flex", justifyContent:"space-between", marginBottom:"5px"}}>
-                 {/* COULEURS GRISES CAMOUFLÉES ICI : */}
                  <span style={{fontSize:"10px", color:"rgb(" + "102, 102, 102)", fontFamily:"monospace"}}>{item.sku}</span>
                  <span style={{fontSize:"10px", color:"rgb(" + "136, 136, 136)"}}>{item.brand}</span>
                </div>

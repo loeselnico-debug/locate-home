@@ -19,7 +19,13 @@ const generateSKU = (index: number) => {
 };
 
 const RULES_ENGINE = {
-  analyzeFacom: (color: string) => ({ name: `Tournevis Facom (Rouge)`, brand: 'Facom', cat: CATEGORIES.HAND, safety: null }),
+  // CORRECTION FACOM DYNAMIQUE INTÉGRÉE ICI :
+  analyzeFacom: (color: string) => ({ 
+    name: `Tournevis Facom (${color.charAt(0).toUpperCase() + color.slice(1)})`, 
+    brand: 'Facom', 
+    cat: CATEGORIES.HAND, 
+    safety: null 
+  }),
   analyzePowerTool: (brand: string, variant: string) => {
     if (brand === 'bosch' && variant === 'flexiclick') {
       return {
@@ -47,7 +53,6 @@ export default function App() {
   const [safetyAcknowledged, setSafetyAcknowledged] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
-  // Correction ici : ajout du type any pour éviter l'erreur TypeScript stricte
   const [inventory, setInventory] = useState<any[]>([
     { id: 1, sku: 'LS-LH-KIT-BETA-001', name: "Pince Coupante", brand: "Knipex", cat: CATEGORIES.HAND },
   ]);
@@ -105,6 +110,7 @@ export default function App() {
       let analysis = null;
       if(scenario === 'flexi') analysis = RULES_ENGINE.analyzePowerTool('bosch', 'flexiclick');
       if(scenario === 'milwaukee') analysis = RULES_ENGINE.analyzePowerTool('milwaukee', 'standard');
+      // Ici on appelle Facom avec 'rouge', mais le code est prêt pour d'autres couleurs
       if(scenario === 'facom') analysis = RULES_ENGINE.analyzeFacom('rouge');
 
       if (analysis) {
@@ -126,9 +132,9 @@ export default function App() {
   return (
     <div style={{ backgroundColor: '#0f0f0f', minHeight: '100vh', color: '#ecf0f1', fontFamily: 'sans-serif', paddingBottom: '90px' }}>
       
-      {/* HEADER V5 */}
+      {/* HEADER V5.1 */}
       <header style={{ padding: '20px', background: 'rgba(20,20,20,0.9)', borderBottom: '1px solid #333', position:'sticky', top:0, zIndex:50, backdropFilter:'blur(10px)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div style={{fontWeight:'800', fontSize:'16px'}}>LOCATE HOME <span style={{fontSize:'10px', color:'#2ecc71'}}>V5 FINAL</span></div>
+        <div style={{fontWeight:'800', fontSize:'16px'}}>LOCATE HOME <span style={{fontSize:'10px', color:'#2ecc71'}}>V5.1 FACOM</span></div>
         {view === 'camera' && <button onClick={() => setView('home')}><X color="white" /></button>}
       </header>
 
@@ -193,6 +199,7 @@ export default function App() {
               <div style={{display:'flex', gap:'10px', justifyContent:'center', padding:'20px'}}>
                  <button onClick={() => triggerAI('flexi')} style={btnTest}>⚠️ Test Flexi</button>
                  <button onClick={() => triggerAI('milwaukee')} style={btnTest}>⚡ Test M18</button>
+                 <button onClick={() => triggerAI('facom')} style={btnTest}>🔴 Test Facom</button>
               </div>
             )}
             

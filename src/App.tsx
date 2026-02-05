@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  ScanLine, X, Cpu, TriangleAlert, Hammer, Wrench,
-  CheckCircle2, Lock, Unlock, ShieldCheck
+  ScanLine, X, TriangleAlert, Hammer, Wrench, Cpu,
+  Lock, Unlock, ShieldCheck
 } from 'lucide-react';
 
 // --- 1. CONFIGURATION ---
 
 const CATEGORIES = {
-  // J'utilise Cpu au lieu de Zap pour éviter le crash serveur
   POWER:    { id: 'power',    label: '⚡ Électroportatif', color: '#e67e22', icon: Cpu },
   HAND:     { id: 'hand',     label: '🔨 Outillage à main', color: '#3498db', icon: Hammer },
   KEY:      { id: 'key',      label: '🔧 Serrage & Clés',   color: '#9b59b6', icon: Wrench },
@@ -48,11 +47,12 @@ export default function App() {
   const [safetyAcknowledged, setSafetyAcknowledged] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [inventory, setInventory] = useState([
+  // Correction ici : ajout du type any pour éviter l'erreur TypeScript stricte
+  const [inventory, setInventory] = useState<any[]>([
     { id: 1, sku: 'LS-LH-KIT-BETA-001', name: "Pince Coupante", brand: "Knipex", cat: CATEGORIES.HAND },
   ]);
 
-  // --- CAMERA UNIVERSELLE (J5 + IPHONE) ---
+  // --- CAMERA ---
   useEffect(() => {
     let currentStream: MediaStream | null = null;
     let mounted = true;
@@ -61,7 +61,6 @@ export default function App() {
       if (view !== 'camera') return;
 
       try {
-        // Configuration minimale pour compatibilité max (J5)
         const constraints = {
           audio: false,
           video: { facingMode: 'environment' }
@@ -77,7 +76,6 @@ export default function App() {
         currentStream = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          // Hack iOS indispensable
           videoRef.current.onloadedmetadata = () => {
             videoRef.current?.play().catch(e => console.log("Autoplay blocked:", e));
           };
@@ -128,9 +126,9 @@ export default function App() {
   return (
     <div style={{ backgroundColor: '#0f0f0f', minHeight: '100vh', color: '#ecf0f1', fontFamily: 'sans-serif', paddingBottom: '90px' }}>
       
-      {/* HEADER : V4.1 SAFE */}
+      {/* HEADER V5 */}
       <header style={{ padding: '20px', background: 'rgba(20,20,20,0.9)', borderBottom: '1px solid #333', position:'sticky', top:0, zIndex:50, backdropFilter:'blur(10px)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div style={{fontWeight:'800', fontSize:'16px'}}>LOCATE HOME <span style={{fontSize:'10px', color:'#3498db'}}>V4.1 SAFE</span></div>
+        <div style={{fontWeight:'800', fontSize:'16px'}}>LOCATE HOME <span style={{fontSize:'10px', color:'#2ecc71'}}>V5 FINAL</span></div>
         {view === 'camera' && <button onClick={() => setView('home')}><X color="white" /></button>}
       </header>
 

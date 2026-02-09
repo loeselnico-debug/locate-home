@@ -1,75 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Locate Home - Prototype</title>
-    <style>
-        /* CSS : L'apparence de votre interface */
-        body { margin: 0; font-family: sans-serif; background: #2F2F2F; color: white; overflow: hidden; }
-        #app-interface { height: 100vh; display: flex; flex-direction: column; transition: background 0.5s ease; }
-        
-        video { width: 100%; height: 60%; object-fit: cover; background: black; }
-        
-        .info-panel { flex-grow: 1; padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
-        h1 { font-size: 1.5rem; margin: 0; }
-        .status { font-weight: bold; margin-top: 10px; opacity: 0.8; }
-        
-        /* Styles Chameleon */
-        .bosch-blue { background-color: #0056A3 !important; }
-        .milwaukee-red { background-color: #D3122A !important; }
-    </style>
-</head>
-<body>
-
-<div id="app-interface">
-    <video id="video-stream" autoplay playsinline></video>
-
-    <div class="info-panel">
-        <h1 id="tool-name">SCAN EN COURS...</h1>
-        <p class="status" id="status-text">Présentez un outil devant l'objectif</p>
-        
-        <div style="margin-top:20px;">
-            <button onclick="setMode('BOSCH')">Test Bosch</button>
-            <button onclick="setMode('MILWAUKEE')">Test Milwaukee</button>
-            <button onclick="setMode('RESET')">Reset</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    /* JAVASCRIPT : L'intelligence de la bascule */
-    const interface = document.getElementById('app-interface');
-    const toolName = document.getElementById('tool-name');
-
-    // 1. Démarrer la caméra sur Safari
-    async function initCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            document.getElementById('video-stream').srcObject = stream;
-        } catch (err) {
-            alert("Erreur caméra : Vérifiez les autorisations Safari");
-        }
-    }
-
-    // 2. Fonction Chameleon (Le Switch de couleur)
-    function setMode(marque) {
-        interface.classList.remove('bosch-blue', 'milwaukee-red');
-        
-        if (marque === 'BOSCH') {
-            interface.classList.add('bosch-blue');
-            toolName.innerText = "BOSCH PRO 10.8V";
-        } else if (marque === 'MILWAUKEE') {
-            interface.classList.add('milwaukee-red');
-            toolName.innerText = "MILWAUKEE M18 FUEL";
-        } else {
-            toolName.innerText = "SCAN EN COURS...";
-        }
-    }
-
-    // Lancement au démarrage
-    initCamera();
-</script>
-
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Locate Home</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

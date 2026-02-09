@@ -30,8 +30,7 @@ export default function App() {
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif', backgroundColor: '#0f172a', color: 'white', minHeight: '100vh' }}>
       <h1 style={{ color: '#fb923c' }}>Locate Home - Mode Phoenix</h1>
-      <input 
-  type="file" 
+<input type="file" accept="image/*" capture="environment" onChange={handleFileChange} ref={fileInputRef} style={{ display: 'none' }} />  type="file" 
   accept="image/*" 
   capture="environment" 
   onChange={handleFileChange} 

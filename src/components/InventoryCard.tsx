@@ -1,4 +1,4 @@
-import React from 'react';
+
 import type { InventoryItem } from '../types';
 import { CATEGORIES } from '../constants';
 

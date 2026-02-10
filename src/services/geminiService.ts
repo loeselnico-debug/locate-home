@@ -2,16 +2,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 
-if (!API_KEY) {
-  throw new Error("Clé API manquante");
-}
-
+// ON FORCE LA VERSION V1 POUR ÉVITER LE 404
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// On utilise le nom le plus stable pour éviter la 404
-const model = genAI.getGenerativeModel({ 
-  model: "gemini-1.5-flash" 
-});
+const model = genAI.getGenerativeModel(
+  { model: "gemini-1.5-flash" },
+  { apiVersion: "v1" } // <--- C'EST LE RÉGLAGE DÉCISIF
+);
 
 export const analyzeInventory = async (base64Image: string) => {
   try {
@@ -24,13 +21,13 @@ export const analyzeInventory = async (base64Image: string) => {
           mimeType: "image/jpeg",
         },
       },
-      "Identifie cet objet et décris sa couleur.",
+      "Identifie cet objet.",
     ]);
 
     const response = await result.response;
     return response.text();
   } catch (error: any) {
-    console.error("Erreur technique :", error);
-    return `Code Erreur : ${error.message}`;
+    // Si ça échoue, on veut l'erreur brute pour le diagnostic final
+    return `Erreur Google : ${error.message}`;
   }
 };

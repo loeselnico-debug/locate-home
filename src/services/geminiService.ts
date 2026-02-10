@@ -1,31 +1,37 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export async function analyzeInventory(base64Image: string) {
-  const API_KEY = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
+const API_KEY = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 
-  if (!API_KEY) {
-    throw new Error("Clé API manquante dans le fichier .env");
-  }
+if (!API_KEY) {
+  throw new Error("Clé API manquante dans le fichier .env");
+}
 
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+// Configuration stable pour Gemini 1.5 Flash
+const model = genAI.getGenerativeModel({ 
+  model: "gemini-1.5-flash" 
+});
+
+export const analyzeInventory = async (base64Image: string) => {
   try {
-    const genAI = new GoogleGenerativeAI(API_KEY);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest", // On ajoute "-latest" pour plus de stabilité
-      systemInstruction: "Tu es l'assistant de vision de Locate Home. Identifie les objets et leur position."
-    });
+    // Nettoyage automatique du préfixe base64
+    const base64Data = base64Image.split(",")[1] || base64Image;
 
-    const imagePart = {
-      inlineData: {
-        data: base64Image.split(",")[1],
-        mimeType: "image/jpeg",
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: "image/jpeg",
+        },
       },
-    };
+      "Identifie cet outil et décris son état général (marque, couleur, usure).",
+    ]);
 
-    const result = await model.generateContent(["Analyse cette image.", imagePart]);
-    return result.response.text();
+    const response = await result.response;
+    return response.text();
   } catch (error: any) {
     console.error("Erreur Gemini :", error);
-    // Affiche le message d'erreur réel pour le diagnostic
-    return `Erreur : ${error.message || "Problème de connexion"}`;
+    return `Erreur technique : ${error.message}`;
   }
-}
+};

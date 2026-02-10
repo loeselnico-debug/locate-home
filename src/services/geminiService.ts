@@ -10,7 +10,7 @@ export async function analyzeInventory(base64Image: string) {
   try {
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-flash-latest", // On ajoute "-latest" pour plus de stabilité
       systemInstruction: "Tu es l'assistant de vision de Locate Home. Identifie les objets et leur position."
     });
 

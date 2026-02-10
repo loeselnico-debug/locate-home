@@ -23,8 +23,9 @@ export async function analyzeInventory(base64Image: string) {
 
     const result = await model.generateContent(["Analyse cette image.", imagePart]);
     return result.response.text();
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erreur Gemini :", error);
-    return "Erreur lors de l'analyse.";
+    // Affiche le message d'erreur réel pour le diagnostic
+    return `Erreur : ${error.message || "Problème de connexion"}`;
   }
 }

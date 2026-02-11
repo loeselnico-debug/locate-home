@@ -1,59 +1,50 @@
-import React, { useState, useRef } from 'react';
-import { analyzeInventory } from './services/geminiService';
+import React, { useState } from 'react';
+import Dashboard from './components/Dashboard';
+import Scanner from './components/Scanner'; // Ton composant de scan actuel
+import { LayoutDashboard, Camera, Settings } from 'lucide-react';
 
-export default function App() {
-  const [result, setResult] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setLoading(true);
-    const reader = new FileReader();
-    
-    reader.onload = async (e) => {
-      const base64 = e.target?.result as string;
-      try {
-        const response = await analyzeInventory(base64);
-        setResult(response);
-      } catch (error) {
-        setResult("Erreur lors de l'analyse.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
+const App = () => {
+  // Le levier de navigation : par défaut on arrive sur le Dashboard
+  const [currentView, setCurrentView] = useState<'dashboard' | 'scanner'>('dashboard');
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif', backgroundColor: '#0f172a', color: 'white', minHeight: '100vh' }}>
-      <h1 style={{ color: '#fb923c' }}>Locate Home - Mode Phoenix</h1>
-      
-      <div style={{ margin: '20px 0' }}>
-        {/* UN SEUL INPUT AVEC CAPTURE FORCEE */}
-        <input 
-          type="file" 
-          accept="image/*" 
-          capture="environment" 
-          onChange={handleFileChange} 
-          ref={fileInputRef} 
-          style={{ display: 'none' }} 
-        />
-        
-        <button 
-          onClick={() => fileInputRef.current?.click()}
-          style={{ padding: '12px 24px', cursor: 'pointer', backgroundColor: '#3b82f6', border: 'none', color: 'white', borderRadius: '8px', fontWeight: 'bold' }}
-        >
-          {loading ? "Analyse en cours..." : "Scanner un objet"}
-        </button>
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Affichage de la vue active */}
+      <main className="pb-20">
+        {currentView === 'dashboard' ? <Dashboard /> : <Scanner />}
+      </main>
 
-      <div style={{ marginTop: '20px', padding: '20px', border: '1px solid #334155', borderRadius: '12px', backgroundColor: '#1e293b' }}>
-        <h3 style={{ marginTop: 0 }}>Résultat :</h3>
-        <p style={{ whiteSpace: 'pre-wrap', color: '#cbd5e1' }}>{result || "Prêt pour le scan."}</p>
-      </div>
+      {/* BARRE DE NAVIGATION BASSE (Fixe) */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 shadow-lg">
+        <div className="max-w-md mx-auto flex justify-between items-center">
+          
+          {/* Bouton Dashboard */}
+          <button 
+            onClick={() => setCurrentView('dashboard')}
+            className={`flex flex-col items-center gap-1 ${currentView === 'dashboard' ? 'text-blue-600' : 'text-slate-400'}`}
+          >
+            <LayoutDashboard size={24} />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Inventaire</span>
+          </button>
+
+          {/* Bouton SCAN (Le bouton d'action central) */}
+          <button 
+            onClick={() => setCurrentView('scanner')}
+            className={`flex flex-col items-center justify-center -mt-12 bg-blue-600 w-16 h-16 rounded-full border-4 border-slate-50 shadow-blue-200 shadow-xl transition-transform active:scale-95 ${currentView === 'scanner' ? 'bg-blue-700' : ''}`}
+          >
+            <Camera size={28} className="text-white" />
+          </button>
+
+          {/* Bouton Profil / Master Plan */}
+          <button className="flex flex-col items-center gap-1 text-slate-400 opacity-50 cursor-not-allowed">
+            <Settings size={24} />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Réglages</span>
+          </button>
+
+        </div>
+      </nav>
     </div>
   );
-}
+};
+
+export default App;

@@ -34,13 +34,20 @@ const Dashboard = () => {
   return (
     <div className="p-6 space-y-8 pb-32 bg-slate-900 min-h-screen">
       {/* LOGO & STATUT */}
-      <div className="flex items-center justify-between pt-2">
-        <div className="flex items-center gap-3">
-          <div className="bg-orange-500 p-2 rounded-lg text-white font-black italic shadow-lg shadow-orange-900/20">LH</div>
-          <h1 className="text-xl font-black text-white tracking-tighter uppercase italic">Locate <span className="text-orange-500">Home</span></h1>
-        </div>
-        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></div>
-      </div>
+<div className="flex items-center justify-between pt-2">
+  <div className="flex items-center gap-3">
+    {/* Montage du logo réel */}
+    <img 
+      src="/logo.png" 
+      alt="Locate Home" 
+      className="h-10 w-auto object-contain brightness-110 drop-shadow-[0_0_8px_rgba(249,115,22,0.3)]" 
+    />
+    <h1 className="text-xl font-black text-white tracking-tighter uppercase italic">
+      Locate <span className="text-orange-500">Home</span>
+    </h1>
+  </div>
+  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></div>
+</div>
 
       {/* JAUGE DE CAPACITÉ ORANGE */}
       <div className="bg-slate-800 p-6 rounded-[2.5rem] border border-slate-700 shadow-2xl">

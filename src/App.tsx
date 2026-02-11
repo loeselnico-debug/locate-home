@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Dashboard from './components/Dashboard';
 import Scanner from './components/Scanner';
-import { LayoutDashboard, Camera, Settings } from 'lucide-react';
+import { Camera, Settings } from 'lucide-react';
 
 function App() {
   // Levier de navigation : on démarre sur l'inventaire
@@ -18,10 +18,13 @@ function App() {
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 px-6 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.4)] z-50">
   <div className="max-w-md mx-auto flex justify-between items-center relative">
     
-    <button onClick={() => setCurrentView('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${currentView === 'dashboard' ? 'text-orange-500 scale-110' : 'text-slate-500'}`}>
-      <LayoutDashboard size={24} strokeWidth={currentView === 'dashboard' ? 3 : 2} />
-      <span className="text-[10px] font-black uppercase tracking-widest">Inventaire</span>
-    </button>
+    <button 
+  onClick={() => setCurrentView('dashboard')} 
+  className={`flex flex-col items-center gap-1 transition-all ${currentView === 'dashboard' ? 'scale-110' : 'opacity-50 grayscale'}`}
+>
+  <img src="/icon.png" alt="Menu" className="w-6 h-6 object-contain" />
+  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Inventaire</span>
+</button>
 
     <div className="absolute left-1/2 -translate-x-1/2 -top-12">
       <button 

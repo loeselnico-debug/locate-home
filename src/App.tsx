@@ -4,17 +4,17 @@ import Scanner from './components/Scanner';
 import { LayoutDashboard, Camera, Settings } from 'lucide-react';
 
 function App() {
-  // Définition du levier de navigation (Par défaut : Dashboard)
+  // Levier de navigation : on démarre sur l'inventaire
   const [currentView, setCurrentView] = useState<'dashboard' | 'scanner'>('dashboard');
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* 1. Zone d'affichage dynamique */}
+      {/* 1. Affichage dynamique de la vue */}
       <main className="flex-grow pb-24">
         {currentView === 'dashboard' ? <Dashboard /> : <Scanner />}
       </main>
 
-      {/* 2. Barre de Navigation Basse (Master Class) */}
+      {/* 2. Barre de Navigation Basse */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 shadow-2xl z-50">
         <div className="max-w-md mx-auto flex justify-between items-center relative">
           
@@ -27,7 +27,7 @@ function App() {
             <span className="text-[10px] font-bold uppercase tracking-wider">Inventaire</span>
           </button>
 
-          {/* Bouton SCAN (Action Centrale) */}
+          {/* Bouton SCAN (Central et surélevé) */}
           <div className="absolute left-1/2 -translate-x-1/2 -top-12">
             <button 
               onClick={() => setCurrentView('scanner')}
@@ -37,7 +37,7 @@ function App() {
             </button>
           </div>
 
-          {/* Bouton Réglages (Grisonné pour le mode Freemium) */}
+          {/* Bouton Réglages (Freemium : Inactif) */}
           <button className="flex flex-col items-center gap-1 text-slate-300 cursor-not-allowed">
             <Settings size={24} />
             <span className="text-[10px] font-bold uppercase tracking-wider">Réglages</span>

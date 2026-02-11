@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Search, Package, LayoutGrid, Zap, ShieldCheck } from 'lucide-react';
 
 const Dashboard = () => {

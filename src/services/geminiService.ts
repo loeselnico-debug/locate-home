@@ -2,12 +2,16 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 
-// ON FORCE LA VERSION V1 POUR ÉVITER LE 404
+if (!API_KEY) {
+  throw new Error("ALERTE : Clé API absente du fichier .env");
+}
+
 const genAI = new GoogleGenerativeAI(API_KEY);
 
+// Point de Vigilance : Forçage de l'API v1 (Stable)
 const model = genAI.getGenerativeModel(
   { model: "gemini-1.5-flash" },
-  { apiVersion: "v1" } // <--- C'EST LE RÉGLAGE DÉCISIF
+  { apiVersion: "v1" }
 );
 
 export const analyzeInventory = async (base64Image: string) => {
@@ -21,13 +25,14 @@ export const analyzeInventory = async (base64Image: string) => {
           mimeType: "image/jpeg",
         },
       },
-      "Identifie cet objet.",
+      "Identifie cet outil et décris son état.",
     ]);
 
     const response = await result.response;
     return response.text();
   } catch (error: any) {
-    // Si ça échoue, on veut l'erreur brute pour le diagnostic final
-    return `Erreur Google : ${error.message}`;
+    // Diagnostic en cas de panne
+    console.error("ERREUR_CONTROLE :", error.message);
+    return `Erreur signalée : ${error.message}`;
   }
 };

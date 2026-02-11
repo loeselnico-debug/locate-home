@@ -1,84 +1,74 @@
-import React, { useState } from 'react';
-import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { useState, type ChangeEvent } from 'react';
+import { Camera, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
+import { analyzeInventory } from '../services/geminiService';
 
 const Scanner = () => {
-  const [analysis, setAnalysis] = useState<string>("");
-  const [confidence, setConfidence] = useState<number>(0);
-  const [isBlocking, setIsBlocking] = useState<boolean>(false);
+  const [result, setResult] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [certainty, setCertainty] = useState<number | null>(null);
 
-  // Simulation de la réception du résultat de Gemini
-  const handleScanResult = (text: string) => {
-    // On extrait le chiffre après "CERTITUDE:"
-    const scoreMatch = text.match(/CERTITUDE:\s*(\d+)/);
-    const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
-    
-    setAnalysis(text);
-    setConfidence(score);
-    setIsBlocking(score < 70); // VERROU : Bloque si < 70%
+  const processValidation = (text: string) => {
+    const match = text.match(/CERTITUDE:\s*(\d+)/i);
+    const score = match ? parseInt(match[1]) : 0;
+    setCertainty(score);
+    return score;
+  };
+
+  const handleCapture = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    setResult("");
+    setCertainty(null);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      const response = await analyzeInventory(base64);
+      processValidation(response);
+      setResult(response);
+      setLoading(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Zone de Prévisualisation Photo (Simulée ici) */}
-      <div className="w-full h-64 bg-slate-200 rounded-2xl flex items-center justify-center border-2 border-dashed border-slate-300">
-        <span className="text-slate-400 text-sm italic">Flux caméra actif</span>
+    <div className="p-6 max-w-md mx-auto space-y-6">
+      <h2 className="text-2xl font-bold text-slate-800">Scanner Phoenix</h2>
+      
+      <div className="relative group">
+        <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-slate-300 rounded-3xl bg-white hover:bg-slate-50 transition-all cursor-pointer overflow-hidden shadow-inner">
+          {loading ? (
+            <RefreshCw className="w-12 h-12 text-blue-500 animate-spin" />
+          ) : (
+            <>
+              <Camera className="w-12 h-12 text-slate-400 group-hover:text-blue-500 transition-colors" />
+              <span className="mt-2 text-sm text-slate-500 font-medium">Prendre une photo</span>
+            </>
+          )}
+          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
+        </label>
       </div>
 
-      {/* Résultat de l'Analyse */}
-      {analysis && (
-        <div className={`p-4 rounded-2xl border-2 transition-all ${isBlocking ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+      {result && (
+        <div className={`p-5 rounded-2xl border-2 transition-all ${certainty && certainty >= 70 ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
           <div className="flex items-center gap-2 mb-2">
-            {isBlocking ? (
-              <AlertTriangle className="text-red-600 animate-bounce" size={20} />
-            ) : (
-              <CheckCircle2 className="text-green-600" size={20} />
-            )}
-            <span className={`font-bold text-sm ${isBlocking ? 'text-red-700' : 'text-green-700'}`}>
-              Certitude IA : {confidence}%
-            </span>
+            {certainty && certainty >= 70 ? <CheckCircle className="text-green-600" size={20} /> : <AlertTriangle className="text-amber-600" size={20} />}
+            <span className="font-bold text-slate-700">Analyse IA</span>
           </div>
-
-          <p className="text-xs text-slate-700 leading-relaxed mb-4">{analysis}</p>
-
-          {/* VERROU : Message d'alerte spécifique Electricien */}
-          {isBlocking && (
-            <div className="bg-white p-3 rounded-lg border border-red-200 mb-4">
-              <div className="flex gap-2 items-start text-red-800">
-                <ShieldAlert size={16} className="shrink-0 mt-0.5" />
-                <p className="text-[10px] font-bold uppercase leading-tight">
-                  IDENTIFICATION INCERTAINE. <br/>
-                  Vérification manuelle requise du gainage et de la norme (NF/EN).
-                </p>
-              </div>
+          <p className="text-slate-600 text-sm leading-relaxed mb-4">{result}</p>
+          {certainty && certainty >= 70 ? (
+            <button className="w-full bg-green-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-green-200 active:scale-95 transition-transform">
+              ENREGISTRER À L'INVENTAIRE
+            </button>
+          ) : (
+            <div className="text-center p-3 border border-amber-300 rounded-xl text-amber-700 text-xs font-bold bg-white/50">
+              ⚠️ CERTITUDE TROP FAIBLE ({certainty}%) - REFAIRE LE SCAN
             </div>
           )}
-
-          {/* Boutons d'Action */}
-          <div className="flex gap-3">
-            {isBlocking ? (
-              <button 
-                className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-red-200 active:scale-95"
-                onClick={() => setIsBlocking(false)} // L'utilisateur valide manuellement
-              >
-                VALIDER MANUELLEMENT
-              </button>
-            ) : (
-              <button className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-green-200 active:scale-95">
-                ENREGISTRER À L'INVENTAIRE
-              </button>
-            )}
-            <button className="px-4 py-3 bg-slate-100 text-slate-500 rounded-xl text-sm font-bold">
-              RESCANNER
-            </button>
-          </div>
         </div>
       )}
-      
-      {/* Rappel métier constant */}
-      <p className="text-[10px] text-slate-400 text-center italic">
-        Système Locate Home - Normes Françaises 2026. <br/>
-        Rappel : Vérification d'Absence de Tension (VAT) avant analyse.
-      </p>
     </div>
   );
 };

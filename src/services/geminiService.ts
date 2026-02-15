@@ -1,16 +1,15 @@
 export const geminiService = {
   analyzeTool: async (base64Image: string) => {
-    // Utilisation de la variable pour le log technique
-    console.log("Analyse image reçue (taille):", base64Image.length);
-
-    // Simulation de réponse IA pour tes tests
+    console.log("Analyse technique en cours...");
+    
+    // Simulation d'une analyse haute précision pour ta Bosch Pro 12V
     return {
-      name: "Perceuse Bosch Pro 12V",
-      details: "Outil électroportatif pro, batterie Lithium-Ion.",
-      etat: "Bon état",
+      name: "Perceuse-Visseuse Bosch Pro 12V-35",
+      details: "Moteur Brushless. Couple max 35Nm. Mandrin 10mm. Maintenance préventive : Vérifier charbons/batterie.",
+      etat: "Opérationnel",
       categorie: "electro",
-      score_confiance: 98,
-      alerte_securite: false
+      score_confiance: 99,
+      alerte_securite: false // Pas de défaut critique détecté
     };
   }
 };

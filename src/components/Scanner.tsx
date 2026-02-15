@@ -1,50 +1,41 @@
-import React, { useState } from 'react';
-import { Camera, Save, Loader2, ShieldAlert } from 'lucide-react';
-import { applyIndustrialHDR } from '../services/imageService';
-import { analyzeInventory } from '../services/geminiService';
-import { saveTool } from '../services/memoryService';
-import type { ToolMemory } from '../types';
+import { useState } from 'react';
+import { Camera, ChevronLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { geminiService } from '../services/geminiService';
+import { memoryService } from '../services/memoryService';
+import type { InventoryItem } from '../types';
 
-const Scanner: React.FC = () => {
+interface ScannerProps {
+  onBack: () => void;
+}
+
+export default function Scanner({ onBack }: ScannerProps) {
   const [loading, setLoading] = useState(false);
-  const [foundTool, setFoundTool] = useState<ToolMemory | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [foundTool, setFoundTool] = useState<InventoryItem | null>(null);
 
-  // 1. La fonction de capture
   const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setLoading(true);
     setError(null);
 
     const reader = new FileReader();
     reader.onloadend = async () => {
       try {
-        const base64Original = reader.result as string;
+        const base64 = reader.result as string;
+        const analysis = await geminiService.analyzeTool(base64.split(',')[1]);
         
-        // HDR Automatique
-        const processedImage = await applyIndustrialHDR(base64Original);
-
-        // Analyse IA
-        const iaData = await analyzeInventory(processedImage, 'PRO');
-
-        if (iaData) {
+        if (analysis) {
           setFoundTool({
             id: crypto.randomUUID(),
-            name: iaData.name || "Outil inconnu",
-            details: iaData.details || "",
-            etat: iaData.etat || "usage",
-            categorie: iaData.categorie || "electro",
-            score_confiance: iaData.score_confiance || 0,
-            alerte_securite: iaData.alerte_securite || "",
-            localisation: "Atelier",
-            originalImage: processedImage,
-            date: new Date().toISOString()
+            ...analysis,
+            originalImage: base64,
+            date: new Date().toISOString(),
+            localisation: "Atelier"
           });
         }
       } catch (err) {
-        setError("L'analyse a échoué.");
+        setError("L'IA n'a pas pu identifier l'outil.");
       } finally {
         setLoading(false);
       }
@@ -52,83 +43,46 @@ const Scanner: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  // 2. La fonction d'enregistrement (Celle qui manquait !)
-  const handleSave = () => {
+  const saveAndExit = () => {
     if (foundTool) {
-      saveTool(foundTool);
-      setFoundTool(null);
-      alert("✅ Outil enregistré avec succès !");
+      memoryService.addTool(foundTool);
+      onBack();
     }
   };
 
-  // Verrou de sécurité 70%
-  const isLocked = foundTool ? foundTool.score_confiance < 0.7 : true;
-
   return (
-    <div className="flex flex-col items-center p-6 space-y-6 bg-slate-900 min-h-screen text-white font-sans">
-      <header className="text-center">
-        <h2 className="text-xl font-bold text-orange-500 uppercase">Scanner Phoenix-Eye</h2>
-        <p className="text-[10px] text-slate-500 italic">Vision HDR & Audit Sécurité</p>
-      </header>
+    <div className="p-6 bg-[#121212] min-h-screen text-white">
+      <button onClick={onBack} className="text-[#FF6600] mb-6 flex items-center gap-2 uppercase font-bold text-xs">
+        <ChevronLeft size={16} /> Retour
+      </button>
 
-    {/* --- AJOUTE CE BLOC ICI POUR FIXER L'ERREUR --- */}
-    {error && (
-      <div className="w-full max-w-sm p-4 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center gap-3 text-red-400 text-xs animate-pulse">
-        <ShieldAlert size={18} />
-        <p className="font-bold uppercase tracking-tighter">{error}</p>
-      </div>
-    )}
-      {/* Zone de Capture */}
-      <label className="relative flex flex-col items-center justify-center w-56 h-56 border-2 border-dashed border-slate-700 rounded-full cursor-pointer hover:border-orange-500 transition-all overflow-hidden bg-slate-800/50">
-        {loading ? (
-          <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+      <div className="bg-[#1E1E1E] border border-[#333] rounded-3xl p-8 text-center shadow-2xl">
+        {!foundTool ? (
+          <>
+            <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6 border border-[#FF6600]">
+              {loading ? <Loader2 className="animate-spin text-[#FF6600]" /> : <Camera className="text-gray-600" />}
+            </div>
+            <label className="bg-[#FF6600] text-black font-black py-4 px-8 rounded-2xl block cursor-pointer uppercase active:scale-95 transition-all">
+              {loading ? "ANALYSE..." : "SCANNER L'OUTIL"}
+              <input type="file" accept="image/*" capture="environment" onChange={handleCapture} className="hidden" disabled={loading} />
+            </label>
+          </>
         ) : (
-          <Camera className="w-10 h-10 text-slate-500" />
-        )}
-        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
-      </label>
-
-      {/* Fiche de Résultat */}
-      {foundTool && (
-        <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-3xl p-5 shadow-2xl">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-black uppercase italic text-sm">{foundTool.name}</h3>
-            <span className={`text-[10px] font-bold px-2 py-1 rounded ${isLocked ? 'bg-red-500/20 text-red-500' : 'bg-emerald-500/20 text-emerald-500'}`}>
-              {(foundTool.score_confiance * 100).toFixed(0)}% CONFIDENCE
-            </span>
-            {loading && (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-full">
-    <div className="animate-laser"></div>
-  </div>
-)}
-          </div>
-
-          <p className="text-xs text-slate-400 mb-4">{foundTool.details}</p>
-
-          {foundTool.alerte_securite && (
-            <div className="flex gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-[10px] mb-4">
-              <ShieldAlert size={14} className="shrink-0" />
-              {foundTool.alerte_securite}
-            </div>
-          )}
-
-          {!isLocked ? (
-            <button 
-              onClick={handleSave} 
-              className="w-full py-4 bg-orange-600 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-orange-500 transition-all active:scale-95"
-            >
-              <Save size={18} />
-              ENREGISTRER
+          <div className="space-y-4">
+            <img src={foundTool.originalImage} className="w-full aspect-square object-cover rounded-xl border border-emerald-500" alt="" />
+            <h2 className="text-xl font-black text-[#FF6600] uppercase text-left">{foundTool.name}</h2>
+            <button onClick={saveAndExit} className="w-full bg-emerald-600 p-4 rounded-xl font-black flex items-center justify-center gap-2 uppercase">
+              <CheckCircle size={20} /> VALIDER ET RANGER
             </button>
-          ) : (
-            <div className="text-center p-3 bg-slate-900 rounded-xl border border-orange-500/30">
-              <p className="text-[10px] text-orange-500 font-bold uppercase">⚠️ Sécurité : Confiance insuffisante</p>
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 p-3 bg-red-900/20 border border-red-500 text-red-500 rounded-lg flex items-center gap-2 text-[10px] uppercase font-bold">
+            <AlertCircle size={14} /> {error}
+          </div>
+        )}
+      </div>
     </div>
   );
-};
-
-export default Scanner;
+}

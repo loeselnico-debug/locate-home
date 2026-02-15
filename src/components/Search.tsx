@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Search as SearchIcon, MapPin, ChevronLeft } from 'lucide-react';
-import { memoryService } from '../services/memoryService';
+// Correction de l'import suite à notre modification du service
+import { getInventory } from '../services/memoryService';
 import type { ToolMemory } from '../types';
 
-const Search: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+interface SearchProps {
+  onBack: () => void;
+}
+
+const Search: React.FC<SearchProps> = ({ onBack }) => {
   const [isListening, setIsListening] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ToolMemory[]>([]);
   const [allTools, setAllTools] = useState<ToolMemory[]>([]);
 
+  // Chargement initial avec la nouvelle fonction getInventory
   useEffect(() => {
-    setAllTools(memoryService.getTools());
+    const tools = getInventory();
+    setAllTools(tools);
   }, []);
 
-  // Logique de filtrage
+  // Logique de filtrage en temps réel
   useEffect(() => {
     if (query.trim() === '') {
       setResults([]);
@@ -26,9 +33,9 @@ const Search: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
   }, [query, allTools]);
 
-  // Fonction de reconnaissance vocale
+  // Reconnaissance vocale (Web Speech API)
   const startListening = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitRecognition;
     
     if (!SpeechRecognition) {
       alert("La reconnaissance vocale n'est pas supportée sur ce navigateur.");
@@ -51,57 +58,73 @@ const Search: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-slate-950 min-h-screen text-white pb-32">
-      <button onClick={onBack} className="text-orange-500 font-black flex items-center gap-2 mb-4 uppercase text-xs">
-        <ChevronLeft size={16} /> Retour Dashboard
+    <div className="min-h-screen bg-[#121212] text-white p-6 font-sans pb-32">
+      
+      {/* BOUTON RETOUR : Bleu Navigation selon Manifeste */}
+      <button 
+        onClick={onBack} 
+        className="text-[#007BFF] font-bold flex items-center gap-1 mb-6 uppercase text-xs tracking-tighter"
+      >
+        <ChevronLeft size={18} /> Retour Dashboard
       </button>
 
-      <header>
-        <h2 className="text-2xl font-black text-white italic uppercase">Retrouver</h2>
-        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Assistant Vocal & Spatial</p>
+      <header className="mb-8">
+        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Retrouver</h2>
+        <div className="h-1 w-12 bg-[#FF6600] mt-1 shadow-[0_0_8px_#FF6600]"></div>
+        <p className="text-[10px] text-[#B0BEC5] font-bold uppercase tracking-widest mt-2">Assistant Vocal & Spatial</p>
       </header>
 
-      {/* Barre de recherche interactive */}
-      <div className="relative group">
+      {/* ZONE DE RECHERCHE */}
+      <div className="relative mb-10">
         <input 
           type="text" 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Nom de l'outil ou catégorie..."
-          className="w-full bg-slate-900 border-2 border-slate-800 rounded-2xl py-4 pl-12 pr-16 text-sm focus:border-orange-500 transition-all outline-none"
+          placeholder="Outil, catégorie, bac..."
+          className="w-full bg-[#1E1E1E] border border-[#333] rounded-2xl py-5 pl-14 pr-16 text-sm focus:border-[#FF6600] transition-all outline-none shadow-inner"
         />
-        <SearchIcon className="absolute left-4 top-4 text-slate-500" size={18} />
+        <SearchIcon className="absolute left-5 top-5 text-[#B0BEC5]" size={20} />
         
+        {/* BOUTON MICRO : Effet Glow Phoenix */}
         <button 
           onClick={startListening}
-          className={`absolute right-2 top-2 p-3 rounded-xl transition-all ${isListening ? 'bg-red-500 animate-pulse' : 'bg-orange-600 hover:bg-orange-500'}`}
+          className={`absolute right-2 top-2 p-3.5 rounded-xl transition-all ${
+            isListening 
+            ? 'bg-[#DC3545] animate-pulse shadow-[0_0_20px_#DC3545]' 
+            : 'bg-[#FF6600] hover:scale-105 shadow-[0_0_15px_rgba(255,102,0,0.4)]'
+          }`}
         >
-          {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+          {isListening ? <MicOff size={22} /> : <Mic size={22} />}
         </button>
       </div>
 
-      {/* Liste des résultats (Charte de Vérité) */}
-      <div className="space-y-4">
+      {/* RÉSULTATS : Look Industriel */}
+      <div className="grid gap-4">
         {results.length > 0 ? (
           results.map(tool => (
-            <div key={tool.id} className="bg-slate-900 border border-slate-800 rounded-[2rem] p-5 flex items-center gap-4 shadow-xl">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden bg-black flex-shrink-0 border border-slate-700">
-                <img src={tool.originalImage} alt="" className="w-full h-full object-cover opacity-80" />
+            <div key={tool.id} className="bg-[#1E1E1E] border border-[#333] rounded-2xl p-4 flex items-center gap-4 hover:border-[#FF6600] transition-colors group">
+              <div className="w-20 h-20 rounded-xl overflow-hidden bg-black border border-[#444] flex-shrink-0">
+                <img src={tool.originalImage} alt={tool.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-sm uppercase text-white">{tool.name}</h3>
-                <div className="flex items-center gap-1 text-emerald-500 mt-1">
-                  <MapPin size={10} />
-                  <span className="text-[10px] font-black uppercase">Localisation : {tool.localisation}</span>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-black text-base uppercase text-white truncate">{tool.name}</h3>
+                <div className="flex items-center gap-1.5 text-[#FF6600] mt-1">
+                  <MapPin size={12} />
+                  <span className="text-[11px] font-bold uppercase tracking-tighter">Emplacement : {tool.localisation || 'Non défini'}</span>
                 </div>
-                <p className="text-[9px] text-slate-500 mt-1 italic">"À côté de : {tool.details.substring(0, 30)}..."</p>
+                <p className="text-[10px] text-[#B0BEC5] mt-2 line-clamp-1 italic">
+                  Ref: {tool.details}
+                </p>
               </div>
             </div>
           ))
         ) : query !== '' && (
-          <p className="text-center text-slate-600 text-xs py-10">Aucun outil correspondant trouvé.</p>
+          <div className="text-center py-20 border-2 border-dashed border-[#333] rounded-3xl">
+            <p className="text-[#B0BEC5] text-sm font-medium italic">Aucun signal détecté pour "{query}"</p>
+          </div>
         )}
       </div>
+
     </div>
   );
 };

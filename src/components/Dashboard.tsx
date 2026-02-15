@@ -1,67 +1,93 @@
-import { useState, useEffect } from 'react';
-import { ChevronRight, Settings } from 'lucide-react';
-import { memoryService } from '../services/memoryService';
-import type { InventoryItem } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Settings, PlusCircle, LayoutGrid, Search } from 'lucide-react';
+// Importation du service de mémoire (vérifie bien le chemin vers ton dossier services)
+import { getInventory } from '../services/memoryService'; 
 
-interface DashboardProps {
-  onNavigate: (page: 'dashboard' | 'scanner' | 'library' | 'search') => void;
-}
+const Dashboard: React.FC = () => {
+  const [itemCount, setItemCount] = useState<number>(0);
+  const MAX_CAPACITY = 50; // Limite PRO définie dans ton manifeste
 
-const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const [tools, setTools] = useState<InventoryItem[]>([]);
+  // Calcul du pourcentage pour la jauge
+  // Formule : $\text{pourcentage} = (\text{itemCount} / \text{MAX\_CAPACITY}) \times 100$
+  const percentage = Math.min((itemCount / MAX_CAPACITY) * 100, 100);
 
   useEffect(() => {
-    setTools(memoryService.getTools());
+    // Fonction pour charger les données au démarrage
+    const refreshData = () => {
+      const items = getInventory();
+      setItemCount(items.length);
+    };
+
+    refreshData();
   }, []);
 
   return (
-    <div className="p-6 bg-[#121212] min-h-screen text-white">
-      <div className="flex justify-between items-center mb-10">
-        <img src="/logo.png" alt="LocateHome" className="h-10 w-auto" />
-        <Settings className="text-gray-600" />
-      </div>
+    <div className="min-h-screen bg-[#121212] text-white p-6 font-sans">
+      
+      {/* HEADER : Logo Phoenix-Eye */}
+      <header className="flex justify-between items-center mb-10">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-[#FF6600] rounded-sm shadow-[0_0_10px_#FF6600]"></div>
+          <h1 className="text-xl font-black tracking-tighter italic">PHOENIX-EYE</h1>
+        </div>
+        <Settings className="text-[#B0BEC5] hover:rotate-90 transition-transform cursor-pointer" />
+      </header>
 
-      <div className="bg-[#1E1E1E] border border-[#333] rounded-3xl p-6 mb-8 shadow-xl">
+      {/* JAUGE D'INVENTAIRE DYNAMIQUE */}
+      <section className="bg-[#1E1E1E] border border-[#333] rounded-xl p-6 mb-8 shadow-2xl">
         <div className="flex justify-between items-end mb-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF6600]">État Stock</p>
-          <span className="text-3xl font-black">{tools.length} <span className="text-sm text-gray-600">/ 50</span></span>
+          <div>
+            <p className="text-[#B0BEC5] text-xs uppercase tracking-widest mb-1">Capacité Inventaire</p>
+            <h2 className="text-3xl font-bold text-white">
+              {itemCount} <span className="text-[#B0BEC5] text-lg font-normal">/ {MAX_CAPACITY}</span>
+            </h2>
+          </div>
+          <div className="text-right">
+            <span className="text-[#FF6600] font-mono font-bold text-lg">{Math.round(percentage)}%</span>
+          </div>
         </div>
-        <div className="w-full bg-black h-2 rounded-full overflow-hidden">
-          <div className="bg-[#FF6600] h-full transition-all duration-1000" style={{ width: `${(tools.length/50)*100}%` }} />
+
+        {/* Barre de progression avec effet Glow Orange */}
+        <div className="h-4 bg-[#000] rounded-full overflow-hidden border border-[#333]">
+          <div 
+            className="h-full bg-[#FF6600] transition-all duration-1000 ease-out shadow-[0_0_15px_#FF6600]"
+            style={{ width: `${percentage}%` }}
+          ></div>
         </div>
-      </div>
+        <p className="text-[10px] text-[#B0BEC5] mt-3 italic">* Mode PRO activé : Optimisé pour iPhone 12 Pro</p>
+      </section>
 
-      <div className="space-y-4">
-        {/* BOUTON SCANNER */}
-        <button onClick={() => onNavigate('scanner')} className="w-full bg-[#FF6600] p-5 rounded-2xl flex items-center gap-4 text-black font-black active:scale-95 transition-all">
-          <img src="/icon-scanner.png" className="w-14 h-14 object-contain" alt="" />
-          <div className="text-left">
-            <p className="uppercase text-xl leading-none">Scanner</p>
-            <p className="text-[9px] uppercase opacity-70 mt-1">Identification IA</p>
+      {/* BOUTONS D'ACTION (Grille 2x2) */}
+      <nav className="grid grid-cols-2 gap-4">
+        <button className="flex flex-col items-center justify-center aspect-square bg-[#1E1E1E] border border-[#333] rounded-2xl hover:border-[#FF6600] transition-colors group">
+          <div className="p-4 bg-[#000] rounded-full mb-3 group-hover:shadow-[0_0_10px_#FF6600] transition-all">
+             <PlusCircle className="text-[#FF6600]" size={32} />
           </div>
-          <ChevronRight className="ml-auto opacity-40" />
+          <span className="font-bold text-sm">SCANNER</span>
         </button>
 
-        {/* BOUTON RANGER */}
-        <button onClick={() => onNavigate('library')} className="w-full bg-[#1E1E1E] border border-[#333] p-5 rounded-2xl flex items-center gap-4 text-white font-black active:scale-95 transition-all">
-          <img src="/icon-ranger.png" className="w-14 h-14 object-contain" alt="" />
-          <div className="text-left">
-            <p className="uppercase text-xl leading-none">Ranger</p>
-            <p className="text-[9px] uppercase text-gray-500 mt-1">Ma Bibliothèque</p>
+        <button className="flex flex-col items-center justify-center aspect-square bg-[#1E1E1E] border border-[#333] rounded-2xl hover:border-[#FF6600] transition-colors group">
+          <div className="p-4 bg-[#000] rounded-full mb-3 group-hover:shadow-[0_0_10px_#FF6600] transition-all">
+             <LayoutGrid className="text-[#FF6600]" size={32} />
           </div>
-          <ChevronRight className="ml-auto text-gray-700" />
+          <span className="font-bold text-sm">RANGER</span>
         </button>
 
-        {/* BOUTON RETROUVER */}
-        <button onClick={() => onNavigate('search')} className="w-full bg-[#1E1E1E] border border-[#333] p-5 rounded-2xl flex items-center gap-4 text-white font-black active:scale-95 transition-all">
-          <img src="/icon-retrouver.png" className="w-14 h-14 object-contain" alt="" />
-          <div className="text-left">
-            <p className="uppercase text-xl leading-none">Retrouver</p>
-            <p className="text-[9px] uppercase text-gray-500 mt-1">Assistant Vocal</p>
+        <button className="flex flex-col items-center justify-center aspect-square bg-[#1E1E1E] border border-[#333] rounded-2xl hover:border-[#FF6600] transition-colors group">
+          <div className="p-4 bg-[#000] rounded-full mb-3 group-hover:shadow-[0_0_10px_#FF6600] transition-all">
+             <Search className="text-[#FF6600]" size={32} />
           </div>
-          <ChevronRight className="ml-auto text-gray-700" />
+          <span className="font-bold text-sm">RETROUVER</span>
         </button>
-      </div>
+
+        <button className="flex flex-col items-center justify-center aspect-square bg-[#1E1E1E] border border-[#333] rounded-2xl opacity-40 grayscale cursor-not-allowed">
+          <div className="p-4 bg-[#000] rounded-full mb-3">
+             <div className="w-8 h-8 border-2 border-[#B0BEC5] rounded-full flex items-center justify-center text-[10px]">BT</div>
+          </div>
+          <span className="font-bold text-sm uppercase">Stock (V2)</span>
+        </button>
+      </nav>
+
     </div>
   );
 };

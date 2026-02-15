@@ -2,7 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Configuration du fond Anthracite Profond pour l'OLED */
 body {
-  background-color: #121212; /* Anthracite Dark */
+  background: radial-gradient(circle at top left, #1a1a1a, #121212);
   color: white;
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  margin: 0;
+}
+
+/* Animation Laser Phoenix pour LinkedIn */
+@keyframes laser-scan {
+  0% { top: 0%; opacity: 0; }
+  50% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.animate-laser {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, #FF6600, transparent);
+  box-shadow: 0 0 15px #FF6600;
+  animation: laser-scan 2s linear infinite;
+  z-index: 20;
 }

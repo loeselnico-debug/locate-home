@@ -17,14 +17,14 @@ export const InventoryCard = ({ item }: { item: InventoryItem }) => {
         />
         {/* Badge de confiance IA */}
         <div className="absolute top-1 left-1 bg-black/60 px-1.5 rounded text-[10px] text-white border border-white/10">
-          {item.confiance}
+          {item.score_confiance}
         </div>
       </div>
 
       {/* Zone Infos */}
       <div className="p-3 flex flex-col justify-between flex-1 min-w-0">
         <div>
-          <h3 className="font-bold text-white text-sm truncate">{item.objet}</h3>
+          <h3 className="font-bold text-white text-sm truncate">{item.name}</h3>
           <p className="text-xs text-brand-orange font-medium uppercase">{catLabel}</p>
         </div>
         

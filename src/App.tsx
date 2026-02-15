@@ -1,47 +1,49 @@
 import { useState } from 'react';
-import Dashboard from './components/Dashboard';
 import Scanner from './components/Scanner';
-import { Camera, Settings } from 'lucide-react';
+import Dashboard from './components/Dashboard';
+import Search from './components/Search'; // Ton nouveau module vocal
+import { type UserTier } from './constants/tiers';
+import Library from './components/Library';
 
 function App() {
-  // Levier de navigation : on démarre sur l'inventaire
-  const [currentView, setCurrentView] = useState<'dashboard' | 'scanner'>('dashboard');
-
+  // 1. Définition de l'état du Tier (Résout l'erreur 'Cannot find name currentTier')
+  const [currentTier] = useState<UserTier>('PRO');
+  
+  // 2. Gestion de la navigation sur les 3 piliers (Ranger, Scanner, Retrouver)
+  const [view, setView] = useState<'dashboard' | 'scanner' | 'search' | 'library'>('dashboard');
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* 1. Affichage dynamique de la vue */}
-      <main className="flex-grow pb-24">
-        {currentView === 'dashboard' ? <Dashboard /> : <Scanner />}
+    <div className="min-h-screen bg-[#1A1A1A] text-white font-sans">
+      {/* Barre de navigation Phoenix-Eye */}
+      <nav className="p-4 border-b border-[#FF6600] flex justify-between items-center bg-black sticky top-0 z-50">
+        <h1 
+          className="text-[#FF6600] font-black tracking-tighter text-xl cursor-pointer italic"
+          onClick={() => setView('dashboard')}
+        >
+          PHOENIX-EYE
+        </h1>
+        <div className="flex gap-4 items-center">
+          <span className="text-[10px] bg-gray-800 px-2 py-1 rounded border border-gray-600 font-bold uppercase">
+            MODE: {currentTier}
+          </span>
+        </div>
+      </nav>
+
+      {/* 3. Bloc de navigation unique (Résout l'erreur 'one parent element') */}
+      <main className="pb-24">
+        {view === 'dashboard' && (
+          <Dashboard 
+            tier={currentTier} 
+            onNavigate={(target) => setView(target as any)} 
+           
+          />
+        )}
+        
+        {view === 'scanner' && <Scanner />}
+        {view === 'library' && <Library onBack={() => setView('dashboard')} />}
+        {view === 'search' && (
+          <Search onBack={() => setView('dashboard')} />
+        )}
       </main>
-
-      {/* 2. Barre de Navigation Basse */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 px-6 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.4)] z-50">
-  <div className="max-w-md mx-auto flex justify-between items-center relative">
-    
-    <button 
-  onClick={() => setCurrentView('dashboard')} 
-  className={`flex flex-col items-center gap-1 transition-all ${currentView === 'dashboard' ? 'scale-110' : 'opacity-50 grayscale'}`}
->
-  <img src="/icon.png" alt="Menu" className="w-6 h-6 object-contain" />
-  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Inventaire</span>
-</button>
-
-    <div className="absolute left-1/2 -translate-x-1/2 -top-12">
-      <button 
-        onClick={() => setCurrentView('scanner')} 
-        className="flex items-center justify-center w-18 h-18 rounded-full border-[6px] border-slate-900 shadow-2xl bg-orange-500 text-white active:scale-90 transition-transform"
-      >
-        <Camera size={32} strokeWidth={2.5} />
-      </button>
-    </div>
-
-    <button className="flex flex-col items-center gap-1 text-slate-700 cursor-not-allowed">
-      <Settings size={24} />
-      <span className="text-[10px] font-black uppercase tracking-widest">Réglages</span>
-    </button>
-    
-  </div>
-</nav>
     </div>
   );
 }

@@ -1,70 +1,128 @@
-import { useState, type ChangeEvent } from 'react';
-import { Camera, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Camera, Save, Loader2, ShieldAlert } from 'lucide-react';
+import { applyIndustrialHDR } from '../services/imageService';
 import { analyzeInventory } from '../services/geminiService';
+import { saveTool } from '../services/memoryService';
+import type { ToolMemory } from '../types';
 
-const Scanner = () => {
-  const [result, setResult] = useState<string>("");
+const Scanner: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [certainty, setCertainty] = useState<number | null>(null);
+  const [foundTool, setFoundTool] = useState<ToolMemory | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const processValidation = (text: string) => {
-    const match = text.match(/CERTITUDE:\s*(\d+)/i);
-    const score = match ? parseInt(match[1]) : 0;
-    setCertainty(score);
-    return score;
-  };
-
-  const handleCapture = async (e: ChangeEvent<HTMLInputElement>) => {
+  // 1. La fonction de capture
+  const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setLoading(true);
-    setResult("");
-    setCertainty(null);
+    setError(null);
 
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      const response = await analyzeInventory(base64);
-      processValidation(response);
-      setResult(response);
-      setLoading(false);
+    reader.onloadend = async () => {
+      try {
+        const base64Original = reader.result as string;
+        
+        // HDR Automatique
+        const processedImage = await applyIndustrialHDR(base64Original);
+
+        // Analyse IA
+        const iaData = await analyzeInventory(processedImage, 'PRO');
+
+        if (iaData) {
+          setFoundTool({
+            id: crypto.randomUUID(),
+            name: iaData.name || "Outil inconnu",
+            details: iaData.details || "",
+            etat: iaData.etat || "usage",
+            categorie: iaData.categorie || "electro",
+            score_confiance: iaData.score_confiance || 0,
+            alerte_securite: iaData.alerte_securite || "",
+            localisation: "Atelier",
+            originalImage: processedImage,
+            date: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        setError("L'analyse a échoué.");
+      } finally {
+        setLoading(false);
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  return (
-    <div className="p-6 max-w-md mx-auto space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">Scanner Phoenix</h2>
-      
-      <div className="relative group">
-        <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-slate-300 rounded-3xl bg-white hover:bg-slate-50 transition-all cursor-pointer overflow-hidden shadow-inner">
-          {loading ? (
-            <RefreshCw className="w-12 h-12 text-blue-500 animate-spin" />
-          ) : (
-            <>
-              <Camera className="w-12 h-12 text-slate-400 group-hover:text-blue-500 transition-colors" />
-              <span className="mt-2 text-sm text-slate-500 font-medium">Prendre une photo</span>
-            </>
-          )}
-          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
-        </label>
-      </div>
+  // 2. La fonction d'enregistrement (Celle qui manquait !)
+  const handleSave = () => {
+    if (foundTool) {
+      saveTool(foundTool);
+      setFoundTool(null);
+      alert("✅ Outil enregistré avec succès !");
+    }
+  };
 
-      {result && (
-        <div className={`p-5 rounded-2xl border-2 transition-all ${certainty && certainty >= 70 ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
-          <div className="flex items-center gap-2 mb-2">
-            {certainty && certainty >= 70 ? <CheckCircle className="text-green-600" size={20} /> : <AlertTriangle className="text-amber-600" size={20} />}
-            <span className="font-bold text-slate-700">Analyse IA</span>
+  // Verrou de sécurité 70%
+  const isLocked = foundTool ? foundTool.score_confiance < 0.7 : true;
+
+  return (
+    <div className="flex flex-col items-center p-6 space-y-6 bg-slate-900 min-h-screen text-white font-sans">
+      <header className="text-center">
+        <h2 className="text-xl font-bold text-orange-500 uppercase">Scanner Phoenix-Eye</h2>
+        <p className="text-[10px] text-slate-500 italic">Vision HDR & Audit Sécurité</p>
+      </header>
+
+    {/* --- AJOUTE CE BLOC ICI POUR FIXER L'ERREUR --- */}
+    {error && (
+      <div className="w-full max-w-sm p-4 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center gap-3 text-red-400 text-xs animate-pulse">
+        <ShieldAlert size={18} />
+        <p className="font-bold uppercase tracking-tighter">{error}</p>
+      </div>
+    )}
+      {/* Zone de Capture */}
+      <label className="relative flex flex-col items-center justify-center w-56 h-56 border-2 border-dashed border-slate-700 rounded-full cursor-pointer hover:border-orange-500 transition-all overflow-hidden bg-slate-800/50">
+        {loading ? (
+          <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+        ) : (
+          <Camera className="w-10 h-10 text-slate-500" />
+        )}
+        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
+      </label>
+
+      {/* Fiche de Résultat */}
+      {foundTool && (
+        <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-3xl p-5 shadow-2xl">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-black uppercase italic text-sm">{foundTool.name}</h3>
+            <span className={`text-[10px] font-bold px-2 py-1 rounded ${isLocked ? 'bg-red-500/20 text-red-500' : 'bg-emerald-500/20 text-emerald-500'}`}>
+              {(foundTool.score_confiance * 100).toFixed(0)}% CONFIDENCE
+            </span>
+            {loading && (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-full">
+    <div className="animate-laser"></div>
+  </div>
+)}
           </div>
-          <p className="text-slate-600 text-sm leading-relaxed mb-4">{result}</p>
-          {certainty && certainty >= 70 ? (
-            <button className="w-full bg-green-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-green-200 active:scale-95 transition-transform">
-              ENREGISTRER À L'INVENTAIRE
+
+          <p className="text-xs text-slate-400 mb-4">{foundTool.details}</p>
+
+          {foundTool.alerte_securite && (
+            <div className="flex gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-[10px] mb-4">
+              <ShieldAlert size={14} className="shrink-0" />
+              {foundTool.alerte_securite}
+            </div>
+          )}
+
+          {!isLocked ? (
+            <button 
+              onClick={handleSave} 
+              className="w-full py-4 bg-orange-600 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-orange-500 transition-all active:scale-95"
+            >
+              <Save size={18} />
+              ENREGISTRER
             </button>
           ) : (
-            <div className="text-center p-3 border border-amber-300 rounded-xl text-amber-700 text-xs font-bold bg-white/50">
-              ⚠️ CERTITUDE TROP FAIBLE ({certainty}%) - REFAIRE LE SCAN
+            <div className="text-center p-3 bg-slate-900 rounded-xl border border-orange-500/30">
+              <p className="text-[10px] text-orange-500 font-bold uppercase">⚠️ Sécurité : Confiance insuffisante</p>
             </div>
           )}
         </div>

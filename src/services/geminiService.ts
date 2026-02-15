@@ -1,19 +1,24 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { TIERS_CONFIG, type UserTier } from '../constants/tiers';
 
-const API_KEY = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: "v1" });
+export const analyzeInventory = async (base64Image: string, tier: UserTier = 'FREE') => {
+  const config = TIERS_CONFIG[tier];
+  const systemPrompt = `Identifie l'outil. Réponds en JSON : { "name": "", "details": "", "etat": "", "categorie": "", "score_confiance": 0.0, "alerte_securite": "" }. ${config.safetyAudit ? "Active l'Audit Sécurité." : ""}`;
+  
+  const cleanBase64 = base64Image.split(',')[1] || base64Image;
 
-export const analyzeInventory = async (base64Image: string) => {
-  try { // <--- LE MOT CLÉ INDISPENSABLE
-    const base64Data = base64Image.split(",")[1] || base64Image;
-    const result = await model.generateContent([
-      { inlineData: { data: base64Data, mimeType: "image/jpeg" } },
-      "Identifie cet outil et son état. CERTITUDE: [valeur entre 0 et 100]"
-    ]);
-    const response = await result.response;
-    return response.text();
-  } catch (error: any) {
-    return `Erreur : ${error.message}`;
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: systemPrompt }, { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } }] }]
+      })
+    });
+    const result = await response.json();
+    const text = result.candidates[0].content.parts[0].text;
+    const match = text.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : null;
+  } catch (error) {
+    return null;
   }
 };

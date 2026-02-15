@@ -1,40 +1,31 @@
-# 🦅 PHOENIX-EYE / LOCATE HOME - RÉFÉRENTIEL PROJET (V1.0)
+# 🦅 PHOENIX-EYE | MANIFESTE DE VISION V1.3
+**Date :** 15 Février 2026
+**Statut :** V1.0 Stable (Prêt pour Démo LinkedIn)
+**Support de test :** iPhone 12 Pro (OLED Optimized)
 
-## 1. VISION & UX (Flux Croquis 14/02)
-- **Concept** : Application hybride (Bricolage / Maintenance Pro) basée sur 3 piliers d'action.
-- **RANGER** : Accès direct à l'inventaire par catégories.
-- **SCANNER** : Module de vision IA pour identification et audit.
-- **RETROUVER** : Moteur de recherche spatiale avec support vocal.
+---
 
-## 2. CHARTE DE VÉRITÉ (Data Schema)
-- **Fichier Source** : `src/types.ts`.
-- **Interface `InventoryItem`** : id, name, details, etat, categorie, score_confiance, alerte_securite, originalImage, date.
-- **Sécurité** : Verrouillage automatique de l'enregistrement si `score_confiance` < 0.7 (70%).
+## 1. VISION DU PRODUIT
+Transformer la maintenance industrielle par une application de "mémoire visuelle et vocale" ultra-rapide, utilisable d'une seule main en environnement sombre.
 
-## 3. RÉFÉRENTIEL DES CATÉGORIES (8 Piliers)
-- `electro` (Outillage Électroportatif)
-- `main` (Outillage à main)
-- `serrage` (Serrage et Clés)
-- `quinc` (Quincaillerie)
-- `elec` (Électricité)
-- `peinture` (Peinture et Finition)
-- `mesure` (Mesure et Traçage)
-- `jardin` (Jardin et Extérieur)
+## 2. IDENTITÉ VISUELLE (CHARTE GRAPHIQUE)
+- **Fond :** Anthracite Profond (`#121212`) - Optimisé pour écrans OLED.
+- **Accent :** Orange Phoenix (`#FF6600`) - Haute visibilité.
+- **Iconographie :** Pack d'icônes PNG personnalisées avec relief 3D.
+- **Effets :** Balayage Laser Orange (Scan) + Glassmorphism (Panneaux).
 
-## 4. LOGIQUE DES TIERS (Fichier `tiers.ts`)
-- **FREE** : Limite 50 outils, fonctions de base.
-- **PREMIUM** : HDR activé, Vision AR, limite 9999.
-- **PRO** : Safety Audit (Audit de sécurité) activé via Gemini Service.
+## 3. ÉTAT DES PILIERS TECHNIQUES
+- [x] **SCANNER** : Filtre HDR + Reconnaissance Gemini + Animation Laser.
+- [x] **RANGER** : 8 Catégories métiers + Navigation par icônes PNG.
+- [x] **RETROUVER** : Recherche vocale via Web Speech API.
+- [x] **DASHBOARD** : Jauge de capacité dynamique (50 outils PRO).
 
-## 5. ARCHITECTURE TECHNIQUE VALIDÉE
-- **App.tsx** : Gestionnaire de navigation (Dashboard / Scanner / Library).
-- **Dashboard.tsx** : Affichage par secteurs (ex: Garage/Alpha) et jauge de capacité.
-- **Scanner.tsx** : Capture image et mapping vers la Charte de Vérité.
-- **geminiService.ts** : Prompt expert tier-aware (PRO/FREE) avec extraction JSON Regex.
-- **memoryService.ts** : Persistance LocalStorage sous la clé `phoenix_inventory_v1`.
+## 4. CONFIGURATION MATÉRIELLE CIBLE
+- **Développement :** Lenovo Ryzen 5 (FullHD 15.6").
+- **Déploiement cible :** iPhone 12 Pro (iOS Safari / PWA).
+- **Navigateur :** Chrome/Safari (Requis pour Web Speech & Camera).
 
-## 6. ROADMAP & DETTES TECHNIQUES (MaJ 15/02)
-- [x] **RECONSTRUCTION HDR** : Filtre industriel opérationnel.
-- [x] **VOCAL** : Implémenté via Web Speech API.
-- [x] **DASHBOARD DYNAMIQUE** : Connecté au memoryService.
-- [x] **RANGEMENT PAR CATÉGORIES** : Grille de 8 piliers interactive.
+## 5. PROCHAINES ÉTAPES (V2.0)
+- Intégration de la localisation précise (Bacs/Étagères).
+- Mode hors-ligne (PWA Offline storage).
+- Historique de maintenance par outil.

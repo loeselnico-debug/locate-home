@@ -1,88 +1,73 @@
-import { useState } from 'react';
-import { Camera, ChevronLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { geminiService } from '../services/geminiService';
-import { memoryService } from '../services/memoryService';
+import React, { useState } from 'react';
+import { ChevronLeft, Camera, ScanLine } from 'lucide-react';
+import { addTool } from '../services/memoryService';
 import type { InventoryItem } from '../types';
 
 interface ScannerProps {
   onBack: () => void;
 }
 
-export default function Scanner({ onBack }: ScannerProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [foundTool, setFoundTool] = useState<InventoryItem | null>(null);
+const Scanner: React.FC<ScannerProps> = ({ onBack }) => {
+  const [isScanning, setIsScanning] = useState(false);
 
-  const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setLoading(true);
-    setError(null);
-
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      try {
-        const base64 = reader.result as string;
-        const analysis = await geminiService.analyzeTool(base64.split(',')[1]);
-        
-        if (analysis) {
-          setFoundTool({
-            id: crypto.randomUUID(),
-            ...analysis,
-            originalImage: base64,
-            date: new Date().toISOString(),
-            localisation: "Atelier"
-          });
-        }
-      } catch (err) {
-        setError("L'IA n'a pas pu identifier l'outil.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const saveAndExit = () => {
-    if (foundTool) {
-      memoryService.addTool(foundTool);
-      onBack();
-    }
+  // Simulation de capture pour le moment (en attente de Gemini Flash 1.5 réel)
+  const handleCapture = () => {
+    setIsScanning(true);
+    
+    setTimeout(() => {
+      const newItem: InventoryItem = {
+        id: Date.now().toString(),
+        name: "Nouvel Outil",
+        details: "Scan automatique",
+        etat: "Bon",
+        categorie: "Outillage",
+        score_confiance: 0.95,
+        alerte_securite: false,
+        originalImage: "https://via.placeholder.com/150",
+        date: new Date().toLocaleDateString(),
+        localisation: "Bac Alpha"
+      };
+      
+      addTool(newItem);
+      setIsScanning(false);
+      alert("Outil enregistré dans le Phoenix-Eye !");
+    }, 2000);
   };
 
   return (
-    <div className="p-6 bg-[#121212] min-h-screen text-white">
-      <button onClick={onBack} className="text-[#FF6600] mb-6 flex items-center gap-2 uppercase font-bold text-xs">
-        <ChevronLeft size={16} /> Retour
+    <div className="min-h-screen bg-[#121212] text-white p-6 flex flex-col">
+      <button onClick={onBack} className="text-[#007BFF] font-bold flex items-center gap-1 mb-6 uppercase text-xs">
+        <ChevronLeft size={18} /> Retour
       </button>
 
-      <div className="bg-[#1E1E1E] border border-[#333] rounded-3xl p-8 text-center shadow-2xl">
-        {!foundTool ? (
-          <>
-            <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6 border border-[#FF6600]">
-              {loading ? <Loader2 className="animate-spin text-[#FF6600]" /> : <Camera className="text-gray-600" />}
-            </div>
-            <label className="bg-[#FF6600] text-black font-black py-4 px-8 rounded-2xl block cursor-pointer uppercase active:scale-95 transition-all">
-              {loading ? "ANALYSE..." : "SCANNER L'OUTIL"}
-              <input type="file" accept="image/*" capture="environment" onChange={handleCapture} className="hidden" disabled={loading} />
-            </label>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <img src={foundTool.originalImage} className="w-full aspect-square object-cover rounded-xl border border-emerald-500" alt="" />
-            <h2 className="text-xl font-black text-[#FF6600] uppercase text-left">{foundTool.name}</h2>
-            <button onClick={saveAndExit} className="w-full bg-emerald-600 p-4 rounded-xl font-black flex items-center justify-center gap-2 uppercase">
-              <CheckCircle size={20} /> VALIDER ET RANGER
-            </button>
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="relative w-full aspect-square max-w-sm bg-black border-2 border-[#333] rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,1)]">
+          {/* EFFET LASER SCANNER */}
+          {isScanning && (
+            <div className="absolute top-0 left-0 w-full h-1 bg-[#FF6600] shadow-[0_0_15px_#FF6600] animate-scan-move z-10"></div>
+          )}
+          
+          <div className="absolute inset-0 flex items-center justify-center opacity-20">
+            <Camera size={80} className="text-[#B0BEC5]" />
           </div>
-        )}
+        </div>
 
-        {error && (
-          <div className="mt-4 p-3 bg-red-900/20 border border-red-500 text-red-500 rounded-lg flex items-center gap-2 text-[10px] uppercase font-bold">
-            <AlertCircle size={14} /> {error}
-          </div>
-        )}
+        <button 
+          onClick={handleCapture}
+          disabled={isScanning}
+          className={`mt-10 w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all ${
+            isScanning ? 'bg-[#333] scale-90' : 'bg-[#FF6600] hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,102,0,0.5)]'
+          }`}
+        >
+          <ScanLine size={32} className="text-white" />
+        </button>
+        
+        <p className="mt-4 text-[#B0BEC5] text-[10px] font-bold uppercase tracking-[0.2em]">
+          {isScanning ? "Analyse Gemini en cours..." : "Prêt pour Scan HDR"}
+        </p>
       </div>
     </div>
   );
-}
+};
+
+export default Scanner;

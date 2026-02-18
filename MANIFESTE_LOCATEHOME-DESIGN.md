@@ -1,60 +1,53 @@
-# 🛠️ MANIFESTE DU DESIGN - LOCATE HOME
-> **Version :** 1.0 (Février 2026)
-> **Statut :** Document de référence pour le développement VSCode
+# 🦅 MANIFESTE DESIGN | LOCATEHOME
+**Version :** 1.0 (Révision Industrielle - 17 Février 2026)  
+**Statut :** RÉFÉRENTIEL OFFICIEL  
+**Philosophie :** "Le Google Search de la maintenance" – Mémoire augmentée & Indexation spatiale.
 
 ---
 
-## 1. 🎨 IDENTITÉ VISUELLE & COULEURS
-*C'est ici que tu modifies l'ambiance générale de l'app.*
+## 🎨 1. CHARTE GRAPHIQUE (PALETTE PRO)
 
-| Élément | Code Hexa | Commentaire pour modification |
+| Élément | Code Hexa | Usage & Rendu |
 | :--- | :--- | :--- |
-| **Fond (Background)** | `#000000` | **NOIR PUR.** Ne pas modifier pour garder le contraste "OLED". |
-| **Accent Primaire** | `#FF8C00` | **ORANGE INDUSTRIEL.** Couleur des boutons d'action. |
-| **Accent Secondaire** | `#B0BEC5` | **GRIS MÉTAL.** Utilisé pour les icônes secondaires et bordures. |
-| **Validation OK** | `#28A745` | **VERT.** Utilisé pour "Intégration Automatique". |
-| **Correction** | `#DC3545` | **ROUGE.** Utilisé pour "Correction Manuelle". |
-| **Navigation** | `#007BFF` | **BLEU.** Couleur exclusive des boutons "RETOUR". |
+| **Fond (OLED)** | `#121212` | Anthracite profond. Économie batterie & confort nocturne. |
+| **Accent Action** | `#FF6600` | Orange Industriel. Signalétique, boutons primaires et Laser. |
+| **Accent Nav** | `#007BFF` | Bleu Standard. Boutons de retour et navigation système. |
+| **Bordures / Gris** | `#1E1E1E` | Gris de profondeur pour les cartes et conteneurs. |
+| **Texte / Icônes** | `#B0BEC5` | Gris bleuté clair. Lisibilité haute sans éblouissement. |
 
 ---
 
-## 2. 💎 LOGIQUE DU BADGE "PREMIUM" (EFFET NÉON)
-*Cette section définit le rendu visuel de l'abonnement sous le logo.*
+## 🏷️ 2. BRANDING & LOGOTYPAGE
 
-* **ÉTAT PREMIUM :** * **Dégradé :** De `Orange (#FF8C00)` vers `Gris Métal (#B0BEC5)`.
-    * **Effet :** Ombre portée (Shadow) de 10px type "Néon Orange".
-* **ÉTAT FREE / PRO :** * **Dégradé :** Nuances de Gris uniquement (Effet plaque d'acier brossé).
-    * **Modification :** Pour changer l'intensité du néon, modifier la valeur `blurRadius` dans le code.
+### A. Le Logo Principal
+* **Structure :** **LOCATE** (en `#FF6600`) **HOME** (en `#FFFFFF`).
+* **Signature "by Systems" :** - Incrustation sous forme de **bandeau oblique orange**.
+    - Placé sous le "HOME", touchant la base de la lettre "E".
+    - Texte "by Systems" avec un **dégradé métallique doré**.
 
----
-
-## 3. 📐 RÈGLES DE MISE EN PAGE (UI)
-*À suivre pour chaque nouvel écran créé dans VSCode.*
-
-* **Tri des Listes (Écrans 01 A, A1...A8) :**
-    * **RÈGLE D'OR :** Tri **ALPHABÉTIQUE strict (A-Z)** sur le label de l'outil.
-    * *Pourquoi ?* Rapidité de lecture pour un technicien en intervention.
-* **Le Header (Haut d'écran) :**
-    * Le logo "LOCATE HOME" est toujours centré.
-    * Le bouton "Paramètres" (Engrenage) est toujours à droite.
-* **Zone Caméra (01 B / 01 C) :**
-    * **Focus :** Cadres de détection (Bounding Boxes) en couleur **CYAN**.
-    * **HDR :** Filtre HDR automatique activé par défaut (selon Roadmap).
+### B. Indicateur de Tiers (Badges)
+* **Emplacement :** Header (haut à gauche).
+* **Style :** Bouton à effet **Néon** avec dégradé (Jaune vers Orange).
+* **Étiquettes :** `FREE` (15 outils) | `PREMIUM` | `PRO`.
 
 ---
 
-## 4. 🧩 BIBLIOTHÈQUE D'ICÔNES (LUCIDE)
-*Utiliser uniquement ces noms pour rester cohérent avec la structure de données.*
+## 📐 3. RÈGLES D'ADAPTABILITÉ (SCALING)
 
-* **Outillage :** `Hammer`, `Wrench`, `Zap`, `Nut`.
-* **Navigation :** `ChevronLeft`, `Settings`, `X`.
-* **Actions :** `Search` (Loupe), `ScanLine` (Scanner), `Archive` (Ranger).
+Pour garantir un affichage parfait du **Galaxy J5** à l'**iPhone 17 Pro**, le design suit une logique de flux liquide :
+
+* **Unités de mesure :** - **Interdiction du Pixel fixe (px)** pour les tailles d'écran.
+    - Utilisation du `rem` pour la typographie (respect du choix utilisateur).
+    - Utilisation du `vh/vw` et `%` pour les conteneurs.
+* **Vecteurs (SVG) :** Tous les logos, icônes (Lucide) et éléments graphiques sont en **SVG** pour une netteté absolue à n'importe quelle densité (@2x, @3x, @4x).
+* **Zones de Sécurité (Safe Areas) :** Utilisation systématique des marges dynamiques pour éviter les encoches (notches) et les barres d'accueil iOS/Android.
 
 ---
 
-## 5. 📑 GLOSSAIRE POUR LE CODE
-*Pour ne pas se tromper de variable dans les fichiers .tsx*
+## 📱 4. ARCHITECTURE DE L'INTERFACE (LAYOUT)
 
-* `primaryColor` -> Toujours l'Orange.
-* `isPremium` -> Variable (Vrai/Faux) qui déclenche l'effet néon.
-* `categorySort` -> Fonction de tri A-Z.
+### 🔝 LE HEADER (Fixe)
+1. **Gauche :** Badge de statut (Abonnement).
+2. **Centre :** Logo "LOCATE HOME by Systems".
+3. **Droite :** Roue dentée (Paramètres) en gris clair.
+4. **Séparation :

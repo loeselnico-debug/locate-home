@@ -1,104 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, PlusCircle, LayoutGrid, Search } from 'lucide-react';
-import { getInventory } from '../services/memoryService'; 
+import type { InventoryItem } from '../types';
+import { Plus, Trash2, Box, ShieldCheck, AlertTriangle } from 'lucide-react';
 
-// C'est ici qu'on définit les "bornes" pour brancher la navigation
 interface DashboardProps {
-  onNavigate: (page: 'search' | 'dashboard' | 'scanner' | 'library') => void;
+  inventory: InventoryItem[];
+  onStartScan: () => void;
+  onDelete: (id: string) => void;
+  limit: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const [itemCount, setItemCount] = useState<number>(0);
-  const MAX_CAPACITY = 50; 
-
-  const percentage = Math.min((itemCount / MAX_CAPACITY) * 100, 100);
-
-  useEffect(() => {
-    const refreshData = () => {
-      const items = getInventory();
-      setItemCount(items.length);
-    };
-    refreshData();
-  }, []);
+const Dashboard = ({ inventory, onStartScan, onDelete, limit }: DashboardProps) => {
+  const progress = (inventory.length / limit) * 100;
 
   return (
-    <div className="min-h-screen bg-[#121212] text-white p-6 font-sans">
-      
+    <div className="flex flex-col gap-6 pb-24">
       {/* HEADER */}
-      <header className="flex justify-between items-center mb-10">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#FF6600] rounded-sm shadow-[0_0_10px_#FF6600]"></div>
-          <h1 className="text-xl font-black tracking-tighter italic">PHOENIX-EYE</h1>
-        </div>
-        <Settings className="text-[#B0BEC5] hover:rotate-90 transition-transform cursor-pointer" />
-      </header>
-
-      {/* JAUGE DYNAMIQUE */}
-      <section className="bg-[#1E1E1E] border border-[#333] rounded-xl p-6 mb-8 shadow-2xl">
-        <div className="flex justify-between items-end mb-4">
-          <div>
-            <p className="text-[#B0BEC5] text-xs uppercase tracking-widest mb-1">Capacité Inventaire</p>
-            <h2 className="text-3xl font-bold text-white">
-              {itemCount} <span className="text-[#B0BEC5] text-lg font-normal">/ {MAX_CAPACITY}</span>
-            </h2>
-          </div>
-          <div className="text-right">
-            <span className="text-[#FF6600] font-mono font-bold text-lg">{Math.round(percentage)}%</span>
+      <div className="flex justify-between items-center py-4 border-b border-[#333]">
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-bold tracking-tighter">
+            <span className="text-[#FF6600]">LOCATE</span>
+            <span className="text-white">HOME</span>
+          </h1>
+          <div className="bg-[#FF6600] text-[10px] font-bold text-white px-2 py-0.5 rounded-sm -mt-1 self-start transform -skew-x-12">
+            by Systems
           </div>
         </div>
-
-        <div className="h-4 bg-[#000] rounded-full overflow-hidden border border-[#333]">
-          <div 
-            className="h-full bg-[#FF6600] transition-all duration-1000 ease-out shadow-[0_0_15px_#FF6600]"
-            style={{ width: `${percentage}%` }}
-          ></div>
+        <div className="px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-[#FF6600] text-black text-xs font-black">
+          FREE
         </div>
-      </section>
+      </div>
 
-      {/* NAVIGATION : On a branché les fonctions onNavigate ici */}
-      <nav className="grid grid-cols-2 gap-4">
-        {/* BOUTON SCANNER */}
-        <button 
-          onClick={() => onNavigate('scanner')}
-          className="flex flex-col items-center justify-center aspect-square bg-[#1E1E1E] border border-[#333] rounded-2xl hover:border-[#FF6600] transition-colors group"
-        >
-          <div className="p-4 bg-[#000] rounded-full mb-3 group-hover:shadow-[0_0_10px_#FF6600] transition-all">
-             <PlusCircle className="text-[#FF6600]" size={32} />
+      {/* CAPACITÉ */}
+      <div className="bg-[#1E1E1E] p-4 rounded-2xl border border-[#333]">
+        <div className="flex justify-between items-end mb-2">
+          <span className="text-xs uppercase tracking-widest text-[#B0BEC5]">Inventaire</span>
+          <span className="text-sm font-bold text-white">{inventory.length} / {limit}</span>
+        </div>
+        <div className="w-full h-2 bg-black rounded-full overflow-hidden">
+          <div className="h-full bg-[#FF6600] transition-all" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+
+      {/* LISTE */}
+      <div className="grid gap-4">
+        {inventory.length === 0 ? (
+          <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-[#333] rounded-3xl opacity-30">
+            <Box size={40} className="mb-2" />
+            <p className="text-sm">Aucun outil scanné</p>
           </div>
-          <span className="font-bold text-sm">SCANNER</span>
-        </button>
+        ) : (
+          inventory.map((item) => (
+            <div key={item.id} className="bg-[#1E1E1E] p-4 rounded-2xl border-l-4 border-[#FF6600] flex justify-between items-center">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-white uppercase text-sm">{item.name}</h3>
+                  {item.alerte_securite && <AlertTriangle size={14} className="text-red-500 animate-pulse" />}
+                </div>
+                <p className="text-[11px] text-[#B0BEC5] italic mb-2">{item.details}</p>
+                <div className="flex gap-3 items-center">
+                  <span className="text-[10px] bg-black/40 px-2 py-0.5 rounded text-[#007BFF] font-bold uppercase">{item.localisation}</span>
+                  <div className={`flex items-center gap-1 text-[10px] font-bold ${item.score_confiance > 70 ? 'text-green-500' : 'text-yellow-500'}`}>
+                    {item.score_confiance > 70 && <ShieldCheck size={12} />}
+                    <span>{item.score_confiance}% Certifié</span>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => onDelete(item.id)} className="p-2 text-red-900/50 hover:text-red-500">
+                <Trash2 size={18} />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
 
-        {/* BOUTON RANGER (LIBRARY) */}
-        <button 
-          onClick={() => onNavigate('library')}
-          className="flex flex-col items-center justify-center aspect-square bg-[#1E1E1E] border border-[#333] rounded-2xl hover:border-[#FF6600] transition-colors group"
-        >
-          <div className="p-4 bg-[#000] rounded-full mb-3 group-hover:shadow-[0_0_10px_#FF6600] transition-all">
-             <LayoutGrid className="text-[#FF6600]" size={32} />
-          </div>
-          <span className="font-bold text-sm">RANGER</span>
-        </button>
-
-        {/* BOUTON RETROUVER (SEARCH) */}
-        <button 
-          onClick={() => onNavigate('search')}
-          className="flex flex-col items-center justify-center aspect-square bg-[#1E1E1E] border border-[#333] rounded-2xl hover:border-[#FF6600] transition-colors group"
-        >
-          <div className="p-4 bg-[#000] rounded-full mb-3 group-hover:shadow-[0_0_10px_#FF6600] transition-all">
-             <Search className="text-[#FF6600]" size={32} />
-          </div>
-          <span className="font-bold text-sm">RETROUVER</span>
-        </button>
-
-        {/* BOUTON DESACTIVER (STOCK V2) */}
-        <button className="flex flex-col items-center justify-center aspect-square bg-[#1E1E1E] border border-[#333] rounded-2xl opacity-40 grayscale cursor-not-allowed">
-          <div className="p-4 bg-[#000] rounded-full mb-3">
-             <div className="w-8 h-8 border-2 border-[#B0BEC5] rounded-full flex items-center justify-center text-[10px]">BT</div>
-          </div>
-          <span className="font-bold text-sm uppercase">Stock (V2)</span>
-        </button>
-      </nav>
-
+      {/* SCAN BUTTON */}
+      <button 
+        onClick={onStartScan}
+        className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#FF6600] text-white px-8 py-4 rounded-full font-black flex items-center gap-3 shadow-lg active:scale-95 z-50"
+      >
+        <Plus size={24} /> LANCER LE SCAN
+      </button>
     </div>
   );
 };

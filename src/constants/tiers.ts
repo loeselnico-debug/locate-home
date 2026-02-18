@@ -1,7 +1,19 @@
 export type UserTier = 'FREE' | 'PREMIUM' | 'PRO';
 
 export const TIERS_CONFIG = {
-  FREE: { label: "L'Anti-Oubli", itemLimit: 50, safetyAudit: false },
-  PREMIUM: { label: "Le Garage Intelligent", itemLimit: 9999, safetyAudit: false },
-  PRO: { label: "L'Exigence Industrielle", itemLimit: 9999, safetyAudit: true }
+  FREE: { 
+    label: "LOCATE HOME Basic", 
+    itemLimit: 15, // Aligné sur la V1.4
+    safetyAudit: false 
+  },
+  PREMIUM: { 
+    label: "LOCATE HOME Premium", 
+    itemLimit: 1000, 
+    safetyAudit: false 
+  },
+  PRO: { 
+    label: "LOCATE SYSTEMS Expert", 
+    itemLimit: 9999, 
+    safetyAudit: true 
+  }
 };

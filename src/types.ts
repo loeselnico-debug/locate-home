@@ -1,18 +1,7 @@
-export interface InventoryItem {
-  id: string;
-  name: string;
-  details: string;
-  etat: string;
-  categorie: string;
-  score_confiance: number;
-  alerte_securite: boolean;
-  originalImage: string;
-  date: string;
-  localisation: string;
-}
-
-// Cette ligne règle l'erreur "no exported member ToolMemory"
-export type ToolMemory = InventoryItem;
+/**
+ * LOCATEHOME - Source de Vérité Unique (V1.4)
+ * Toute modification de ce schéma doit être validée par l'Architecte.
+ */
 
 export interface Category {
   id: string;
@@ -20,3 +9,31 @@ export interface Category {
   iconName: string;
   description: string;
 }
+
+export const CATEGORIES: Category[] = [
+  { id: 'electro', label: 'Outillage Électroportatif', iconName: 'Zap', description: 'Perceuse, visseuse, meuleuse...' },
+  { id: 'main', label: 'Outillage à main', iconName: 'Hammer', description: 'Marteaux, scies, niveaux...' },
+  { id: 'serrage', label: 'Serrage et Clés', iconName: 'Wrench', description: 'Clés, pinces, serre-joints...' },
+  { id: 'quinc', label: 'Quincaillerie', iconName: 'Nut', description: 'Vis, clous, boulons...' },
+  { id: 'elec', label: 'Électricité', iconName: 'Lightbulb', description: 'Multimètres, câbles, ampoules...' },
+  { id: 'peinture', label: 'Peinture et Finition', iconName: 'Paintbrush', description: 'Pinceaux, rouleaux, enduits...' },
+  { id: 'mesure', label: 'Mesure et Traçage', iconName: 'Ruler', description: 'Mètres, lasers, équerres...' },
+  { id: 'jardin', label: 'Jardin et Extérieur', iconName: 'Leaf', description: 'Sécateurs, taille-haie, gants...' },
+  { id: 'epi', label: 'Protection & EPI', iconName: 'Shield', description: 'Gants, lunettes, masques, casques...' },
+];
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  details: string;           // Pour les conseils de maintenance IA
+  etat: string;              // "Opérationnel" | "À vérifier"
+  categorie: string;
+  score_confiance: number;   // Le verrou des 70%
+  alerte_securite: boolean;  // Signal visuel critique
+  originalImage: string;     // Base64 pour traçabilité visuelle
+  date: string;              // Horodatage du scan
+  localisation: string;      // Cœur du système : Fourgon, Établi, etc.
+}
+
+// Alias de compatibilité pour les anciens fichiers (à supprimer en V2.0)
+export type ToolMemory = InventoryItem;

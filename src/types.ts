@@ -22,6 +22,21 @@ export const CATEGORIES: Category[] = [
   { id: 'epi', label: 'Protection & EPI', iconName: 'Shield', description: 'Gants, lunettes, masques, casques...' },
 ];
 
+export interface Location {
+  id: string;
+  label: string;
+  iconName: string;
+  description: string;
+}
+
+export const LOCATIONS: Location[] = [
+  { id: 'fourgon', label: 'Fourgon', iconName: 'Truck', description: 'Véhicule d\'intervention et transport' },
+  { id: 'atelier', label: 'Atelier', iconName: 'Wrench', description: 'Zone de maintenance principale' },
+  { id: 'etabli', label: 'Établi', iconName: 'Hammer', description: 'Plan de travail direct' },
+  { id: 'garage', label: 'Garage', iconName: 'Car', description: 'Stockage des grands volumes' },
+  { id: 'cabanon', label: 'Cabanon', iconName: 'Home', description: 'Stockage extérieur et matériel divers' }
+];
+
 export interface InventoryItem {
   id: string;
   name: string;

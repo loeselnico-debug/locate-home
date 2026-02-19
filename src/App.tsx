@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
 import type { InventoryItem } from './types';
+import Hub from './components/Hub';
 import HomeMenu from './components/HomeMenu';
 import Dashboard from './components/Dashboard';
 import Scanner from './components/Scanner';
+import Search from './components/Search';
 import { TIERS_CONFIG } from './constants/tiers';
 import SettingsPage from './pages/SettingsPage';
 import { useUserTier } from './hooks/useUserTier';
 
-// On définit les différentes vues possibles
-type ViewState = 'home' | 'inventory' | 'scanner' | 'search' | 'settings';
+// On ajoute 'hub' comme point d'entrée principal de la plateforme
+type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings';
 
 const App = () => {
-  const [view, setView] = useState<ViewState>('home');
+  // Le démarrage se fait désormais sur le Hub (Locate Core)
+  const [view, setView] = useState<ViewState>('hub');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
-  // Configuration du Tier (modifie 'FREE' par 'PREMIUM' ou 'PRO' selon tes tests)
+  // Configuration du Tier
   const { currentTier } = useUserTier();
   const limit = TIERS_CONFIG[currentTier].itemLimit;
 
@@ -60,7 +63,17 @@ const App = () => {
   return (
     <main className="min-h-screen bg-[#121212] text-[#B0BEC5] font-sans">
       
-      {/* ÉCRAN 1 : MENU PRINCIPAL */}
+      {/* ÉCRAN 0 : LE HUB (LOCATE CORE) */}
+      {view === 'hub' && (
+        <Hub 
+          onSelectModule={(module) => {
+            // Seul le module 'home' est techniquement redirigé pour l'instant
+            if (module === 'home') setView('home');
+          }} 
+        />
+      )}
+
+      {/* ÉCRAN 1 : MENU PRINCIPAL (LOCATE HOME) */}
       {view === 'home' && (
         <HomeMenu 
           onNavigate={setView} 
@@ -98,20 +111,14 @@ const App = () => {
         />
       )}
 
-      {/* ÉCRAN 4 : RECHERCHE (PROCHAINEMENT) */}
+      {/* ÉCRAN 4 : RECHERCHE (RETROUVER) */}
       {view === 'search' && (
-        <div className="flex flex-col items-center justify-center h-screen p-10 text-center">
-          <img src="/icon-retrouver.png" className="w-32 h-32 opacity-20 mb-4" alt="Search" />
-          <h2 className="text-orange-500 font-black mb-4 uppercase">Module Retrouver</h2>
-          <p className="text-gray-500 text-sm mb-8">La recherche par IA dans vos rangements sera bientôt disponible.</p>
-          <button 
-            onClick={() => setView('home')}
-            className="px-6 py-2 border border-orange-500 text-orange-500 rounded-full font-bold"
-          >
-            RETOUR AU MENU
-          </button>
-        </div>
+        <Search 
+          onBack={() => setView('home')} 
+        />
       )}
+
+      {/* ÉCRAN 5 : PARAMÈTRES */}
       {view === 'settings' && (
         <div className="absolute inset-0 z-50 bg-[#121212]">
           <button 

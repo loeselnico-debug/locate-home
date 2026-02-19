@@ -1,77 +1,62 @@
-# 🦅 LOCATEHOME | RÉFÉRENTIEL TECHNIQUE V1.4
+# 🦅 LOCATEHOME | RÉFÉRENTIEL TECHNIQUE V1.5
 
-**Date :** 17 Février 2026  
-**Statut :** OPÉRATIONNEL (Build Vercel Ready 🟢)  
-**Cible :** iPhone 12 Pro & Environnement Industriel (Multi-devices J5 à iPhone 17 Pro)
+**Date :** 19 Février 2026  
+**Statut :** OPÉRATIONNEL - VALIDÉ SUR TERRAIN 🟢  
+**Cible :** iPhone 12 Pro et Galaxy J5 (Optimisation flux vidéo & haptique)
 
 ---
 
 ## 1. 🎯 OBJECTIF DU PRODUIT
-Système de gestion et de traçabilité d'outillage pour maintenance industrielle. Optimisé pour une saisie rapide sur le terrain et une recherche instantanée par reconnaissance visuelle ou vocale.
+Système expert de traçabilité et de diagnostic d'outillage. Le système ne se contente pas d'identifier, il analyse l'état de sécurité et la segmentation spatiale (différenciation des contenants).
 
 ---
 
-## 2. 🎨 SPÉCIFICATIONS UI (CHARTE GRAPHIQUE)
+## 2. 🎨 SPÉCIFICATIONS UI (IDENTITÉ VISUELLE "BY SYSTEMS")
 
-| Élément | Code Hexa | Usage |
+| Élément | Style / Code | Usage |
 | :--- | :--- | :--- |
-| **Fond** | `#121212` | Anthracite profond (Optimisation OLED / Basse luminosité). |
-| **Accent** | `#FF6600` | Orange Industriel (Signalétique et Actions). |
-| **Navigation** | `#007BFF` | Bleu Standard (Boutons de retour). |
+| **Fond** | `#121212` | Anthracite profond industriel. |
+| **Accent principal** | `#FF6600` | Orange Néon (Titre "LOCATE" et Actions). |
+| **Texte Secondaire** | `#FFFFFF` | Blanc Pur (Titre "HOME"). |
+| **Signature** | **Or Métallique** | Dégradé "by Systems" sur bandeau oblique orange. |
+| **Boutons Tier** | Jaune ⮕ Orange | Effet néon pour statut Freemium/Premium/Pro. |
 
 ---
 
-## 🛠️ 3. PILIERS TECHNIQUES ACTUELS
+## 🛠️ 3. PILIERS TECHNIQUES ACTUALISÉS
 
-### 📊 TABLEAU DE BORD
-* **Suivi de capacité :** Jauge dynamique (**Limite : 15 unités en Freemium**).
-* **Flux de données :** Rafraîchissement automatique via LocalStorage (Persistance).
+### 📊 NAVIGATION & INTERFACE
+* **Composants :** Utilisation des actifs 3D (`icon-ranger.png`, `icon-scanner.png`, `icon-retrouver.png`).
+* **Header :** Structure fixe incluant le bouton Tier à gauche et les paramètres à droite.
+* **Navigation :** Gestion par état `ViewState` (Home / Inventory / Scanner / Search).
 
-### ⚡ SCANNER HDR (MULTI-OBJET)
-* **Analyse IA :** Moteur **Google Gemini 1.5 Flash** avec injection de "La Bible" (ExpertiseRules).
-* **Capture :** Flux vidéo live avec laser de balayage dynamique.
-* **Reconnaissance :** Identification morphologique (Mandrins, batteries, signatures marques).
-
-### 📦 GESTION D'INVENTAIRE (LIBRARY)
-* **Classement :** Tri chronologique (Dernier scan en haut).
-* **Classification :** **9 catégories métiers** (incluant Protection & EPI) avec iconographie dédiée.
-* **Traçabilité :** Archivage des métadonnées techniques et score de confiance.
-
-### 🔍 RECHERCHE & LOCALISATION
-* **Interface :** Recherche hybride texte / voix.
-* **État :** Localisation par défaut positionnée sur "Zone de Scan".
+### ⚡ SCANNER VIDÉO "BURST" (CERVEAU IA)
+* **Moteur :** **Google Gemini 3 Flash** (Priorité Vitesse & Lecture Typographique).
+* **Capture :** Mode "Burst" — Capture automatique de **6 frames sur 10 secondes**.
+* **Capacités validées :** * Lecture des micro-détails (ex: "M5 x 60", "Set 22 pcs").
+    * Analyse de sécurité (ex: détection d'usure de gaine isolante).
+    * Conscience spatiale (distinction de deux bacs séparés).
 
 ---
 
-## 🚀 4. DÉVELOPPEMENT V2.0 (EN COURS)
-- [ ] **Gestion des Emplacements :** Attribution précise Bacs / Étagères.
-- [ ] **Persistance Offline :** Cache local pour utilisation hors réseau.
+## 🚀 4. ÉVOLUTIONS RÉALISÉES
+
+- [x] **Migration Moteur :** Passage effectif à Gemini 3 Flash (Zéro erreur 404/429).
+- [x] **Refonte Header :** Intégration conforme du logo et de la signature dorée.
+- [x] **Design Boutons :** Remplacement des icônes vectorielles par les PNG 3D.
+- [x] **Protocole de Scan :** Implémentation de la fonction `analyzeVideoBurst`.
+- [x] **Diagnostic Sécurité :** Injection des règles métiers dans le prompt système.
 
 ---
 
 ## 🚀 5. PROCHAINES ÉTAPES (ROADMAP V2.0)
 
-### ✅ ÉTAPES RÉALISÉES
-- [x] **Nettoyage sémantique :** Remplacer les références textuelles "PHOENIX-EYE" par "LOCATEHOME".
-- [x] **Verrouillage du schéma :** Interface `InventoryItem` définie comme référence unique.
-- [x] **Mise à jour `src/types.ts` :** Inclusion de la localisation et des 9 catégories.
-- [x] **Gestion de la limite :** Ajouter une vérification dans `addTool` (Limite 15 outils Freemium).
-- [x] **Fonction de nettoyage :** Intégration de `deleteTool` pour vider ou supprimer un scan.
-- [x] **Hardening (Blindage) :** Vérifications de sécurité sur `data.candidates`.
-- [x] **Extraction de secours :** Nettoyage JSON robuste pour éviter les crashs.
-- [x] **Passage au Flux Vidéo Live (VRAIS YEUX) :** Intégration de `getUserMedia` et cadre de visée.
-- [x] **Synchronisation du Laser :** Balayage dynamique synchronisé avec l'analyse.
-- [x] **Sémantique Finale :** Remplacement de "Répertoire Phoenix-Eye" par "Système LocateHome".
-- [x] **Reprendre le design :** Intégration conforme au `MANIFESTE_LOCATEHOME-DESIGN.md`.
-- [x] **Syncronisation /tiers.ts avec /App.tsx
+### 🟡 PRIORITÉS IMMÉDIATES
+- [ ] **Bridage Métier :** Filtrage de l'environnement (ignorer le décor pour focus outils).
+- [ ] **Protocole Zero-Trust :** Forcer l'IA à l'incertitude plutôt qu'à l'hallucination (ex: canette ouverte).
+- [ ] **Localisation de Vérité :** Indexer les zones réelles (Fourgon, Atelier, Établi).
+- [ ] **Dédoublonnage Intelligent :** Logique de fusion d'objets identiques détectés en rafale.
 
-### 🟡 ÉTAPES À VENIR
-- [ ] **Affichage des Catégories :** Afficher le label (ex: "Outillage à main") au lieu de l'ID brut.
-- [X] **Localisation de Vérité :** Fournir à l'IA la liste des zones réelles (Fourgon, Établi).
-- [ ] **Mode Hors-ligne :** Support PWA et stockage local des images pour zones blanches.
-- [ ] **Filtrage par Zone (V2.0) :** Système d'onglets pour filtrer par "Fourgon" ou "Atelier".
-- [ ] **Mode Basse Lumière :** Activation flash/torche via l'interface.
-- [ ] **Gestion des Emplacements :** Attribution précise Bacs / Étagères.
-- [ ] **Remise en service avec nouvelle clé API (ancienne delete car public)
-- [ ] **Remplacer les boutons d'action "lucide-react" par ceux du fichier /public
-- [ ] **Compléter et affiner /tiers.ts
+### 🔵 ÉVOLUTIONS FUTURES
+- [ ] **Module "Retrouver" :** Recherche spatiale guidée par commande vocale.
+- [ ] **Mode Basse Lumière :** Activation auto du flash/torche via l'API Camera.

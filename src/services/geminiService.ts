@@ -1,74 +1,71 @@
-import { INDUSTRIAL_RULES } from '../config/expertiseRules';
+
 
 const API_KEY = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
+// Note: Assurez-vous que ce modèle existe bien pour votre clé API. 
+// Si erreur 404, remplacez par 'gemini-1.5-flash'
 const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
 export const geminiService = {
-  analyzeTool: async (base64Image: string): Promise<any[]> => {
-    const base64Data = base64Image.split(',')[1] || base64Image;
+  analyzeVideoBurst: async (base64Images: string[]): Promise<any[]> => {
+    // 1. DÉFINITION DU CERVEAU (Prompt Système)
+    const systemPrompt = `
+    Tu es un expert en sécurité industrielle LOCATE SYSTEMS.
+    MISSION : Identifier l'outil et AUDITER sa sécurité.
 
-    // INJECTION DYNAMIQUE DE L'EXPERTISE MÉTIER
-    const prompt = `
-      Tu es l'Expert Vision de la holding LOCATE SYSTEMS.
-      Ta mission est d'identifier l'environnement et CHAQUE outil avec une précision industrielle.
+    RÈGLES D'IDENTIFICATION :
+    - Sois précis (ex: "Perceuse Makita 18V").
+    - Ignore le décor.
 
-      RÈGLES D'EXPERTISE À APPLIQUER (STRICT) :
-      ${JSON.stringify(INDUSTRIAL_RULES)}
+    RÈGLES DE SÉCURITÉ (LA VÉRITÉ SYSTÈME) :
+    1. SCANNE l'image pour : Câbles dénudés ? Carter fissuré ? Rouille ?
+    2. Si défaut visible -> 'safetyAlert' = true et remplis 'safetyDetails'.
+    3. Si RAS -> 'safetyAlert' = false.
 
-      FORMAT DE RÉPONSE :
-      Renvoie UNIQUEMENT un tableau JSON [{}, {}] respectant scrupuleusement l'interface InventoryItem.
-      Chaque objet doit inclure :
-      - name: Nom technique précis (ex: "Visseuse à choc Milwaukee M18")
-      - details: Analyse selon l'expertise (état batterie, type mandrin, usure)
-      - etat: "Opérationnel" ou "À vérifier"
-      - categorie: L'ID exact parmi les 9 catégories définies.
-      - score_confiance: 0-100 (Sois sévère, applique le seuil de 70%)
-      - alerte_securite: boolean (Vrai si anomalie ou outil dangereux sans EPI)
-      - localisation: Détection spatiale précise (ex: "Établi Central", "Rayon Droite Fourgon")
-
-      RÈGLE CRITIQUE : Pas de texte avant ou après le JSON.
+    FORMAT JSON STRICT ATTENDU :
+    [
+      {
+        "toolName": "string",
+        "category": "string (id)",
+        "state": "string",
+        "safetyAlert": boolean,
+        "safetyLevel": "LOW" | "MEDIUM" | "HIGH",
+        "safetyDetails": "string",
+        "description": "string"
+      }
+    ]
     `;
+
+    // 2. PRÉPARATION DE L'ENVOI (Payload)
+    const contents = [{
+      parts: [
+        { text: systemPrompt }, 
+        ...base64Images.map(img => ({
+          inline_data: { mime_type: "image/jpeg", data: img.split(',')[1] }
+        }))
+      ]
+    }];
 
     try {
       const response = await fetch(MODEL_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: "image/jpeg", data: base64Data } }
-            ]
-          }]
-        })
+        body: JSON.stringify({ contents })
       });
-
+      
       const data = await response.json();
-
-      // BLINDAGE : Vérification de l'existence de la réponse
-      if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-        console.error("⚠️ Réponse Gemini vide ou bloquée par la sécurité.");
+      
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        console.error("Structure réponse IA invalide:", data);
         return [];
       }
 
-      const textResponse = data.candidates[0].content.parts[0].text;
-      
-      // EXTRACTION DE SECOURS : On cherche le premier '[' et le dernier ']'
-      const startJson = textResponse.indexOf('[');
-      const endJson = textResponse.lastIndexOf(']') + 1;
-      
-      if (startJson === -1 || endJson === 0) {
-        console.error("❌ Aucun format JSON détecté dans la réponse.");
-        return [];
-      }
-
-      const jsonString = textResponse.substring(startJson, endJson);
-      const result = JSON.parse(jsonString);
-
-      return Array.isArray(result) ? result : [result];
+      const text = data.candidates[0].content.parts[0].text;
+      // Nettoyage du markdown JSON si présent
+      const cleanJson = text.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleanJson);
 
     } catch (error) {
-      console.error("❌ Erreur Analyse Expert :", error);
+      console.error("Erreur IA:", error);
       return [];
     }
   }

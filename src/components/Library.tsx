@@ -16,7 +16,7 @@ const Library: React.FC<LibraryProps> = ({ onBack }) => {
   useEffect(() => {
     const data = getInventory();
     // Tri A-Z selon le Manifeste
-    const sortedData = [...data].sort((a, b) => a.name.localeCompare(b.name));
+    const sortedData = [...data].sort((a, b) => a.toolName.localeCompare(b.toolName));
     setTools(sortedData);
   }, []);
 
@@ -56,28 +56,28 @@ const Library: React.FC<LibraryProps> = ({ onBack }) => {
             <div key={tool.id} className="bg-[#1E1E1E] border border-[#333] rounded-2xl p-4 flex items-center gap-4 hover:border-[#FF6600] transition-all group">
               {/* Image de l'outil */}
               <div className="w-16 h-16 rounded-xl overflow-hidden bg-black border border-[#444] flex-shrink-0 relative">
-                <img src={tool.originalImage} alt={tool.name} className="w-full h-full object-cover opacity-80" />
+                <img src={tool.imageUrl} alt={tool.toolName} className="w-full h-full object-cover opacity-80" />
                 {/* Badge Icône Catégorie */}
                 <div className="absolute -bottom-1 -right-1 bg-[#FF6600] p-1.5 rounded-lg shadow-lg border-2 border-[#1E1E1E] text-white">
-                  {renderCategoryIcon(tool.categorie)}
+                  {renderCategoryIcon(tool.category)}
                 </div>
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-sm uppercase truncate pr-2">{tool.name}</h3>
+                  <h3 className="font-bold text-sm uppercase truncate pr-2">{tool.toolName}</h3>
                   <span className="text-[9px] bg-[#333] px-2 py-0.5 rounded text-[#B0BEC5] font-mono">
                     {tool.date}
                   </span>
                 </div>
                 
                 <p className="text-[#FF6600] text-[10px] font-black uppercase tracking-tighter mt-1">
-                  {tool.categorie}
+                  {tool.category}
                 </p>
                 
                 <div className="flex items-center gap-1 mt-1.5">
-                   <div className={`w-1.5 h-1.5 rounded-full ${tool.alerte_securite ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></div>
-                   <p className="text-[#B0BEC5] text-[9px] italic truncate">Loc: {tool.localisation || 'Zone non définie'}</p>
+                   <div className={`w-1.5 h-1.5 rounded-full ${tool.safetyStatus ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></div>
+                   <p className="text-[#B0BEC5] text-[9px] italic truncate">Loc: {tool.location || 'Zone non définie'}</p>
                 </div>
               </div>
             </div>

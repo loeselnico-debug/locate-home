@@ -39,13 +39,14 @@ export const LOCATIONS: Location[] = [
 
 export interface InventoryItem {
   id: string;
-  toolName: string;      // Nom de l'outil identifié par l'IA
-  location: string;      // Une des 6 zones de vérité
-  category: string;      // Type d'outil
-  sku?: string;          // Code article (6 chiffres)
-  safetyStatus?: string; // État de sécurité
-  imageUrl?: string;     // Lien vers la photo capturée
-  date: string;          // Date d'ajout
+  toolName: string;
+  location: string;
+  category: string;
+  sku?: string;
+  safetyStatus?: string;
+  imageUrl?: string;
+  date: string;
+  confidence?: number; // <--- Ajout de la propriété manquante (optionnelle avec ?)
 }
 
 // Alias de compatibilité pour les anciens fichiers (à supprimer en V2.0)

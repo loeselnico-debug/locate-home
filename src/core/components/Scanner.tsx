@@ -1,44 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { geminiService, VALID_LOCATIONS } from '../services/geminiService';
 
-// 1. Définition des propriétés pour la communication avec App.tsx
 interface ScannerProps {
   onBack: () => void;
   onAnalysisComplete: (newItems: any[]) => void;
 }
 
 export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) => {
-  // --- ÉTATS (Hooks de contrôle) ---
   const [selectedLocation, setSelectedLocation] = useState("Atelier");
   const [frames, setFrames] = useState<string[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // --- LOGIQUE CAMÉRA (VRAIS YEUX) ---
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } 
       });
       if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch (err) {
-      console.error("Erreur caméra:", err);
-    }
+    } catch (err) { console.error("Caméra non accessible", err); }
   };
 
   useEffect(() => {
     startCamera();
     return () => {
-      // Nettoyage des flux à la fermeture du module
       if (videoRef.current?.srcObject) {
         (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
       }
     };
   }, []);
 
-  const captureFrame = (quality = 0.7) => {
+  const captureFrame = (quality = 0.8) => {
     if (!videoRef.current) return "";
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
@@ -51,78 +46,85 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     return "";
   };
 
-  // --- MODES DE CAPTURE ---
-
-  // MODE A : Photo Unique (HD pour OCR précis)
   const handleSinglePhoto = async () => {
-    const photo = captureFrame(0.9); // Haute qualité
+    const photo = captureFrame(0.9);
     if (photo) {
       setFrames([photo]);
-      const data = await geminiService.analyzeVideoBurst([photo], selectedLocation);
-      setResults(data);
-      onAnalysisComplete(data);
+      setIsAnalyzing(true);
+      try {
+        const data = await geminiService.analyzeVideoBurst([photo], selectedLocation);
+        setResults(data);
+        if (data.length > 0) {
+          setTimeout(() => onAnalysisComplete(data), 2000); // Délai pour laisser voir le résultat
+        }
+      } finally { setIsAnalyzing(false); }
     }
   };
 
-  // MODE B : Burst Vidéo (Standard 12 frames / 20s)
   const handleBurstScan = () => {
+    setFrames([]);
     setIsScanning(true);
     let count = 0;
     const burstInterval = setInterval(() => {
-      const frame = captureFrame();
+      const frame = captureFrame(0.7);
       if (frame) setFrames(prev => [...prev, frame].slice(-12));
       count++;
       if (count >= 12) {
         clearInterval(burstInterval);
         setIsScanning(false);
       }
-    }, 1500);
+    }, 800); // Un peu plus rapide pour le J5
   };
 
-  // MODE C : Analyse Manuelle
   const handleAnalyze = async () => {
     if (frames.length === 0) return;
+    setIsAnalyzing(true);
     try {
       const data = await geminiService.analyzeVideoBurst(frames, selectedLocation);
       setResults(data);
-      onAnalysisComplete(data);
-    } catch (error) {
-      console.error("Erreur analyse:", error);
-    }
+      if (data.length > 0) {
+        setTimeout(() => onAnalysisComplete(data), 2500);
+      } else {
+        alert("IA : Aucun outil détecté. Rapprochez-vous.");
+      }
+    } finally { setIsAnalyzing(false); }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#050505] text-white p-[2vh]">
+    <div className="flex flex-col h-screen bg-[#050505] text-white p-[1.5vh] overflow-hidden">
       
-      {/* HEADER : BRANDING LOCATE SYSTEMS */}
-      <div className="flex justify-between items-center mb-[4vh]">
-        <button onClick={onBack} className="text-[1.5rem] p-[1rem] active:scale-90 transition-transform">←</button>
+      {/* HEADER COMPACT (Optimisé J5) */}
+      <div className="flex justify-between items-center mb-[1.5vh]">
+        <button onClick={onBack} className="text-[1.2rem] p-[0.5rem]">←</button>
         <div className="flex flex-col items-center">
-          <h1 className="text-[1.3rem] font-bold tracking-tighter italic uppercase">
+          <h1 className="text-[1.1rem] font-bold italic uppercase tracking-tighter">
             <span className="text-[#FF6600]">Locate</span> <span className="text-white">Home</span>
           </h1>
-          <div className="relative self-end mt-[-0.4rem]">
-            <span className="text-[0.6rem] font-bold italic pr-[0.5rem]" 
-                  style={{ background: 'linear-gradient(90deg, #BF953F, #FCF6BA, #B38728)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              by Systems
-            </span>
-          </div>
+          <span className="text-[0.5rem] font-bold italic mt-[-0.2rem] opacity-70" style={{ color: '#FCF6BA' }}>by Systems</span>
         </div>
-        <div className="border border-[#FFCC00] text-[#FFCC00] px-[1rem] py-[0.2rem] rounded-full text-[0.7rem] font-black shadow-[0_0_10px_rgba(255,204,0,0.2)]">
-          FREE
-        </div>
+        <div className="text-[#FFCC00] border border-[#FFCC00] px-2 py-0.5 rounded-full text-[0.6rem] font-black">FREE</div>
       </div>
 
-      {/* BARRE DE LOCALISATION DE VÉRITÉ */}
-      <div className="flex overflow-x-auto gap-[0.8rem] mb-[4vh] no-scrollbar">
+      {/* ZONE VISION 4:3 (Gain de place vertical pour J5) */}
+      <div className="relative aspect-[4/3] w-full bg-black rounded-[1.5rem] overflow-hidden border border-white/10 shadow-2xl">
+        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+        {isScanning && <div className="absolute inset-0 border-[3px] border-[#FF6600] animate-pulse" />}
+        {isAnalyzing && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center flex-col">
+            <div className="w-12 h-12 border-4 border-[#FF6600] border-t-transparent rounded-full animate-spin mb-2" />
+            <p className="text-[0.7rem] font-black uppercase tracking-widest text-[#FF6600]">Analyse IA...</p>
+          </div>
+        )}
+      </div>
+
+      {/* LOCALISATION (Compact) */}
+      <div className="flex overflow-x-auto gap-[0.5rem] my-[1.5vh] no-scrollbar py-1">
         {VALID_LOCATIONS.map((loc) => (
           <button
             key={loc}
             onClick={() => setSelectedLocation(loc)}
-            className={`px-[1.2rem] py-[0.6rem] rounded-full border text-[0.8rem] whitespace-nowrap transition-all duration-300 ${
-              selectedLocation === loc 
-                ? "bg-[#FF6600] border-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)] scale-105" 
-                : "border-gray-800 text-gray-500 bg-black/20"
+            className={`px-[1rem] py-[0.4rem] rounded-full border text-[0.65rem] font-bold whitespace-nowrap transition-all ${
+              selectedLocation === loc ? "bg-[#FF6600] border-[#FF6600]" : "border-white/10 text-gray-500"
             }`}
           >
             {loc}
@@ -130,63 +132,30 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         ))}
       </div>
 
-      {/* ZONE VISION HDR AVEC LASER */}
-      <div className="relative aspect-[3/4] w-full bg-black rounded-[2.5rem] overflow-hidden border border-gray-800 shadow-2xl">
-        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-        
-        {/* FILTRE INDUSTRIEL / LASER */}
-        {isScanning && (
-          <div className="absolute inset-0 border-[4px] border-[#FF6600] animate-pulse pointer-events-none" />
-        )}
-        <div className="absolute inset-x-0 h-[2px] bg-[#FF6600] shadow-[0_0_15px_#FF6600] top-1/2 animate-bounce opacity-40 pointer-events-none" />
-        
-        <div className="absolute top-[2vh] left-1/2 -translate-x-1/2 bg-black/50 px-[1rem] py-[0.4rem] rounded-full text-[0.6rem] border border-white/10 uppercase tracking-widest">
-          {isScanning ? "Capture Burst..." : "Système Prêt"}
-        </div>
-      </div>
-
-      {/* ACTIONS : COMMANDES 3D BY SYSTEMS */}
-      <div className="flex justify-around items-center py-[5vh] px-[2vw]">
-        
-        {/* PHOTO HD */}
-        <button onClick={handleSinglePhoto} disabled={isScanning} className="relative w-[4.5rem] h-[4.5rem] transition-transform active:scale-90">
-          <img src="/icon-photo.png" alt="HD" className="w-full h-full object-contain" />
-          <span className="absolute -bottom-[1vh] left-1/2 -translate-x-1/2 text-[0.5rem] font-black text-white/40">HD</span>
+      {/* ACTIONS 3D (Taille ajustée J5) */}
+      <div className="flex justify-around items-center mb-[2vh]">
+        <button onClick={handleSinglePhoto} className="w-[3.5rem] h-[3.5rem] active:scale-90">
+          <img src="/icon-photo.png" alt="Photo" className="w-full h-full object-contain" />
         </button>
 
-        {/* BURST VIDÉO */}
-        <button onClick={handleBurstScan} disabled={isScanning} className="relative w-[5.5rem] h-[5.5rem] transition-all active:scale-90">
+        <button onClick={handleBurstScan} disabled={isScanning} className="relative w-[4.5rem] h-[4.5rem] active:scale-90">
           <img src="/icon-video.png" alt="Burst" className={`w-full h-full object-contain ${isScanning ? "animate-pulse" : ""}`} />
-          {isScanning && (
-             <div className="absolute inset-0 flex items-center justify-center">
-               <div className="w-[80%] h-[80%] border-[3px] border-[#FF6600] border-t-transparent rounded-full animate-spin" />
-             </div>
-          )}
         </button>
 
-        {/* ANALYSEUR IA */}
-        <button onClick={handleAnalyze} disabled={frames.length === 0 || isScanning} className={`relative w-[4.5rem] h-[4.5rem] transition-transform active:scale-90 ${frames.length === 0 ? "opacity-30" : ""}`}>
-          <img src="/icon-scanner.png" alt="Analyze" className="w-full h-full object-contain" />
-          <span className="absolute -top-[1vh] right-0 bg-[#FF6600] text-black text-[0.6rem] font-black px-[0.6rem] py-[0.2rem] rounded-full italic shadow-lg">
+        <button onClick={handleAnalyze} disabled={frames.length === 0} className="relative w-[3.5rem] h-[3.5rem] active:scale-90">
+          <img src="/icon-scanner.png" alt="Scan" className="w-full h-full object-contain" />
+          <span className="absolute -top-1 -right-1 bg-[#FF6600] text-black text-[0.6rem] font-black px-1.5 rounded-full">
             {frames.length}
           </span>
         </button>
-
       </div>
 
-      {/* RÉSULTATS DYNAMIQUES */}
-      <div className="flex-1 space-y-[1.2rem] pb-[5vh]">
-        {results.map((item, index) => (
-          <div key={index} className="bg-[#111111] p-[1.2rem] rounded-[1.5rem] border-l-[4px] border-[#FF6600] flex justify-between items-center animate-fade-in">
-            <div>
-              <p className="font-bold text-[0.9rem] text-white">{item.toolName}</p>
-              <p className="text-[0.6rem] text-gray-500 uppercase tracking-tighter">
-                {item.location} • SKU: {item.sku}
-              </p>
-            </div>
-            <div className="text-[0.6rem] font-black text-green-500 bg-green-500/10 px-[0.8rem] py-[0.3rem] rounded-md uppercase">
-              {item.safetyStatus}
-            </div>
+      {/* RÉSULTATS ÉPHÉMÈRES (Derniers objets trouvés) */}
+      <div className="flex-1 overflow-y-auto px-1">
+        {results.map((item, i) => (
+          <div key={i} className="bg-white/5 border-l-2 border-[#FF6600] p-2 rounded-r-lg mb-2 flex justify-between animate-fade-in">
+            <span className="text-[0.7rem] font-bold">{item.toolName}</span>
+            <span className="text-[0.6rem] text-[#FF6600]">{item.confidence}%</span>
           </div>
         ))}
       </div>

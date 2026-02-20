@@ -1,66 +1,61 @@
-// src/core/services/geminiService.ts
+import { INDUSTRIAL_RULES } from '../../config/expertiseRules'; // Correction du chemin (montée de 2 niveaux)
 
 const API_KEY = import.meta.env.VITE_GOOGLE_GENAI_API_KEY?.trim();
 const MODEL_NAME = "gemini-2.0-flash";
 const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
 
-// LA SOURCE DE VÉRITÉ DES ZONES
 export const VALID_LOCATIONS = ["Garage", "Atelier", "Maison", "Prêt", "Jardin", "Chantier"];
 
+// Correction du mot-clé 'eexport' en 'export'
 export const geminiService = {
   analyzeVideoBurst: async (base64Images: string[], userLocation: string = "Atelier"): Promise<any[]> => {
+    
+    // INJECTION DE LA BIBLE DANS LE PROMPT (Lecture typographique & Morphologie)
     const systemPrompt = `
-      Tu es l'expert vision de LOCATE SYSTEMS 🧭 ⚛️ 🇫🇷.
-      MISSION : Identifier l'outillage et l'indexer dans la zone : ${userLocation}.
+      Tu es l'Expert Vision de LOCATE SYSTEMS 🧭.
+      Tu dois identifier l'outillage en suivant strictement le RÉFÉRENTIEL MÉTIER V1.4 :
       
-      CONTRAINTE : Choisis impérativement la localisation parmi cette liste : [${VALID_LOCATIONS.join(", ")}].
+      PROTOCOLE D'IDENTIFICATION :
+      ${INDUSTRIAL_RULES.identification_logic.join(' -> ')}
+
+      SIGNATURES MARQUES :
+      - Makita : ${INDUSTRIAL_RULES.brand_dna.makita.style}
+      - Milwaukee : ${INDUSTRIAL_RULES.brand_dna.milwaukee.style}
+      - Bosch Pro : ${INDUSTRIAL_RULES.brand_dna.bosch_pro.style}
       
+      LOGIQUE DE TÊTE (NEZ) :
+      - Visseuse choc : ${INDUSTRIAL_RULES.tool_head_logic.visseuse_choc}
+      - Boulonneuse : ${INDUSTRIAL_RULES.tool_head_logic.boulonneuse}
+
       FORMAT JSON STRICT :
       [{
         "toolName": string,
-        "location": string,
+        "location": "${userLocation}",
         "category": "electro" | "main" | "serrage" | "quinc" | "elec" | "peinture" | "mesure" | "jardin" | "EPI",
-        "sku": string,
+        "confidence": number,
         "safetyStatus": string,
-        "confidence": number
+        "sku": string
       }]
     `;
 
-    try {
-      if (!API_KEY) throw new Error("Clé API manquante dans l'environnement.");
+    const contents = base64Images.map(b64 => ({
+      inline_data: { mime_type: "image/jpeg", data: b64.split(',')[1] }
+    }));
 
+    try {
       const response = await fetch(MODEL_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: systemPrompt },
-              ...base64Images.map(img => ({
-                inline_data: { mime_type: "image/jpeg", data: img.split(',')[1] }
-              }))
-            ]
-          }]
+          contents: [{ role: "user", parts: [{ text: systemPrompt }, ...contents] }],
+          generationConfig: { response_mime_type: "application/json" }
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("❌ Erreur API Gemini:", errorData.error?.message);
-        return [];
-      }
-
       const data = await response.json();
-      const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!textResponse) return [];
-
-      // Nettoyage et parsing robuste du JSON
-      const cleanJson = textResponse.replace(/```json|```/g, "").trim();
-      return JSON.parse(cleanJson);
-
+      return JSON.parse(data.candidates[0].content.parts[0].text);
     } catch (error) {
-      console.error("💥 Crash geminiService:", error);
+      console.error("Erreur Vision Systems:", error);
       return [];
     }
   }

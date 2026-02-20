@@ -3,7 +3,7 @@ import type { InventoryItem } from './types';
 import Hub from './components/Hub';
 import HomeMenu from './components/HomeMenu';
 import Dashboard from './components/Dashboard';
-import Scanner from './components/Scanner';
+import { Scanner } from './core/components/Scanner';
 import Search from './components/Search';
 import { TIERS_CONFIG } from './constants/tiers';
 import SettingsPage from './pages/SettingsPage';
@@ -112,11 +112,12 @@ const App = () => {
       )}
 
       {/* ÉCRAN 4 : RECHERCHE (RETROUVER) */}
-      {view === 'search' && (
-        <Search 
-          onBack={() => setView('home')} 
-        />
-      )}
+{view === 'search' && (
+  <Search 
+    onBack={() => setView('home')} 
+    inventory={inventory} // <--- Ajout de cette ligne cruciale
+  />
+)}
 
       {/* ÉCRAN 5 : PARAMÈTRES */}
       {view === 'settings' && (

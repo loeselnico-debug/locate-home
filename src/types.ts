@@ -39,15 +39,13 @@ export const LOCATIONS: Location[] = [
 
 export interface InventoryItem {
   id: string;
-  name: string;
-  details: string;           // Pour les conseils de maintenance IA
-  etat: string;              // "Opérationnel" | "À vérifier"
-  categorie: string;
-  score_confiance: number;   // Le verrou des 70%
-  alerte_securite: boolean;  // Signal visuel critique
-  originalImage: string;     // Base64 pour traçabilité visuelle
-  date: string;              // Horodatage du scan
-  localisation: string;      // Cœur du système : Fourgon, Établi, etc.
+  toolName: string;      // Nom de l'outil identifié par l'IA
+  location: string;      // Une des 6 zones de vérité
+  category: string;      // Type d'outil
+  sku?: string;          // Code article (6 chiffres)
+  safetyStatus?: string; // État de sécurité
+  imageUrl?: string;     // Lien vers la photo capturée
+  date: string;          // Date d'ajout
 }
 
 // Alias de compatibilité pour les anciens fichiers (à supprimer en V2.0)

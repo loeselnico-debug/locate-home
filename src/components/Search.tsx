@@ -1,166 +1,140 @@
-import { useState, useEffect } from 'react';
-import { Mic, MicOff, Search as SearchIcon, MapPin } from 'lucide-react';
-import { getInventory } from '../services/memoryService';
-import { LOCATIONS } from '../types';
-import type { ToolMemory } from '../types';
+import { useState, useMemo } from 'react'; // Retrait de useEffect (inutilisé)
+import { Mic, MicOff, Search as SearchIcon, MapPin } from 'lucide-react'; // Retrait de X (inutilisé)
+import type { InventoryItem } from '../types';
 
 interface SearchProps {
   onBack: () => void;
+  inventory: InventoryItem[]; // On utilise les props pour la synchronisation en temps réel
 }
 
-const Search: React.FC<SearchProps> = ({ onBack }) => {
+// Les 6 Zones de Vérité du Manifeste V3.1
+const VALID_LOCATIONS = ["Garage", "Atelier", "Maison", "Prêt", "Jardin", "Chantier"];
+
+const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
   const [isListening, setIsListening] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<string | 'ALL'>('ALL');
-  const [results, setResults] = useState<ToolMemory[]>([]);
-  const [allTools, setAllTools] = useState<ToolMemory[]>([]);
 
-  // Chargement initial
-  useEffect(() => {
-    const tools = getInventory();
-    setAllTools(tools);
-  }, []);
-
-  // Logique de filtrage en temps réel (Texte + Spatial)
-  useEffect(() => {
-    const filtered = allTools.filter(tool => {
-      // 1. Filtre par texte (si vide, on affiche tout pour la zone sélectionnée)
-      const matchesQuery = query.trim() === '' || 
-        tool.name.toLowerCase().includes(query.toLowerCase()) ||
-        tool.categorie.toLowerCase().includes(query.toLowerCase());
-        
-      // 2. Filtre par localisation
-      const matchesLocation = selectedLocation === 'ALL' || tool.localisation === selectedLocation;
-      
-      return matchesQuery && matchesLocation;
-    });
-    
-    // Si pas de recherche texte et "ALL" sélectionné, on vide l'affichage pour garder une interface propre.
-    if (query.trim() === '' && selectedLocation === 'ALL') {
-        setResults([]);
-    } else {
-        setResults(filtered);
-    }
-  }, [query, selectedLocation, allTools]);
-
-  // Reconnaissance vocale (Web Speech API)
+  // --- LOGIQUE VOCALE ---
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-      alert("La reconnaissance vocale n'est pas supportée sur ce navigateur.");
-      return;
-    }
+    if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'fr-FR';
-    recognition.continuous = false;
-
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
-    
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setQuery(transcript);
+      setQuery(event.results[0][0].transcript);
     };
-
     recognition.start();
   };
 
+  // Correction du filtrage pour utiliser 'toolName' et 'category'
+const results = useMemo(() => {
+  return inventory.filter(tool => {
+    const matchesQuery = query.trim() === '' || 
+      tool.toolName.toLowerCase().includes(query.toLowerCase()) || // Changement ici
+      tool.category.toLowerCase().includes(query.toLowerCase());   // Changement ici
+    const matchesLocation = selectedLocation === 'ALL' || tool.location === selectedLocation;
+    return matchesQuery && matchesLocation;
+  });
+}, [query, selectedLocation, inventory]);
   return (
-    <div className="min-h-screen bg-[#121212] text-white p-6 font-sans pb-32">
+    <div className="min-h-screen bg-[#121212] text-white p-[4vh] font-sans pb-[15vh]">
       
-      {/* BOUTON RETOUR : Asset 3D du Manifeste */}
-      <button 
-        onClick={onBack} 
-        className="flex items-center gap-3 mb-6 active:scale-95 transition-transform"
-      >
-        <img src="/icon-return.png" alt="Retour" className="w-10 h-10 object-contain drop-shadow-md" />
-        <span className="text-[#007BFF] font-black uppercase text-xs tracking-widest mt-1">Retour</span>
-      </button>
+      {/* HEADER & RETOUR */}
+      <div className="flex justify-between items-center mb-[4vh]">
+        <button onClick={onBack} className="flex items-center gap-[2vw] active:scale-90 transition-transform">
+          <img src="/icon-return.png" alt="Retour" className="w-[2.5rem] h-[2.5rem] object-contain" />
+          <span className="text-[#FF6600] font-black uppercase text-[0.7rem] tracking-widest mt-1">Menu</span>
+        </button>
+        
+        <div className="flex flex-col items-end">
+          <h2 className="text-[1.5rem] font-black italic uppercase tracking-tighter leading-none">Retrouver</h2>
+          <div className="bg-[#FF6600] px-[1rem] py-[0.1rem] -rotate-2 mt-[0.5rem]">
+            <span className="text-[0.5rem] font-black text-white italic uppercase tracking-[0.2em]">Assistant Vocal</span>
+          </div>
+        </div>
+      </div>
 
-      <header className="mb-8">
-        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Retrouver</h2>
-        <div className="h-1 w-12 bg-[#FF6600] mt-1 shadow-[0_0_8px_#FF6600]"></div>
-        <p className="text-[10px] text-[#B0BEC5] font-bold uppercase tracking-widest mt-2">Assistant Vocal & Spatial</p>
-      </header>
-
-      {/* ZONE DE RECHERCHE TEXTUELLE & VOCALE */}
-      <div className="relative mb-6">
+      {/* INPUT DE RECHERCHE HDR */}
+      <div className="relative mb-[4vh]">
+        <div className="absolute inset-y-0 left-[4vw] flex items-center pointer-events-none">
+          <SearchIcon size={20} className="text-gray-500" />
+        </div>
         <input 
           type="text" 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Outil, catégorie..."
-          className="w-full bg-[#1E1E1E] border border-[#333] rounded-2xl py-5 pl-14 pr-16 text-sm focus:border-[#FF6600] transition-all outline-none shadow-inner"
+          placeholder="Rechercher un outil..."
+          className="w-full bg-[#1E1E1E] border border-white/10 rounded-[1.5rem] py-[2vh] pl-[12vw] pr-[15vw] text-[1rem] focus:border-[#FF6600] transition-all outline-none shadow-inner"
         />
-        <SearchIcon className="absolute left-5 top-5 text-[#B0BEC5]" size={20} />
         
-        {/* BOUTON MICRO */}
         <button 
           onClick={startListening}
-          className={`absolute right-2 top-2 p-3.5 rounded-xl transition-all ${
-            isListening 
-            ? 'bg-[#DC3545] animate-pulse shadow-[0_0_20px_#DC3545]' 
-            : 'bg-[#FF6600] hover:scale-105 shadow-[0_0_15px_rgba(255,102,0,0.4)]'
+          className={`absolute right-[1.5vw] top-1/2 -translate-y-1/2 p-[1.5vh] rounded-[1rem] transition-all ${
+            isListening ? 'bg-red-600 animate-pulse shadow-[0_0_20px_rgba(220,53,69,0.5)]' : 'bg-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.3)]'
           }`}
         >
-          {isListening ? <MicOff size={22} /> : <Mic size={22} />}
+          {isListening ? <MicOff size={22} color="white" /> : <Mic size={22} color="black" />}
         </button>
       </div>
 
-      {/* FILTRES SPATIAUX (Localisation de Vérité) */}
-      <div className="flex overflow-x-auto no-scrollbar gap-3 mb-8 pb-2 snap-x">
+      {/* FILTRES DE ZONES (Source de Vérité) */}
+      <div className="flex overflow-x-auto no-scrollbar gap-[1rem] mb-[5vh] pb-[1vh] snap-x">
         <button 
           onClick={() => setSelectedLocation('ALL')}
-          className={`snap-center shrink-0 px-5 py-2 rounded-full border-2 text-sm font-black tracking-wide transition-all ${
-            selectedLocation === 'ALL' ? 'bg-white text-black border-white' : 'bg-transparent border-white/20 text-white/50'
+          className={`snap-center shrink-0 px-[1.5rem] py-[0.5rem] rounded-full border text-[0.7rem] font-black transition-all ${
+            selectedLocation === 'ALL' ? 'bg-white text-black border-white' : 'border-white/10 text-gray-500'
           }`}
         >
           TOUT
         </button>
-        {LOCATIONS.map(loc => (
+        {VALID_LOCATIONS.map(loc => (
           <button 
-            key={loc.id}
-            onClick={() => setSelectedLocation(loc.id)}
-            className={`snap-center shrink-0 px-5 py-2 rounded-full border-2 text-sm font-black tracking-wide transition-all ${
-              selectedLocation === loc.id ? 'bg-[#FF6600] text-black border-[#FF6600] shadow-[0_0_10px_rgba(255,102,0,0.4)]' : 'bg-transparent border-white/20 text-white/50'
+            key={loc}
+            onClick={() => setSelectedLocation(loc)}
+            className={`snap-center shrink-0 px-[1.5rem] py-[0.5rem] rounded-full border text-[0.7rem] font-black transition-all ${
+              selectedLocation === loc ? 'bg-[#FF6600] text-white border-[#FF6600] shadow-[0_0_10px_#FF6600]' : 'border-white/10 text-gray-500'
             }`}
           >
-            {loc.label}
+            {loc.toUpperCase()}
           </button>
         ))}
       </div>
 
-      {/* RÉSULTATS */}
-      <div className="grid gap-4">
+      {/* LISTE DES RÉSULTATS */}
+      <div className="grid gap-[2vh]">
         {results.length > 0 ? (
           results.map(tool => (
-            <div key={tool.id} className="bg-[#1E1E1E] border border-[#333] rounded-2xl p-4 flex items-center gap-4 hover:border-[#FF6600] transition-colors group">
-              <div className="w-20 h-20 rounded-xl overflow-hidden bg-black border border-[#444] flex-shrink-0">
-                <img src={tool.originalImage} alt={tool.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+            <div key={tool.id} className="relative bg-[#1E1E1E] border border-white/5 rounded-[1.5rem] p-[1rem] flex items-center gap-[4vw] overflow-hidden group">
+              {/* Effet Laser HDR au survol/clic */}
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-[#FF6600] shadow-[0_0_10px_#FF6600] opacity-0 group-active:opacity-100 group-active:animate-scan-laser"></div>
+              
+              <div className="w-[5rem] h-[5rem] rounded-[1rem] overflow-hidden bg-black border border-white/10 flex-shrink-0">
+                <img src={tool.imageUrl || "/placeholder-tool.png"} alt={tool.toolName} className="w-full h-full object-cover" />
               </div>
+
               <div className="flex-1 min-w-0">
-                <h3 className="font-black text-base uppercase text-white truncate">{tool.name}</h3>
-                <div className="flex items-center gap-1.5 text-[#FF6600] mt-1">
+                <h3 className="font-black text-[0.9rem] uppercase text-white truncate">{tool.toolName}</h3>
+                <div className="flex items-center gap-[0.5rem] text-[#FF6600] mt-[0.5vh]">
                   <MapPin size={12} />
-                  <span className="text-[11px] font-bold uppercase tracking-tighter">
-                    Emplacement : {LOCATIONS.find(l => l.id === tool.localisation)?.label || tool.localisation || 'Non défini'}
-                  </span>
+                  <span className="text-[0.6rem] font-black uppercase tracking-tighter">{tool.location}</span>
                 </div>
-                <p className="text-[10px] text-[#B0BEC5] mt-2 line-clamp-1 italic">
-                  Ref: {tool.details}
-                </p>
+                <p className="text-[0.5rem] text-gray-500 mt-[1vh] font-mono">ID: {tool.sku || tool.id.split('-')[0]}</p>
               </div>
             </div>
           ))
-        ) : (query !== '' || selectedLocation !== 'ALL') && (
-          <div className="text-center py-20 border-2 border-dashed border-[#333] rounded-3xl">
-            <p className="text-[#B0BEC5] text-sm font-medium italic">Aucun équipement trouvé pour ces critères.</p>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-[10vh] border-2 border-dashed border-white/5 rounded-[2rem]">
+            <img src="/icon-retrouver.png" className="w-[4rem] opacity-20 mb-[2vh]" alt="" />
+            <p className="text-gray-600 text-[0.7rem] uppercase font-bold tracking-widest italic text-center px-[10vw]">
+              {query ? "Aucun actif identifié" : "En attente d'une commande vocale ou textuelle"}
+            </p>
           </div>
         )}
       </div>
-
     </div>
   );
 };

@@ -1,53 +1,64 @@
-# 🦅 MANIFESTE DESIGN | LOCATEHOME
-**Version :** 1.0 (Révision Industrielle - 17 Février 2026)  
+# 🦅 MANIFESTE DESIGN | LOCATE SYSTEMS
+**Version :** 2.1 (Interface Core & Faisceaux Lumineux - 19 Février 2026)  
 **Statut :** RÉFÉRENTIEL OFFICIEL  
 **Philosophie :** "Le Google Search de la maintenance" – Mémoire augmentée & Indexation spatiale.
 
 ---
 
-## 🎨 1. CHARTE GRAPHIQUE (PALETTE PRO)
+## 🎨 1. CHARTE GRAPHIQUE (DESIGN SYSTEM THÉMATIQUE)
 
-| Élément | Code Hexa | Usage & Rendu |
+L'écosystème repose sur des fondations fixes et un système de "Couleur Thématique" dynamique selon le module actif.
+
+### A. Les Constantes (Communes à tous les modules)
+| Élément | Code Hexa / Style | Usage & Rendu |
 | :--- | :--- | :--- |
-| **Fond (OLED)** | `#121212` | Anthracite profond. Économie batterie & confort nocturne. |
-| **Accent Action** | `#FF6600` | Orange Industriel. Signalétique, boutons primaires et Laser. |
-| **Accent Nav** | `#007BFF` | Bleu Standard. Boutons de retour et navigation système. |
-| **Bordures / Gris** | `#1E1E1E` | Gris de profondeur pour les cartes et conteneurs. |
-| **Texte / Icônes** | `#B0BEC5` | Gris bleuté clair. Lisibilité haute sans éblouissement. |
+| **Fond Hub (Noyau)**| `#050505` | Noir quasi absolu avec grille matricielle CSS. |
+| **Fond App (OLED)** | `#121212` | Anthracite profond pour les interfaces internes. |
+| **Bordures / Cartes** | `#1E1E1E` | Gris de profondeur pour les cartes et conteneurs. |
+| **Texte Secondaire** | `#B0BEC5` | Gris bleuté clair. Lisibilité haute sans éblouissement. |
+
+### B. Les Variables (Couleur Thématique par Module)
+La "Couleur Thématique" s'applique au Titre, aux boutons d'action primaires, aux faisceaux d'énergie du Hub et aux icônes principales.
+* 🟠 **[HOME] :** `#FF6600` (Orange Industriel)
+* 🔵 **[ASSET] :** `#007BFF` (Bleu Rigueur/Standard)
+* 🟢 **[KITCHEN] :** `#28A745` (Vert Hygiène/HACCP)
+* 🔴 **[GARAGE] :** `#DC3545` (Rouge Mécanique/Alerte)
+* ⚪ **[CARE] :** `#E0E0E0` (Blanc Argenté/Médical)
 
 ---
 
 ## 🏷️ 2. BRANDING & LOGOTYPAGE
 
 ### A. Le Logo Principal
-* **Structure :** **LOCATE** (en `#FF6600`) **HOME** (en `#FFFFFF`).
-* **Signature "by Systems" :** - Incrustation sous forme de **bandeau oblique orange**.
-    - Placé sous le "HOME", touchant la base de la lettre "E".
-    - Texte "by Systems" avec un **dégradé métallique doré**.
+* **Structure :** **LOCATE** (en *Couleur Thématique*) **[NOM DU MODULE]** (en `#FFFFFF`).
+* **Signature "by Systems" :** Incrustation sous forme de bandeau oblique touchant la base de la dernière lettre, avec dégradé métallique doré.
 
 ### B. Indicateur de Tiers (Badges)
 * **Emplacement :** Header (haut à gauche).
-* **Style :** Bouton à effet **Néon** avec dégradé (Jaune vers Orange).
+* **Style :** Bouton à effet **Néon** avec dégradé (Jaune vers Orange). Invariable sur tous les modules.
 * **Étiquettes :** `FREE` (15 outils) | `PREMIUM` | `PRO`.
 
 ---
 
 ## 📐 3. RÈGLES D'ADAPTABILITÉ (SCALING)
 
-Pour garantir un affichage parfait du **Galaxy J5** à l'**iPhone 17 Pro**, le design suit une logique de flux liquide :
-
-* **Unités de mesure :** - **Interdiction du Pixel fixe (px)** pour les tailles d'écran.
-    - Utilisation du `rem` pour la typographie (respect du choix utilisateur).
-    - Utilisation du `vh/vw` et `%` pour les conteneurs.
-* **Vecteurs (SVG) :** Tous les logos, icônes (Lucide) et éléments graphiques sont en **SVG** pour une netteté absolue à n'importe quelle densité (@2x, @3x, @4x).
-* **Zones de Sécurité (Safe Areas) :** Utilisation systématique des marges dynamiques pour éviter les encoches (notches) et les barres d'accueil iOS/Android.
+Pour garantir un affichage parfait sur tous les terminaux de terrain :
+* **Design Liquide :** Interdiction du Pixel fixe (px). Utilisation exclusive de `rem`, `vh/vw` et `%`.
+* **Rendu CSS Actif :** Remplacement des images de fond lourdes par du code CSS pur (dégradés, halos lumineux, flous) pour garantir la netteté et soulager le processeur de l'appareil.
+* **Zones de Sécurité (Safe Areas) :** Marges dynamiques pour éviter les encoches (notches) et barres de navigation.
 
 ---
 
 ## 📱 4. ARCHITECTURE DE L'INTERFACE (LAYOUT)
 
-### 🔝 LE HEADER (Fixe)
-1. **Gauche :** Badge de statut (Abonnement).
-2. **Centre :** Logo "LOCATE HOME by Systems".
-3. **Droite :** Roue dentée (Paramètres) en gris clair.
-4. **Séparation :
+### 🔝 LE HUB (LOCATE CORE) - ÉCRAN D'ACCUEIL
+1. **Grille Supérieure :** Alignement horizontal des 5 terminaux métiers.
+2. **Faisceaux d'énergie :** Lignes de lumière CSS (Gradient to transparent) descendant de chaque module vers le centre.
+3. **Processeur Central :** Noyau UI avec halos lumineux superposés (Bleu/Orange) en arrière-plan et typographie "SYSTEMS" espacée (`tracking-widest`).
+4. **Citation Base :** "L'homme ne parle pas à l'IA pour l'écouter, mais pour qu'elle devienne le prolongement de son expertise terrain."
+
+### 🎛️ LES ÉCRANS INTERNES (IDENTIQUES POUR CHAQUE MODULE)
+1. **Le Header :** Badge de statut à gauche, Logo au centre, Paramètres (Roue dentée) à droite. Séparation par un trait gris (`white/10`).
+2. **Menu Module :** Grille des fonctionnalités principales (Ranger, Retrouver...).
+3. **Cockpit IA (Scanner) :** Vue caméra plein écran, zone de focus délimitée, bouton de capture central large.
+4. **Interface Retrouver :** Barre de recherche, filtres spatiaux et bouton micro d'assistance vocale.

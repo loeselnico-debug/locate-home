@@ -1,13 +1,13 @@
-# 🦅 LOCATEHOME | RÉFÉRENTIEL TECHNIQUE V1.5
+# 🦅 LOCATEHOME | RÉFÉRENTIEL TECHNIQUE V2.1
 
-**Date :** 19 Février 2026  
+**Date :** 20 Février 2026  
 **Statut :** OPÉRATIONNEL - VALIDÉ SUR TERRAIN 🟢  
 **Cible :** iPhone 12 Pro et Galaxy J5 (Optimisation flux vidéo & haptique)
 
 ---
 
 ## 1. 🎯 OBJECTIF DU PRODUIT
-Système expert de traçabilité et de diagnostic d'outillage. Le système ne se contente pas d'identifier, il analyse l'état de sécurité et la segmentation spatiale (différenciation des contenants).
+Système expert de traçabilité et de diagnostic d'outillage. Le système ne se contente pas d'identifier, il analyse l'état de sécurité et la segmentation spatiale. Il devient le Hub central de l'écosystème **Locate Systems**.
 
 ---
 
@@ -15,48 +15,49 @@ Système expert de traçabilité et de diagnostic d'outillage. Le système ne se
 
 | Élément | Style / Code | Usage |
 | :--- | :--- | :--- |
-| **Fond** | `#121212` | Anthracite profond industriel. |
-| **Accent principal** | `#FF6600` | Orange Néon (Titre "LOCATE" et Actions). |
-| **Texte Secondaire** | `#FFFFFF` | Blanc Pur (Titre "HOME"). |
-| **Signature** | **Or Métallique** | Dégradé "by Systems" sur bandeau oblique orange. |
-| **Boutons Tier** | Jaune ⮕ Orange | Effet néon pour statut Freemium/Premium/Pro. |
+| **Fond Hub** | `#050505` | Noir absolu / Grille matricielle. |
+| **Accent [HOME]** | `#FF6600` | Orange Néon (Titre & Actions). |
+| **Signature** | **Or Métallique** | Dégradé "by Systems" sur bandeau oblique. |
+| **Effets** | **Néon & Faisceaux** | CSS pur pour économie de batterie & netteté. |
 
 ---
 
-## 🛠️ 3. PILIERS TECHNIQUES ACTUALISÉS
+## 🛠️ 3. PILIERS TECHNIQUES & ÉTALONNAGE
 
-### 📊 NAVIGATION & INTERFACE
-* **Composants :** Utilisation des actifs 3D (`icon-ranger.png`, `icon-scanner.png`, `icon-retrouver.png`).
-* **Header :** Structure fixe incluant le bouton Tier à gauche et les paramètres à droite.
-* **Navigation :** Gestion par état `ViewState` (Home / Inventory / Scanner / Search).
+### 🌐 ÉCOSYSTÈME LOCATE CORE (HUB)
+* **Architecture :** Point d'entrée centralisé unifiant 5 verticales (Home, Asset, Kitchen, Garage, Care).
+* **Interface :** Rail magnétique (Flexbox) avec faisceaux lumineux dynamiques vers le processeur central.
 
 ### ⚡ SCANNER VIDÉO "BURST" (CERVEAU IA)
 * **Moteur :** **Google Gemini 3 Flash** (Priorité Vitesse & Lecture Typographique).
-* **Capture :** Mode "Burst" — Capture automatique de **6 frames sur 10 secondes**.
-* **Capacités validées :** * Lecture des micro-détails (ex: "M5 x 60", "Set 22 pcs").
-    * Analyse de sécurité (ex: détection d'usure de gaine isolante).
-    * Conscience spatiale (distinction de deux bacs séparés).
+* **Étalonnage de Charge (Benchmarks) :**
+    * *Étalon 1 (Lab) :* 6 frames / 10 secondes.
+    * *Étalon 2 (Production) :* **12 frames / 20 secondes** (Standard actuel pour balayage précis).
+* **Vision [ASSET] (Data Engine) :** * Objectif : Ingestion de catalogues lourds (ex: Prolians 2025 - 3200 pages / 1.4 Go).
+    * Corrélation OCR High-Density : Extraction des codes articles (ex: XH-23040L) et lien direct serveur fournisseur.
+
+### 💡 EXPERTISE TERRAIN (HUMAN-IN-THE-LOOP)
+* **Jargon Métier :** L'IA est éduquée par l'utilisateur pour corriger les erreurs de contexte (ex: "Olive Nylon" = Guidage mécanique de portail, pas un consommable).
+* **Diagnostic d'Usure :** Analyse visuelle des surfaces (Téflon, métal) pour prédiction de remplacement.
 
 ---
 
 ## 🚀 4. ÉVOLUTIONS RÉALISÉES
 
-- [x] **Migration Moteur :** Passage effectif à Gemini 3 Flash (Zéro erreur 404/429).
-- [x] **Refonte Header :** Intégration conforme du logo et de la signature dorée.
-- [x] **Design Boutons :** Remplacement des icônes vectorielles par les PNG 3D.
-- [x] **Protocole de Scan :** Implémentation de la fonction `analyzeVideoBurst`.
-- [x] **Diagnostic Sécurité :** Injection des règles métiers dans le prompt système.
+- [x] **Hub "Monstrueux" :** Interface CSS ultra-légère et interactive finie.
+- [x] **Calibration Burst :** Passage à l'Étalon 2 (12 frames / 20s) fonctionnel.
+- [x] **Stratégie Data :** Connexion conceptuelle au flux Prolians validée.
+- [x] **Zéro-Trust :** Filtrage de l'environnement pour focus exclusif sur l'outil/étiquette.
+- [x] **Localisation de Vérité :** Indexation spatiale (Fourgon, Atelier) opérationnelle.
 
 ---
 
-## 🚀 5. PROCHAINES ÉTAPES (ROADMAP V2.0)
+## 🚀 5. PROCHAINES ÉTAPES (ROADMAP V2.2)
 
 ### 🟡 PRIORITÉS IMMÉDIATES
-- [ ] **Bridage Métier :** Filtrage de l'environnement (ignorer le décor pour focus outils).
-- [ ] **Protocole Zero-Trust :** Forcer l'IA à l'incertitude plutôt qu'à l'hallucination (ex: canette ouverte).
-- [ ] **Localisation de Vérité :** Indexer les zones réelles (Fourgon, Atelier, Établi).
-- [ ] **Dédoublonnage Intelligent :** Logique de fusion d'objets identiques détectés en rafale.
+- [ ] **Insertion Actifs 3D :** Remplacement des emojis du Hub par les PNG 3D haute définition.
+- [ ] **Service [ASSET] :** Esquisse du moteur de recherche par code article (OCR -> API Prolians).
+- [ ] **Déploiement Vocal :** Recherche "mains libres" dans le module Retrouver.
 
-### 🔵 ÉVOLUTIONS FUTURES
-- [ ] **Module "Retrouver" :** Recherche spatiale guidée par commande vocale.
-- [ ] **Mode Basse Lumière :** Activation auto du flash/torche via l'API Camera.
+### 🔵 VISION BUSINESS
+- [ ] **Monétisation QR Code :** Transformation du QR Code physique en point d'accès technique "by Systems".

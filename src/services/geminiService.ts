@@ -3,7 +3,7 @@
 const API_KEY = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 // Note: Assurez-vous que ce modèle existe bien pour votre clé API. 
 // Si erreur 404, remplacez par 'gemini-1.5-flash'
-const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+const MODEL_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash:generateContent?key=${API_KEY}`;
 
 export const geminiService = {
   analyzeVideoBurst: async (base64Images: string[]): Promise<any[]> => {

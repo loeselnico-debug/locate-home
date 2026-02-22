@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { get, set } from 'idb-keyval'; // Le nouveau moteur de base de données
 import type { InventoryItem } from './types';
 import Hub from './core/ui/Hub';
 import HomeMenu from './modules/home/components/HomeMenu';
@@ -9,30 +10,39 @@ import { TIERS_CONFIG } from './core/security/tiers';
 import SettingsPage from './modules/home/views/SettingsPage';
 import { useUserTier } from './core/security/useUserTier';
 
-// On ajoute 'hub' comme point d'entrée principal de la plateforme
 type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings';
 
 const App = () => {
-  // Le démarrage se fait désormais sur le Hub (Locate Core)
   const [view, setView] = useState<ViewState>('hub');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [isDbLoaded, setIsDbLoaded] = useState(false); // Verrou de sécurité
 
-  // Configuration du Tier
   const { currentTier } = useUserTier();
   const limit = TIERS_CONFIG[currentTier].itemLimit;
 
-  // 1. Chargement de la mémoire au démarrage
+  // 1. Chargement asynchrone depuis IndexedDB au démarrage
   useEffect(() => {
-    const saved = localStorage.getItem('locatehome_inventory');
-    if (saved) setInventory(JSON.parse(saved));
+    get('locate_systems_db').then((savedItems: InventoryItem[] | undefined) => {
+      if (savedItems) {
+        setInventory(savedItems);
+      }
+      setIsDbLoaded(true); // On lève le verrou une fois la donnée récupérée
+    }).catch((err: any) => {
+      console.error("Erreur de lecture de la base de données militaire :", err);
+      setIsDbLoaded(true); // On lève le verrou même en cas d'erreur
+    });
   }, []);
 
-  // 2. Sauvegarde automatique
+  // 2. Sauvegarde asynchrone ultra-robuste
   useEffect(() => {
-    localStorage.setItem('locatehome_inventory', JSON.stringify(inventory));
-  }, [inventory]);
+    // RÈGLE ABSOLUE : On ne sauvegarde JAMAIS si la DB n'a pas fini de charger initialement
+    if (isDbLoaded) {
+      set('locate_systems_db', inventory).catch((err: any) => {
+        console.error("Échec de l'écriture dans la soute :", err);
+      });
+    }
+  }, [inventory, isDbLoaded]);
 
-  // 3. Logique d'ajout d'outils via le Scanner
   const handleAnalysisResults = (newItems: any[]) => {
     const currentCount = inventory.length;
 
@@ -50,48 +60,33 @@ const App = () => {
     }));
 
     setInventory(prev => [...itemsToAdd, ...prev]);
-    setView('inventory'); // On bascule sur l'inventaire pour voir le résultat
+    setView('inventory');
   };
 
   const deleteTool = (id: string) => {
-    if (window.confirm("Supprimer cet outil ?")) {
+    if (window.confirm("Supprimer cet outil définitivement de la base ?")) {
       setInventory(prev => prev.filter(item => item.id !== id));
     }
   };
 
-  // --- RENDU CONDITIONNEL (L'AIGUILLAGE) ---
   return (
     <main className="w-screen min-h-[100dvh] bg-[#050505] text-[#B0BEC5] font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden">
       
-      {/* ÉCRAN 0 : LE HUB (LOCATE CORE) */}
       {view === 'hub' && (
-        <Hub 
-          onSelectModule={(module) => {
-            // Seul le module 'home' est techniquement redirigé pour l'instant
-            if (module === 'home') setView('home');
-          }} 
-        />
+        <Hub onSelectModule={(module) => { if (module === 'home') setView('home'); }} />
       )}
 
-      {/* ÉCRAN 1 : MENU PRINCIPAL (LOCATE HOME) */}
       {view === 'home' && (
-        <HomeMenu 
-          onNavigate={setView} 
-          tier={currentTier as any} 
-        />
+        <HomeMenu onNavigate={setView} tier={currentTier as any} />
       )}
 
-      {/* ÉCRAN 2 : INVENTAIRE (RANGER) */}
       {view === 'inventory' && (
-        <div className="flex flex-col min-h-screen p-4">
-          <div className="flex justify-between items-center mb-6">
-            <button 
-              onClick={() => setView('home')}
-              className="text-orange-500 font-bold flex items-center gap-2"
-            >
+        <div className="flex flex-col h-full p-4 overflow-y-auto">
+          <div className="flex justify-between items-center mb-6 shrink-0">
+            <button onClick={() => setView('home')} className="text-[#FF6600] font-bold flex items-center gap-2">
               ← MENU
             </button>
-            <span className="text-[10px] text-gray-600 uppercase tracking-widest">Mode Inventaire</span>
+            <span className="text-[10px] text-gray-500 uppercase tracking-widest">Base Sécurisée</span>
           </div>
           
           <Dashboard 
@@ -103,29 +98,17 @@ const App = () => {
         </div>
       )}
 
-      {/* ÉCRAN 3 : SCANNER */}
       {view === 'scanner' && (
-        <Scanner 
-          onBack={() => setView('home')} 
-          onAnalysisComplete={handleAnalysisResults} 
-        />
+        <Scanner onBack={() => setView('home')} onAnalysisComplete={handleAnalysisResults} />
       )}
 
-      {/* ÉCRAN 4 : RECHERCHE (RETROUVER) */}
-{view === 'search' && (
-  <Search 
-    onBack={() => setView('home')} 
-    inventory={inventory} // <--- Ajout de cette ligne cruciale
-  />
-)}
+      {view === 'search' && (
+        <Search onBack={() => setView('home')} inventory={inventory} />
+      )}
 
-      {/* ÉCRAN 5 : PARAMÈTRES */}
       {view === 'settings' && (
-        <div className="absolute inset-0 z-50 bg-[#121212]">
-          <button 
-            onClick={() => setView('home')} 
-            className="absolute top-6 left-6 z-50 text-white bg-gray-800/80 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border border-gray-600"
-          >
+        <div className="absolute inset-0 z-50 bg-[#050505]">
+          <button onClick={() => setView('home')} className="absolute top-6 left-6 z-50 text-white bg-gray-900/80 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border border-gray-700">
             ← Retour
           </button>
           <SettingsPage />

@@ -96,6 +96,11 @@ Cerveau & Architecture
 [ X] Sécurité (Hardening) : Blindage des appels data.candidates et extraction JSON robuste.
 [ X] Limites : Vérification Freemium (15 outils) active dans addTool.
 [ X] Nettoyage : Sémantique "LOCATEHOME" généralisée ; fonction deleteTool intégrée.
+[ X] Architecture Monorepo Modulaire : Séparation stricte Core / Modules / Types.
+[ X] Agnosticisme du Core : L'IA lit dynamiquement la source de vérité.
+[ X] Moteur IA : Tunnel Gemini 2.0 Flash opérationnel.
+[ X] Schéma Data : Interface InventoryItem verrouillée.
+[ X] Sécurité : Verrou Freemium actif dans addTool.
 
 Vision & Scan
 [ X] Scanner HDR : Mode hybride fonctionnel (Photo HD / Vidéo Burst / Importation).
@@ -103,12 +108,17 @@ Vision & Scan
 [ X] Flux Live : Intégration getUserMedia avec cadre de visée et filtre industriel HDR.
 [ X] Laser : Balayage dynamique synchronisé avec l'analyse.
 [ X] Zéro-Trust : Filtrage d'environnement actif pour focus exclusif sur l'objet.
+[ X] Scanner HDR : Mode hybride (Photo/Vidéo/Import) avec interface adaptative (vw).
+[ X] Étalonnage : Mode Burst calibré (12 frames / 20s).
 
 Interface & UX
 [ X] Hub Central : Dashboard dynamique interactive, CSS ultra-léger.
 [ X] Vocal : Implémentation via Web Speech API dans le module "Retrouver".
 [ X] Dashboard : Connexion au memoryService avec jauge orange dynamique.
 [ X] Cohérence : Synchronisation /tiers.ts avec App.tsx et affichage des labels de catégories.
+[ X] Déploiement Mobile PWA : Manifeste, Service Worker, installable sur Android/iOS.
+[ X] Blindage Apple : Variables safe-area-inset et 100dvh actives.
+[ X] Hub Central : Dashboard dynamique, CSS ultra-léger.
 
 🟡 EN COURS / À RÉALISER (PENDING)
 Infrastructure & Sécurité

@@ -123,23 +123,23 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
      ))}
    </div>
 
-      <div className="flex justify-around items-center h-[12vh] border-t border-white/5 mt-auto">
+      <div className="flex justify-evenly items-center h-[15vh] pb-4 border-t border-white/5 mt-auto">
         {/* GALERIE */}
-        <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14">
-          <img src="/icon-photo.png" className="w-full h-full object-contain" alt="Import" />
+        <button onClick={() => fileInputRef.current?.click()} className="w-[15vw] max-w-[60px] aspect-square shrink-0 relative">
+          <img src="/icon-photo.png" className="w-full h-full object-contain drop-shadow-lg" alt="Import" />
           <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*" />
         </button>
 
         {/* BURST VIDÉO */}
-        <button onClick={handleBurst} className={`w-18 h-18 transition-all ${isScanning ? 'scale-110 animate-pulse' : ''}`}>
-          <img src="/icon-video.png" className="w-full h-full object-contain" alt="Video" />
+        <button onClick={handleBurst} className={`w-[25vw] max-w-[90px] aspect-square shrink-0 transition-transform ${isScanning ? 'scale-110 animate-pulse' : ''}`}>
+          <img src="/icon-video.png" className="w-full h-full object-contain drop-shadow-2xl" alt="Video" />
         </button>
 
-        {/* ANALYSER (Utilise frames pour l'affichage du compteur) */}
-        <button onClick={() => runAnalysis(frames)} className="w-14 h-14 relative">
-          <img src="/icon-scanner.png" className={`w-full h-full object-contain ${frames.length > 0 ? 'opacity-100' : 'opacity-30'}`} alt="Scan" />
+        {/* ANALYSER */}
+        <button onClick={() => runAnalysis(frames)} className="w-[15vw] max-w-[60px] aspect-square shrink-0 relative">
+          <img src="/icon-scanner.png" className={`w-full h-full object-contain drop-shadow-lg transition-opacity ${frames.length > 0 ? 'opacity-100' : 'opacity-40'}`} alt="Scan" />
           {frames.length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-orange-600 text-[10px] px-1.5 rounded-full font-black">
+            <span className="absolute -top-2 -right-2 bg-[#FF6600] text-black text-[12px] px-2 py-0.5 rounded-full font-black border-2 border-black z-10">
               {frames.length}
             </span>
           )}

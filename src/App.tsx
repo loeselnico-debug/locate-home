@@ -61,7 +61,7 @@ const App = () => {
 
   // --- RENDU CONDITIONNEL (L'AIGUILLAGE) ---
   return (
-    <main className="min-h-screen bg-[#121212] text-[#B0BEC5] font-sans">
+    <main className="w-screen min-h-[100dvh] bg-[#050505] text-[#B0BEC5] font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden">
       
       {/* ÉCRAN 0 : LE HUB (LOCATE CORE) */}
       {view === 'hub' && (

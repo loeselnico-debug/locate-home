@@ -1,6 +1,6 @@
 
-import { useUserTier } from '../hooks/useUserTier';
-import { TIERS_CONFIG, type UserTier } from '../constants/tiers'; // <--- Import unifié ici
+import { useUserTier } from '../../../core/security/useUserTier';
+import { TIERS_CONFIG, type UserTier } from '../../../core/security/tiers'; // <--- Import unifié ici
 
 export default function SettingsPage() {
   const { currentTier, setTier } = useUserTier();

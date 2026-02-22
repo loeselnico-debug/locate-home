@@ -1,7 +1,7 @@
-import type { InventoryItem } from '../types';
+import type { InventoryItem } from '../../../types';
 import { Plus, Trash2, Box, ShieldCheck } from 'lucide-react';
-import { useUserTier } from '../hooks/useUserTier';
-import { SafetyBadge } from './SafetyBadge';
+import { useUserTier } from '../../../core/security/useUserTier';
+import { SafetyBadge } from '../../../core/ui/SafetyBadge';
 
 interface DashboardProps {
   inventory: InventoryItem[];

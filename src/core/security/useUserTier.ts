@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { UserTier } from '../constants/tiers';
+import type { UserTier } from './tiers';
 
 const TIER_STORAGE_KEY = 'locate_user_tier';
 

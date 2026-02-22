@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { geminiService } from '../services/geminiService';
+import { geminiService } from '../ai/geminiService';
 import { LOCATIONS } from '../../types';
 
 interface ScannerProps {

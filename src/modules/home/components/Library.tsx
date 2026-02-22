@@ -3,10 +3,10 @@ import {
   ChevronLeft, Hammer, Wrench, Zap, Nut, 
   Lightbulb, Paintbrush, Ruler, Leaf, Package 
 } from 'lucide-react';
-import { getInventory } from '../services/memoryService';
-import type { InventoryItem } from '../types';
-import { CATEGORIES } from '../types'; // Cible tes 9 vrais univers
-import { useUserTier } from '../hooks/useUserTier'; // Importe ton hook de sécurité
+import { getInventory } from '../../../core/storage/memoryService';
+import type { InventoryItem } from '../../../types';
+import { CATEGORIES } from '../../../types'; // Cible tes 9 vrais univers
+import { useUserTier } from '../../../core/security/useUserTier'; // Importe ton hook de sécurité
 
 interface LibraryProps {
   onBack: () => void;

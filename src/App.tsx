@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import type { InventoryItem } from './types';
-import Hub from './components/Hub';
-import HomeMenu from './components/HomeMenu';
-import Dashboard from './components/Dashboard';
-import { Scanner } from './core/components/Scanner';
-import Search from './components/Search';
-import { TIERS_CONFIG } from './constants/tiers';
-import SettingsPage from './pages/SettingsPage';
-import { useUserTier } from './hooks/useUserTier';
+import Hub from './core/ui/Hub';
+import HomeMenu from './modules/home/components/HomeMenu';
+import Dashboard from './modules/home/views/Dashboard';
+import { Scanner } from './core/camera/Scanner';
+import Search from './modules/home/components/Search';
+import { TIERS_CONFIG } from './core/security/tiers';
+import SettingsPage from './modules/home/views/SettingsPage';
+import { useUserTier } from './core/security/useUserTier';
 
 // On ajoute 'hub' comme point d'entrée principal de la plateforme
 type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings';

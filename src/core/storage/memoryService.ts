@@ -1,4 +1,4 @@
-import type { InventoryItem } from '../types';
+import type { InventoryItem } from '../../types';
 
 const STORAGE_KEY = 'locatehome_inventory';
 

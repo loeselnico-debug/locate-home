@@ -8,20 +8,44 @@
 ## 📂 1. ORGANIGRAMME TECHNIQUE (STRUCTURE VSCODE)
 
 ```text
-LOCATE-SYSTEMS/
-├── src/
-│   ├── core/                 # 🛡️ M1 : TRONC COMMUN (Le Socle)
-│   │   ├── services/         # Gemini 2.0 Flash (v1beta) - API Stable
-│   │   ├── components/       # Scanner HDR, Flash, Importation, Laser
-│   │   └── theme/            # Grille matricielle, Faisceaux, CSS Néon
-│   ├── modules/
-│   │   ├── home/             # 🏠 M2 : [HOME] (Identité : Orange Néon / Blanc)
-│   │   ├── asset/            # 📦 M3 : [ASSET] (Identité : Bleu Néon / Blanc)
-│   │   ├── kitchen/          # 🍳 M4 : [KITCHEN] (Identité : Vert Émeraude Néon / Blanc)
-│   │   ├── garage/           # 🔧 M5 : [GARAGE] (Identité : Rouge Néon /Blanc)
-│   │   └── care/             # 🩺 M6 : [CARE] (Identité : Blanc / Gris clair)
-│   ├── types/                # Interfaces TypeScript universelles
-│   └── assets/               # Bibliothèque SVG & Icônes 3D par module
+📦 LOCATE-SYSTEMS (Racine du projet)
+├── 📂 public/                  # 🖼️ Actifs Visuels Bruts
+│   ├── 📁 icons-3d/            # PNG 3D de haute qualité (remplace lucide-react)
+│   └── 🌐 manifest.json        # Configuration PWA (Mode hors-ligne)
+│
+├── 📂 src/                     # ⚙️ MOTEUR DE L'APPLICATION
+│   │
+│   ├── 📂 core/                # 🛡️ M1 : TRONC COMMUN (Le Socle)
+│   │   ├── 📁 ai/              # Cerveau : geminiService.ts, expertiseRules.ts (Bible V1.4)
+│   │   ├── 📁 camera/          # Vision : ScannerHDR.tsx, Laser.tsx, flux vidéo
+│   │   ├── 📁 ui/              # Carrosserie : Boutons universels, Badges Néon, Grilles
+│   │   └── 📁 security/        # Contrôles : useUserTier.ts (Verrou Freemium/Pro)
+│   │
+│   ├── 📂 types/               # 📜 SOURCE DE VÉRITÉ (Data & Interfaces)
+│   │   ├── 📄 index.ts         # Exporte toutes les interfaces universelles
+│   │   ├── 📄 inventory.ts     # Les 9 univers (dont EPI), interface InventoryItem
+│   │   └── 📄 spatial.ts       # Les zones réelles (Garage, Atelier, Maison...)
+│   │
+│   ├── 📂 modules/             # 🏭 LES 5 VERTICALES MÉTIERS (Cloisonnées)
+│   │   │
+│   │   ├── 🏠 home/            # M2 : [HOME] (Identité : Orange Néon / Blanc)
+│   │   │   ├── 📁 views/       # Écrans principaux (Dashboard, Search vocal)
+│   │   │   └── 📁 components/  # Pièces spécifiques (Library.tsx, Ranger.tsx)
+│   │   │
+│   │   ├── 📦 asset/           # M3 : [ASSET] (Identité : Bleu Néon / Blanc)
+│   │   │   └── 📄 OcrEngine.ts # Extracteur de SKU 6 chiffres et XHANDER
+│   │   │
+│   │   ├── 🍳 kitchen/         # M4 : [KITCHEN] (Identité : Vert Émeraude Néon / Blanc)
+│   │   │
+│   │   ├── 🔧 garage/          # M5 : [GARAGE] (Identité : Rouge Néon / Blanc)
+│   │   │
+│   │   └── 🩺 care/            # M6 : [CARE] (Identité : Blanc / Gris clair)
+│   │
+│   ├── 📂 styles/              # 🎨 DESIGN LIQUIDE (Zéro Pixel)
+│   │   └── 📄 global.css       # Tailwind, classes personnalisées, adaptation J5->iPhone 17
+│   │
+│   └── 📄 App.tsx              # 🧭 CHEF D'ORCHESTRE (Aiguilleur vers les modules)
+
 
 🛠️ 2. LES 6 PILIERS DU SYSTÈME
 

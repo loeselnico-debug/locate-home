@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'; // Retrait de useEffect (inutilisé)
 import { Mic, MicOff, Search as SearchIcon, MapPin } from 'lucide-react'; // Retrait de X (inutilisé)
-import type { InventoryItem } from '../types';
+import type { InventoryItem } from '../../../types';
 
 interface SearchProps {
   onBack: () => void;

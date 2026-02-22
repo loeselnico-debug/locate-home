@@ -1,6 +1,6 @@
 
 import { AlertTriangle, ShieldCheck, Lock } from 'lucide-react'; // Icônes temporaires Lucide
-import type { UserTier } from '../constants/tiers';
+import type { UserTier } from '../security/tiers';
 interface SafetyBadgeProps {
   hasDanger: boolean;
   details: string;

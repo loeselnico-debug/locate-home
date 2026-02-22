@@ -1,4 +1,4 @@
-import type { InventoryItem } from '../types';
+import type { InventoryItem } from '../../../types';
 
 interface InventoryCardProps {
   item: InventoryItem;

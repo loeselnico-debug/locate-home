@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { geminiService, VALID_LOCATIONS } from '../services/geminiService';
+import { geminiService } from '../services/geminiService';
+import { LOCATIONS } from '../../types';
 
 interface ScannerProps {
   onBack: () => void;
@@ -7,7 +8,7 @@ interface ScannerProps {
 }
 
 export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) => {
-  const [selectedLocation, setSelectedLocation] = useState("Atelier");
+  const [selectedLocation, setSelectedLocation] = useState(LOCATIONS[0].label);
   const [frames, setFrames] = useState<string[]>([]); // Maintenant utilisé pour l'analyse
   const [isScanning, setIsScanning] = useState(false); // Utilisé pour l'état du Burst
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -110,14 +111,17 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         )}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar my-[2vh]">
-        {VALID_LOCATIONS.map(loc => (
-          <button key={loc} onClick={() => setSelectedLocation(loc)} 
-            className={`px-4 py-1.5 rounded-full text-[10px] font-black border ${selectedLocation === loc ? 'bg-orange-600' : 'border-white/10'}`}>
-            {loc.toUpperCase()}
-          </button>
-        ))}
-      </div>
+      <div className="flex gap-2 overflow-x-auto no-scrollbar my-[2vh] px-4">
+     {LOCATIONS.map(loc => (
+       <button 
+         key={loc.id} 
+         onClick={() => setSelectedLocation(loc.label)} 
+         className={`px-4 py-1.5 rounded-full text-[10px] whitespace-nowrap font-black border transition-colors ${selectedLocation === loc.label ? 'bg-orange-600 border-orange-600' : 'border-white/10 hover:border-orange-600/50'}`}
+       >
+         {loc.label.toUpperCase()}
+       </button>
+     ))}
+   </div>
 
       <div className="flex justify-around items-center h-[12vh] border-t border-white/5 mt-auto">
         {/* GALERIE */}

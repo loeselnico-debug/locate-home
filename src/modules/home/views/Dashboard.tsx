@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { InventoryItem } from '../../../types';
-import { Plus, Trash2, Box, ShieldCheck } from 'lucide-react';
+import { CATEGORIES } from '../../../types'; // <-- IMPORTATION DE LA SOURCE DE VÉRITÉ
+import { Plus, Trash2, Box, ShieldCheck, Zap, Hammer, Wrench, Nut, Lightbulb, Paintbrush, Ruler, Leaf, Shield } from 'lucide-react';
 import { useUserTier } from '../../../core/security/useUserTier';
 import { SafetyBadge } from '../../../core/ui/SafetyBadge';
 
@@ -10,9 +12,39 @@ interface DashboardProps {
   limit: number;
 }
 
+// Traducteur pour convertir le texte de la source de vérité en vraie icône visuelle
+const IconMap: Record<string, any> = {
+  'Zap': Zap,
+  'Hammer': Hammer,
+  'Wrench': Wrench,
+  'Nut': Nut,
+  'Lightbulb': Lightbulb,
+  'Paintbrush': Paintbrush,
+  'Ruler': Ruler,
+  'Leaf': Leaf,
+  'Shield': Shield
+};
+
 const Dashboard = ({ inventory, onStartScan, onDelete, limit }: DashboardProps) => {
-  const { currentTier } = useUserTier(); // <-- Récupération dynamique de l'abonnement
+  const { currentTier } = useUserTier();
   const progress = (inventory.length / limit) * 100;
+  
+  const [activeFilter, setActiveFilter] = useState('all');
+
+  // On crée les boutons dynamiquement : Le bouton "Tout", puis on branche le reste sur la Source de Vérité
+  const filterTabs = [
+    { id: 'all', label: 'Tout', Icon: Box },
+    ...CATEGORIES.map(cat => ({
+      id: cat.id,
+      label: cat.label.split(' ')[0], // Garde juste le premier mot pour que le bouton reste petit
+      Icon: IconMap[cat.iconName] || Box
+    }))
+  ];
+
+  const filteredInventory = inventory.filter(item => {
+    if (activeFilter === 'all') return true;
+    return item.category?.toLowerCase() === activeFilter.toLowerCase();
+  });
 
   return (
     <div className="flex flex-col gap-6 pb-24">
@@ -27,7 +59,6 @@ const Dashboard = ({ inventory, onStartScan, onDelete, limit }: DashboardProps) 
             by Systems
           </div>
         </div>
-        {/* Affichage dynamique du TIER */}
         <div className="px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-[#FF6600] text-black text-xs font-black uppercase shadow-[0_0_10px_rgba(255,102,0,0.3)]">
           {currentTier}
         </div>
@@ -44,28 +75,47 @@ const Dashboard = ({ inventory, onStartScan, onDelete, limit }: DashboardProps) 
         </div>
       </div>
 
+      {/* RUBRIQUES (FILTRES CONNECTÉS À TYPES.TS) */}
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 snap-x">
+        {filterTabs.map((tab) => {
+          const Icon = tab.Icon;
+          const isActive = activeFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveFilter(tab.id)}
+              className={`flex flex-col items-center justify-center min-w-[70px] h-[70px] rounded-2xl border snap-center transition-all ${
+                isActive 
+                  ? 'bg-[#FF6600]/20 border-[#FF6600] text-[#FF6600] scale-105 shadow-[0_0_15px_rgba(255,102,0,0.2)]' 
+                  : 'bg-[#1E1E1E] border-[#333] text-gray-500 hover:border-gray-500'
+              }`}
+            >
+              <Icon size={20} className="mb-1" />
+              <span className="text-[9px] font-bold uppercase tracking-wider">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* LISTE */}
       <div className="grid gap-4">
-        {inventory.length === 0 ? (
-          <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-[#333] rounded-3xl opacity-30">
+        {filteredInventory.length === 0 ? (
+          <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-[#333] rounded-3xl opacity-30 mt-4">
             <Box size={40} className="mb-2" />
-            <p className="text-sm">Aucun outil scanné</p>
+            <p className="text-sm font-bold uppercase">Zone Vide</p>
+            <p className="text-xs text-center mt-2 px-8">Aucun outil détecté dans cette rubrique. Lancez un scan.</p>
           </div>
         ) : (
-          inventory.map((item: any) => (
+          filteredInventory.map((item: any) => (
             <div key={item.id} className="bg-[#1E1E1E] p-4 rounded-2xl border-l-4 border-[#FF6600] flex flex-col gap-3">
-              
-              {/* Ligne Haut : Infos principales */}
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  {/* Tolérance pour l'ancien format (name) et le nouveau (toolName) */}
                   <h3 className="font-bold text-white uppercase text-sm mb-1">
                     {item.toolName || item.name || "Outil Inconnu"}
                   </h3>
                   <p className="text-[11px] text-[#B0BEC5] italic mb-2">
                     {item.description || item.details}
                   </p>
-                  
                   <div className="flex gap-3 items-center">
                     <span className="text-[10px] bg-black/40 px-2 py-0.5 rounded text-[#007BFF] font-bold uppercase">
                       {item.localisation || 'À RANGER'}
@@ -76,32 +126,19 @@ const Dashboard = ({ inventory, onStartScan, onDelete, limit }: DashboardProps) 
                     </div>
                   </div>
                 </div>
-                
                 <button onClick={() => onDelete(item.id)} className="p-2 text-red-900/50 hover:text-red-500 transition-colors">
                   <Trash2 size={18} />
                 </button>
               </div>
-
-              {/* Ligne Bas : INJECTION DU CERVEAU DE SÉCURITÉ */}
               <div className="mt-1 pt-3 border-t border-[#333]">
-                <SafetyBadge 
-                  hasDanger={item.safetyAlert} 
-                  details={item.safetyDetails || "RAS - Conforme visuellement"} 
-                  level={item.safetyLevel} 
-                  userTier={currentTier} 
-                />
+                <SafetyBadge hasDanger={item.safetyAlert} details={item.safetyDetails || "RAS - Conforme visuellement"} level={item.safetyLevel} userTier={currentTier} />
               </div>
-
             </div>
           ))
         )}
       </div>
 
-      {/* SCAN BUTTON */}
-      <button 
-        onClick={onStartScan}
-        className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#FF6600] text-white px-8 py-4 rounded-full font-black flex items-center gap-3 shadow-lg active:scale-95 z-50"
-      >
+      <button onClick={onStartScan} className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#FF6600] text-white px-8 py-4 rounded-full font-black flex items-center gap-3 shadow-lg active:scale-95 z-50">
         <Plus size={24} /> LANCER LE SCAN
       </button>
     </div>

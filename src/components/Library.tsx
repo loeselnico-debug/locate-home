@@ -5,14 +5,21 @@ import {
 } from 'lucide-react';
 import { getInventory } from '../services/memoryService';
 import type { InventoryItem } from '../types';
+import { CATEGORIES } from '../types'; // Cible tes 9 vrais univers
+import { useUserTier } from '../hooks/useUserTier'; // Importe ton hook de sécurité
 
 interface LibraryProps {
   onBack: () => void;
 }
 
 const Library: React.FC<LibraryProps> = ({ onBack }) => {
-  const [tools, setTools] = useState<InventoryItem[]>([]);
+const [tools, setTools] = useState<InventoryItem[]>([]);
+const { currentTier } = useUserTier();
+const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+
+// On crée une variable booléenne simple : true si le mec a payé, false s'il est en Free
+const isPremiumAccess = currentTier === 'PREMIUM' || currentTier === 'PRO';
   useEffect(() => {
     const data = getInventory();
     // Tri A-Z selon le Manifeste
@@ -34,6 +41,36 @@ const Library: React.FC<LibraryProps> = ({ onBack }) => {
     if (cat.includes('mesure')) return <Ruler size={iconSize} />;
     if (cat.includes('jardin')) return <Leaf size={iconSize} />;
     
+    {/* --- DÉBUT VERROU FREEMIUM --- */}
+{isPremiumAccess ? (
+  <div className="mb-6">
+    <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-3">Univers Métiers</h3>
+    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      {/* Ici la boucle qui affiche tes 9 onglets */}
+      {CATEGORIES.map((cat) => (
+        <button 
+  key={cat.id}
+  onClick={() => setActiveCategory(cat.id)}
+  className={`px-4 py-2 border rounded-lg text-sm whitespace-nowrap transition-colors ${
+    activeCategory === cat.id 
+      ? 'bg-[#FF6600] border-[#FF6600] text-black font-bold' 
+      : 'bg-[#1A1A1A] border-gray-800 text-white hover:border-[#FF6600]/50'
+  }`}
+>
+  {cat.label}
+</button>
+      ))}
+    </div>
+  </div>
+) : (
+  <div className="p-4 mb-6 bg-[#121212] border border-[#FF6600]/30 rounded-lg text-center">
+    <p className="text-[#FF6600] text-sm font-bold mb-1">⭐ Mode Premium Requis</p>
+    <p className="text-gray-400 text-xs">
+      Débloquez le tri avancé par Univers Métiers (Électroportatif, Outillage à main, EPI...) et gagnez en efficacité.
+    </p>
+  </div>
+)}
+{/* --- FIN VERROU FREEMIUM --- */}
     return <Package size={iconSize} />; // Icône par défaut
   };
 

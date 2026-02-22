@@ -15,11 +15,11 @@ LOCATE-SYSTEMS/
 │   │   ├── components/       # Scanner HDR, Flash, Importation, Laser
 │   │   └── theme/            # Grille matricielle, Faisceaux, CSS Néon
 │   ├── modules/
-│   │   ├── home/             # 🏠 M2 : [HOME] (Identité : Indigo/Blanc)
-│   │   ├── asset/            # 📦 M3 : [ASSET] (Identité : Orange Néon)
-│   │   ├── kitchen/          # 🍳 M4 : [KITCHEN] (Identité : Vert Émeraude)
-│   │   ├── garage/           # 🔧 M5 : [GARAGE] (Identité : Gris/Bleu Chrome)
-│   │   └── care/             # 🩺 M6 : [CARE] (Identité : Rouge/Blanc)
+│   │   ├── home/             # 🏠 M2 : [HOME] (Identité : Orange Néon / Blanc)
+│   │   ├── asset/            # 📦 M3 : [ASSET] (Identité : Bleu Néon / Blanc)
+│   │   ├── kitchen/          # 🍳 M4 : [KITCHEN] (Identité : Vert Émeraude Néon / Blanc)
+│   │   ├── garage/           # 🔧 M5 : [GARAGE] (Identité : Rouge Néon /Blanc)
+│   │   └── care/             # 🩺 M6 : [CARE] (Identité : Blanc / Gris clair)
 │   ├── types/                # Interfaces TypeScript universelles
 │   └── assets/               # Bibliothèque SVG & Icônes 3D par module
 
@@ -32,7 +32,6 @@ Zéro-Trust : Filtrage morphologique strict (Focus outil/donnée uniquement).
 Universalité : CM/Inch, FR/UK, adaptation aux normes locales.
 Architecture des 5 Modules Universels:
 L'écosystème est segmenté en cinq verticales distinctes, partageant une base de données centralisée et sécurisée. Les 5 modules ont en commun la base du code de reconnaissance augmenté et le traitement en local des données. Chaque application détient un code couleur spécifique à son domaine d’activité Domaines sécuriser pour OVH.
-
 
 🏠 M2 : [HOME] (Le Hub)
 Fonction : Dédié aux bricoleurs lambdas, aux bricoleurs experts et créateurs “DIY”, au professionnel et à la génération de rapports d'inventaire d’outillage électroportatif et outillages à main pour assurances. Vision internationale conversion cm/inch, multilingue FR/UK, adaptation des normes exclusives de sécurités au travail des pays d’utilisation..
@@ -57,86 +56,54 @@ Fonction :Santé et services à la personne, incluant la gestion documentaire, l
 
 A. Branding & Logotypage
 Structure : LOCATE (#FF6600) HOME (#FFFFFF).
-
 Signature : Bandeau oblique orange sous le "E" de HOME avec texte "by Systems" en dégradé métallique doré.
-
 Tiers : Badges Néon FREE | PREMIUM | PRO (Dégradé Jaune vers Orange).
 
 B. Adaptabilité Liquide (Scaling)
 Interdiction du Pixel (px) : Strictement banni pour les dimensions et conteneurs.
-
 Unités : rem (typographie), vh/vw et % (structure).
-
 Netteté : Utilisation exclusive du SVG pour les icônes et logos (Optimisation J5 vers iPhone 17).
 
 🟢 ACQUIS TECHNIQUES (TERMINÉ)
 Cerveau & Architecture
-
-Moteur IA : Tunnel Gemini 2.0 Flash opérationnel (sans erreur 404/429).
-
-Schéma Data : Interface InventoryItem verrouillée comme référence unique.
-
-Types : src/types.ts à jour (inclusion de la localisation et des 9 catégories métiers).
-
-Sécurité (Hardening) : Blindage des appels data.candidates et extraction JSON robuste.
-
-Limites : Vérification Freemium (15 outils) active dans addTool.
-
-Nettoyage : Sémantique "LOCATEHOME" généralisée ; fonction deleteTool intégrée.
+[ X] Moteur IA : Tunnel Gemini 2.0 Flash opérationnel (sans erreur 404/429).
+[ X] Schéma Data : Interface InventoryItem verrouillée comme référence unique.
+[ X] Types : src/types.ts à jour (inclusion de la localisation et des 9 catégories métiers).
+[ X] Sécurité (Hardening) : Blindage des appels data.candidates et extraction JSON robuste.
+[ X] Limites : Vérification Freemium (15 outils) active dans addTool.
+[ X] Nettoyage : Sémantique "LOCATEHOME" généralisée ; fonction deleteTool intégrée.
 
 Vision & Scan
-
-Scanner HDR : Mode hybride fonctionnel (Photo HD / Vidéo Burst / Importation).
-
-Étalonnage : Mode Burst calibré (12 frames / 20s).
-
-Flux Live : Intégration getUserMedia avec cadre de visée et filtre industriel HDR.
-
-Laser : Balayage dynamique synchronisé avec l'analyse.
-
-Zéro-Trust : Filtrage d'environnement actif pour focus exclusif sur l'objet.
+[ X] Scanner HDR : Mode hybride fonctionnel (Photo HD / Vidéo Burst / Importation).
+[ X] Étalonnage : Mode Burst calibré (12 frames / 20s).
+[ X] Flux Live : Intégration getUserMedia avec cadre de visée et filtre industriel HDR.
+[ X] Laser : Balayage dynamique synchronisé avec l'analyse.
+[ X] Zéro-Trust : Filtrage d'environnement actif pour focus exclusif sur l'objet.
 
 Interface & UX
-
-Hub Central : Dashboard dynamique interactive, CSS ultra-léger.
-
-Vocal : Implémentation via Web Speech API dans le module "Retrouver".
-
-Dashboard : Connexion au memoryService avec jauge orange dynamique.
-
-Cohérence : Synchronisation /tiers.ts avec App.tsx et affichage des labels de catégories.
+[ X] Hub Central : Dashboard dynamique interactive, CSS ultra-léger.
+[ X] Vocal : Implémentation via Web Speech API dans le module "Retrouver".
+[ X] Dashboard : Connexion au memoryService avec jauge orange dynamique.
+[ X] Cohérence : Synchronisation /tiers.ts avec App.tsx et affichage des labels de catégories.
 
 🟡 EN COURS / À RÉALISER (PENDING)
 Infrastructure & Sécurité
-
 [ ] Clé API : Mise en service de la nouvelle clé (suite à la suppression de l'ancienne).
-
 [ ] Mode Hors-ligne : Support PWA complet et stockage local des images (LocalStorage/IndexDB).
-
 [ ] Persistance V2 : Système d'onglets pour le filtrage par zone (Fourgon/Atelier).
 
 Interface & Actifs
-
 [ ] Design Actifs : Remplacement des icônes "lucide-react" et des emojis par les PNG 3D du dossier /public.
-
 [ ] Optimisation /tiers.ts : Affiner et compléter la structure.
-
-[X] Mode Basse Lumière : Activation physique de la torche via l'interface de scan.
+[ ] Mode Basse Lumière : Activation physique de la torche via l'interface de scan.
 
 Intelligence Métier
-
 [ ] Localisation de Vérité : Injecter la liste des zones réelles (Fourgon, Établi) pour éviter les inventions de l'IA.
-
 [ ] Rangement : Attribution précise aux Bacs / Étagères (Pilote RANGER).
-
 [ ] Service [ASSET] : Développement du moteur de recherche OCR vers l'API Prolians.
 
 Business & Déploiement
-
 [ ] Vocal Pro : Recherche "mains libres" bidirectionnelle.
-
 [ ] Monétisation : Transformation des QR Codes physiques en points d'accès techniques.
-
-
 
 

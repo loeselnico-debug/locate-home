@@ -21,11 +21,31 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
   const categoryNumber = activeCategoryIndex !== -1 ? String(activeCategoryIndex + 1).padStart(2, '0') + '.' : '';
 
   useEffect(() => {
-    const data = getInventory();
-    const filtered = selectedCategoryId 
-      ? data.filter(t => t.category === selectedCategoryId)
-      : data;
-    setTools(filtered.sort((a, b) => a.toolName.localeCompare(b.toolName)));
+    // LES FAUSSES DONNÉES POUR TESTER LE DESIGN
+    // LES FAUSSES DONNÉES POUR TESTER LE DESIGN
+    const MOCK_TOOLS: InventoryItem[] = [
+      { 
+        id: 'mock-1', 
+        toolName: 'Perceuse Visseuse Bosch 18V', 
+        category: selectedCategoryId || 'electro', 
+        location: 'Établi Zone A', 
+        safetyStatus: false as any, // Bypass TS provisoire
+        date: '24/02/2026', 
+        imageUrl: '' 
+      },
+      { 
+        id: 'mock-2', 
+        toolName: 'Meuleuse d\'angle Makita', 
+        category: selectedCategoryId || 'electro', 
+        location: 'Étagère B - Caisse 2', 
+        safetyStatus: true as any, // Bypass TS provisoire
+        date: '24/02/2026', 
+        imageUrl: '' 
+      },
+    ];
+
+    // On force l'affichage des fausses données
+    setTools(MOCK_TOOLS);
   }, [selectedCategoryId]);
 
   return (

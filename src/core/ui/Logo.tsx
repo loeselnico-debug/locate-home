@@ -9,8 +9,9 @@ const Logo: React.FC = () => {
         <span className="text-white ml-1 uppercase">Home</span>
       </div>
       
-      {/* Bandeau Oblique "By Systems" - Opaque (Masque le blanc) et Rotation -20° */}
-      <div className="absolute top-[80%] right-[-5px] bg-[#FF6600] px-[6px] py-[2px] transform -rotate-[20deg] z-10">
+      {/* Bandeau Oblique "By Systems" - Réduit de 40% (scale-0.6) et Rotation -18° */}
+      {/* Ajustement léger des positions top/right pour compenser la réduction de taille */}
+      <div className="absolute top-[78%] right-[-3px] bg-[#FF6600] px-[6px] py-[2px] transform -rotate-[18deg] scale-[0.6] z-10">
         
         {/* Texte Métallique : Dégradé Gauche (Or Foncé) -> Droite (Or Clair) */}
         <span className="text-[10px] font-black italic tracking-[0.15em] block leading-tight bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#FDE047] bg-clip-text text-transparent">

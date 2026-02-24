@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { getInventory } from '../../../core/storage/memoryService';
-import { CATEGORIES } from '../views/Dashboard'; // On importe de Dashboard pour avoir les 9 catégories
+import { CATEGORIES } from '../views/Dashboard'; 
 import type { InventoryItem } from '../../../types';
 
 interface LibraryProps {
   onBack: () => void;
   selectedCategoryId: string | null;
-  onStartScan: () => void; // Conservé dans les props au cas où, même si on ne l'utilise plus visuellement ici
+  onStartScan: () => void; 
 }
 
 const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
   const [tools, setTools] = useState<InventoryItem[]>([]);
 
-  // Récupération de la catégorie active et de son index pour le numéro "0X."
+  // Récupération de la catégorie active
   const activeCategoryIndex = CATEGORIES.findIndex(c => c.id === selectedCategoryId);
   const activeCategory = CATEGORIES[activeCategoryIndex];
   
@@ -20,38 +20,19 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
   const categoryIcon = activeCategory ? `/${activeCategory.id}.png` : '/icon-photo.png';
   const categoryNumber = activeCategoryIndex !== -1 ? String(activeCategoryIndex + 1).padStart(2, '0') + '.' : '';
 
+  // Restauration de ta vraie fonction de lecture mémoire
   useEffect(() => {
-    // LES FAUSSES DONNÉES POUR TESTER LE DESIGN
-    // LES FAUSSES DONNÉES POUR TESTER LE DESIGN
-    const MOCK_TOOLS: InventoryItem[] = [
-      { 
-        id: 'mock-1', 
-        toolName: 'Perceuse Visseuse Bosch 18V', 
-        category: selectedCategoryId || 'electro', 
-        location: 'Établi Zone A', 
-        safetyStatus: false as any, // Bypass TS provisoire
-        date: '24/02/2026', 
-        imageUrl: '' 
-      },
-      { 
-        id: 'mock-2', 
-        toolName: 'Meuleuse d\'angle Makita', 
-        category: selectedCategoryId || 'electro', 
-        location: 'Étagère B - Caisse 2', 
-        safetyStatus: true as any, // Bypass TS provisoire
-        date: '24/02/2026', 
-        imageUrl: '' 
-      },
-    ];
-
-    // On force l'affichage des fausses données
-    setTools(MOCK_TOOLS);
+    const data = getInventory();
+    const filtered = selectedCategoryId 
+      ? data.filter(t => t.category === selectedCategoryId)
+      : data;
+    setTools(filtered.sort((a, b) => a.toolName.localeCompare(b.toolName)));
   }, [selectedCategoryId]);
 
   return (
     <div className="flex flex-col h-full bg-transparent">
       
-      {/* 1. EN-TÊTE : Assurance (Gauche) / Retour vers 01A (Droite) */}
+      {/* EN-TÊTE : Assurance (Gauche) / Retour vers 01A (Droite) */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         <button className="w-12 h-12 bg-[#D3D3D3] rounded-xl flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.5)] active:scale-95 transition-transform border-b-2 border-gray-400">
           <span className="text-[#121212] font-black text-[10px] uppercase tracking-widest leading-none text-center">
@@ -64,7 +45,7 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
         </button>
       </div>
 
-      {/* 2. HERO BANNER : Barre Grise (Rappel de la catégorie) */}
+      {/* HERO BANNER : Barre Grise */}
       {activeCategory && (
         <div className="px-[4vw] mb-6 shrink-0">
           <div className="w-full bg-[#D3D3D3] rounded-xl flex items-center justify-between p-3 shadow-[0_5px_15px_rgba(0,0,0,0.4)] border border-gray-300">
@@ -81,7 +62,7 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
         </div>
       )}
 
-      {/* 3. LISTE DES OUTILS SCANNÉS (Design Accent Industriel) */}
+      {/* LISTE DES OUTILS SCANNÉS */}
       <div className="flex-1 overflow-y-auto px-[4vw] pb-[12vh] no-scrollbar">
         {tools.length > 0 ? (
           <div className="flex flex-col gap-4">
@@ -90,7 +71,7 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
                 key={tool.id} 
                 className="bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
               >
-                {/* Photo miniature (si existante) */}
+                {/* Photo miniature */}
                 <div className="w-16 h-16 rounded-lg bg-black/50 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
                   {tool.imageUrl ? (
                     <img src={tool.imageUrl} className="w-full h-full object-cover" alt={tool.toolName} />
@@ -99,7 +80,7 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
                   )}
                 </div>
 
-                {/* Détails de l'outil */}
+                {/* Détails */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>
                     <h3 className="text-white font-black text-sm uppercase truncate leading-tight">
@@ -110,7 +91,6 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
                     </p>
                   </div>
                   
-                  {/* Ligne inférieure : Statut et Date */}
                   <div className="flex items-center justify-between mt-2">
                     <span className={`px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
                       {tool.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
@@ -124,7 +104,6 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
             ))}
           </div>
         ) : (
-          /* État Vide (Aucun outil) */
           <div className="h-[40vh] flex flex-col items-center justify-center opacity-30">
              <div className="w-16 h-16 border-2 border-dashed border-white/50 rounded-full flex items-center justify-center mb-4">
                 <span className="text-white text-2xl">?</span>

@@ -8,7 +8,7 @@ import Hub from './core/ui/Hub';
 import Logo from './core/ui/Logo';
 import HomeMenu from './modules/home/components/HomeMenu';
 import Dashboard from './modules/home/views/Dashboard';
-import Library from './modules/home/components/Library'; // Assure-toi de l'import
+import Library from './modules/home/components/Library';
 import { Scanner } from './core/camera/Scanner';
 import Search from './modules/home/components/Search';
 import SettingsPage from './modules/home/views/SettingsPage';
@@ -19,10 +19,7 @@ const App = () => {
   const [view, setView] = useState<ViewState>('hub');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
-  
-  // Étape cruciale : On mémorise la catégorie sélectionnée
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
   const { currentTier } = useUserTier();
 
   useEffect(() => {
@@ -38,10 +35,9 @@ const App = () => {
     }
   }, [inventory, isDbLoaded]);
 
-  // Fonction de sélection de catégorie (Règle l'erreur 'onSelectCategory')
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    setView('category_detail'); // On bascule vers la vue détail
+    setView('category_detail');
   };
 
   const deleteTool = (id: string) => {
@@ -61,63 +57,64 @@ const App = () => {
   };
 
   return (
-    <main className="w-screen min-h-[100dvh] bg-[#050505] text-[#B0BEC5] font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
+    <main className="w-screen min-h-[100dvh] bg-[#121212] text-white font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
       
-      {/* HEADER INALTÉRABLE */}
+      {/* HEADER INALTÉRABLE STRICT - CONFORME MAQUETTE */}
       {view !== 'hub' && (
-        <header className="fixed top-0 left-0 w-full h-[12vh] bg-[#121212] z-[100] border-b border-[#D3D3D3]/10 flex flex-col justify-center px-[5vw]">
-          <div className="flex justify-center items-center">
-            <Logo />
-          </div>
-          <div className="flex justify-between items-center mt-2">
-            <div className="bg-[#FF6600]/10 border border-[#FF6600]/40 px-3 py-0.5 rounded-sm">
-              <span className="text-[#FF6600] text-[10px] font-black tracking-[0.2em]">
-                {currentTier.toUpperCase()}
+        <header className="fixed top-0 left-0 w-full h-[12vh] bg-[#121212] z-[100] flex items-center px-[5vw]">
+          
+          {/* GAUCHE : Badge Niveau (Néon Orange) */}
+          <div className="flex-1">
+            <div className="inline-block border border-[#FF6600]/50 rounded-md px-3 py-1 bg-[#FF6600]/10 shadow-[0_0_15px_rgba(255,102,0,0.3)]">
+              <span className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest">
+                {currentTier}
               </span>
             </div>
-            <button onClick={() => setView('settings')} className="opacity-80">
-              <img src="/gear.svg" className="w-5 h-5 invert" alt="Settings" />
+          </div>
+
+          {/* CENTRE : Logo LOCATE HOME */}
+          <div className="flex-shrink-0 flex justify-center mt-2">
+            <Logo />
+          </div>
+
+          {/* DROITE : Engrenage Paramètres */}
+          <div className="flex-1 flex justify-end">
+            <button onClick={() => setView('settings')} className="opacity-60 hover:opacity-100 transition-opacity active:scale-90">
+              <img src="/gear.svg" className="w-6 h-6 invert" alt="Settings" />
             </button>
           </div>
         </header>
       )}
 
-      {/* ZONE DE CONTENU ADAPTATIVE */}
+      {/* ZONE DE CONTENU */}
       <div className={view !== 'hub' ? 'pt-[12vh] h-full' : 'h-full'}>
         {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
-        
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
 
-        {/* DASHBOARD : Le sélecteur d'univers */}
         {view === 'inventory' && (
           <Dashboard 
             inventory={inventory} 
             onStartScan={() => setView('scanner')} 
             onDelete={deleteTool}
-            onSelectCategory={handleCategorySelect} // LIAISON ÉTABLIE
+            onSelectCategory={handleCategorySelect}
           />
         )}
 
-        {/* DÉTAIL CATÉGORIE (01 A1 à A8) */}
         {view === 'category_detail' && (
           <Library 
             onBack={() => setView('inventory')} 
             selectedCategoryId={selectedCategory} 
+            onStartScan={() => setView('scanner')}
           />
         )}
 
-        {view === 'scanner' && (
-          <Scanner onBack={() => setView('home')} onAnalysisComplete={handleAnalysisResults} />
-        )}
-
-        {view === 'search' && (
-          <Search onBack={() => setView('home')} inventory={inventory} />
-        )}
+        {view === 'scanner' && <Scanner onBack={() => setView('home')} onAnalysisComplete={handleAnalysisResults} />}
+        {view === 'search' && <Search onBack={() => setView('home')} inventory={inventory} />}
 
         {view === 'settings' && (
-          <div className="absolute inset-0 z-50 bg-[#050505]">
-            <button onClick={() => setView('home')} className="absolute top-6 left-6 z-50 text-white bg-gray-900 px-4 py-2 rounded-full text-xs font-bold border border-gray-700">
-              ← RETOUR
+          <div className="absolute inset-0 z-50 bg-[#121212]">
+            <button onClick={() => setView('home')} className="absolute top-6 left-6 z-50 text-[#FF6600] border border-[#FF6600] bg-[#1E1E1E] px-4 py-2 rounded-md text-xs font-black uppercase tracking-widest active:scale-95">
+              ← Retour
             </button>
             <SettingsPage />
           </div>

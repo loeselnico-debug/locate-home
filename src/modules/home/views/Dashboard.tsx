@@ -1,110 +1,91 @@
-import type { InventoryItem } from '../../../types';
-import { CATEGORIES } from '../../../types'; 
-import { Settings } from 'lucide-react'; 
-import { useUserTier } from '../../../core/security/useUserTier';
+import React from 'react';
+import { CATEGORIES } from '../../../types';
 
-// On définit strictement les commandes que le Dashboard est autorisé à recevoir
 interface DashboardProps {
-  onNavigateBack: () => void;
-  onSelectCategory: (catId: string) => void;
-  inventory?: InventoryItem[]; // Optionnel, au cas où le système parent l'envoie toujours
+  inventory: any[];
+  onStartScan: () => void;
+  onDelete: (id: string) => void;
+  onSelectCategory: (id: string) => void; // Pour la navigation vers Library
 }
 
-// On visse l'interface sur le composant (on remplace le "any")
-const Dashboard = ({ onNavigateBack, onSelectCategory }: DashboardProps) => {
-  const { currentTier } = useUserTier();
-
+const Dashboard: React.FC<DashboardProps> = ({ inventory, onStartScan, onDelete, onSelectCategory }) => {
   return (
-    <div className="flex flex-col min-h-screen bg-[#121212] font-sans overflow-hidden select-none">
+    <div className="flex flex-col h-full bg-[#121212]">
       
-      {/* ========================================= */}
-      {/* HEADER INALTÉRABLE (Design de Référence)  */}
-      {/* ========================================= */}
-      <header className="pt-[5vh] px-[6vw] w-full flex flex-col relative">
-        
-        {/* ÉTAPE 5 : LOCATE HOME Centré + By Systems sous OME */}
-        <div className="flex justify-center items-center w-full mb-[3vh] relative">
-          <h1 className="text-[2.2rem] font-black tracking-tighter leading-none italic relative">
-            <span className="text-[#FF6600]">LOCATE</span>
-            <span className="text-white ml-2">HOME</span>
-            
-            <div className="absolute right-[-0.5rem] bottom-[-0.8rem] bg-[#FF6600] px-[0.6rem] py-[0.1rem] rotate-[-12deg] shadow-lg">
-              <span className="text-[0.45rem] font-black uppercase text-white tracking-[0.2em] whitespace-nowrap">
-                by Systems
-              </span>
-            </div>
-          </h1>
-        </div>
+      {/* Étape 3 : Bouton Retour (Haut Droite) conforme au Modèle 01 */}
+      <div className="flex justify-end px-4 py-2 shrink-0">
+        <button 
+          onClick={() => window.history.back()} 
+          className="w-10 h-10 active:scale-90 transition-transform"
+        >
+          <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain" />
+        </button>
+      </div>
 
-        {/* ÉTAPE 6 : PREMIUM (Gauche) + Paramètres (Droite) */}
-        <div className="flex justify-between items-center w-full mb-[1.5vh]">
-          <span className="text-[0.8rem] font-black text-[#D3D3D3] tracking-widest uppercase">
-            {currentTier}
-          </span>
-          <button className="text-[#D3D3D3] hover:text-[#FF6600] transition-colors active:rotate-45">
-            <Settings size={22} strokeWidth={1.5} />
-          </button>
-        </div>
+      {/* Container des 9 Rubriques (Scrollable Ratio 1-4) */}
+      <div className="flex-1 overflow-y-auto no-scrollbar px-[4vw] pb-4">
+        <div className="flex flex-col gap-3">
+          {CATEGORIES.map((cat, index) => {
+            // Comptage dynamique des outils par catégorie
+            const itemCount = inventory.filter(item => item.category === cat.id).length;
 
-        {/* ÉTAPE 7 : Ligne Grise de démarcation (#D3D3D3) */}
-        <div className="w-full h-[1px] bg-[#D3D3D3] mb-[2vh]"></div>
+            return (
+              <div 
+                key={cat.id}
+                onClick={() => onSelectCategory(cat.id)}
+                className="w-full h-[15vh] min-h-[100px] bg-[#1E1E1E] rounded-xl border border-white/5 flex items-center px-6 gap-6 active:bg-[#252525] active:scale-[0.98] transition-all cursor-pointer group"
+              >
+                {/* Indexation (Couleur #D3D3D3) */}
+                <span className="text-[#D3D3D3] font-black italic text-xl opacity-20 shrink-0">
+                  0{index + 1}.
+                </span>
 
-      </header>
+                <div className="flex-1">
+                  <h3 className="text-white font-black uppercase text-sm tracking-widest leading-tight">
+                    {cat.label}
+                  </h3>
+                  <span className="text-[#FF6600] text-[10px] font-bold">
+                    {itemCount} OBJET{itemCount > 1 ? 'S' : ''}
+                  </span>
+                </div>
 
-      {/* ========================================= */}
-      {/* ZONE D'ACTION : RETOUR & LISTE SCROLLABLE */}
-      {/* ========================================= */}
-      <main className="flex-1 flex flex-col px-[6vw] pb-[5vh]">
-        
-        {/* ÉTAPE 3 : Bouton Retour (/public/icon-return.png) */}
-        <div className="w-full flex justify-end mb-[2vh]">
-          <button 
-            onClick={onNavigateBack} 
-            className="active:scale-90 transition-transform flex items-center justify-center bg-[#1E1E1E] border border-[#D3D3D3]/20 rounded-lg p-[1vh]"
-          >
-            <img 
-              src="/icon-return.png" 
-              alt="Retour" 
-              className="h-[1.5rem] w-auto object-contain" 
-              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-            />
-          </button>
-        </div>
-
-        {/* LISTE DES 9 RUBRIQUES (Calibrage : 01 à 04 visibles) */}
-        {/* Hauteur verrouillée à 52.5vh (4 * 12vh + 3 * 1.5vh d'écart) */}
-        <div className="w-full h-[52.5vh] flex flex-col gap-[1.5vh] overflow-y-auto scrollbar-hide snap-y snap-mandatory rounded-xl">
-          {CATEGORIES.map((cat, index) => (
-            <button
-              key={cat.id}
-              onClick={() => onSelectCategory?.(cat.id)}
-              className="flex items-center w-full min-h-[12vh] max-h-[12vh] bg-[#1E1E1E] border border-white/5 hover:border-[#FF6600]/50 rounded-xl px-[4vw] snap-start shrink-0 transition-all active:scale-[0.98] group"
-            >
-              {/* Numérotation (01, 02...) */}
-              <span className="text-[#FF6600] font-black text-[1.2rem] italic w-[15%] text-left">
-                {String(index + 1).padStart(2, '0')}.
-              </span>
-
-              {/* Icône 3D Signature (Couleur intégrale) */}
-              <div className="w-[30%] h-[70%] flex items-center justify-center">
+                {/* Icône 3D de la rubrique */}
                 <img 
                   src={`/${cat.id}.png`} 
+                  className="w-14 h-14 object-contain drop-shadow-2xl group-hover:scale-110 transition-transform" 
                   alt={cat.label} 
-                  className="h-full w-full object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform duration-300" 
-                  onError={(e) => (e.currentTarget.src = '/icon-placeholder.png')}
                 />
               </div>
+            );
+          })}
 
-              {/* Nom de la Catégorie */}
-              <span className="flex-1 text-left text-white text-[0.85rem] font-bold uppercase tracking-tight pl-[3vw] leading-tight">
-                {cat.label}
-              </span>
+          {/* Étape 4 & Option B : Bouton Assurance (Fin de scroll) */}
+          <div className="w-full flex flex-col items-center pt-8 pb-12 gap-4">
+            <button 
+              className="w-20 h-20 bg-[#D3D3D3] rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all border-b-4 border-gray-400 group"
+            >
+               <div className="w-10 h-10 border-[3px] border-gray-600 rounded-lg flex items-center justify-center relative">
+                 <div className="w-6 h-1 bg-gray-600 rounded-full rotate-45 absolute group-hover:bg-[#FF6600]"></div>
+                 <div className="w-6 h-1 bg-gray-600 rounded-full -rotate-45 absolute group-hover:bg-[#FF6600]"></div>
+               </div>
             </button>
-          ))}
+            <span className="text-[#D3D3D3] text-[9px] font-black uppercase tracking-widest opacity-40">
+              Rapport Assurance PDF
+            </span>
+          </div>
         </div>
+      </div>
 
-      </main>
+      {/* Bouton de Scan Flottant (Rappel du Modèle 01) */}
+      <button 
+        onClick={onStartScan}
+        className="absolute bottom-6 right-6 w-14 h-14 bg-[#FF6600] rounded-full shadow-[0_0_20px_rgba(255,102,0,0.5)] flex items-center justify-center active:scale-90 transition-transform z-50"
+      >
+        <img src="/icon-scanner.png" className="w-8 h-8 invert" alt="Scan" />
+      </button>
 
+      {/* Nettoyage technique pour onDelete (invisible) */}
+      <div className="hidden">{onDelete.name}</div>
     </div>
   );
 };

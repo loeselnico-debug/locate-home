@@ -59,35 +59,38 @@ const App = () => {
   return (
     <main className="w-screen min-h-[100dvh] bg-[#121212] text-white font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
       
-      {/* HEADER INALTÉRABLE STRICT - CONFORME MAQUETTE */}
+      {/* ========================================== */}
+      {/* HEADER INALTÉRABLE STRICT - DESIGN REFERENCE */}
+      {/* ========================================== */}
       {view !== 'hub' && (
-        <header className="fixed top-0 left-0 w-full h-[12vh] bg-[#121212] z-[100] flex items-center px-[5vw]">
+        <header className="fixed top-0 left-0 w-full h-[14vh] min-h-[90px] bg-[#121212] z-[100] flex flex-col justify-between px-[5vw] py-2 border-b-2 border-[#D3D3D3]">
           
-          {/* GAUCHE : Badge Niveau (Néon Orange) */}
-          <div className="flex-1">
-            <div className="inline-block border border-[#FF6600]/50 rounded-md px-3 py-1 bg-[#FF6600]/10 shadow-[0_0_15px_rgba(255,102,0,0.3)]">
-              <span className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest">
-                {currentTier}
-              </span>
-            </div>
-          </div>
-
-          {/* CENTRE : Logo LOCATE HOME */}
-          <div className="flex-shrink-0 flex justify-center mt-2">
+          {/* ÉTAPE 1 : LOGO AU CENTRE HAUT */}
+          <div className="flex justify-center items-start w-full pt-1">
             <Logo />
           </div>
 
-          {/* DROITE : Engrenage Paramètres */}
-          <div className="flex-1 flex justify-end">
-            <button onClick={() => setView('settings')} className="opacity-60 hover:opacity-100 transition-opacity active:scale-90">
-              <img src="/gear.svg" className="w-6 h-6 invert" alt="Settings" />
+          {/* LIGNE DU BAS : PREMIUM À GAUCHE / PARAMÈTRES À DROITE */}
+          <div className="flex justify-between items-end w-full pb-1">
+            
+            {/* ÉTAPE 2 : BADGE PREMIUM (Maximum Gauche) */}
+            <div className="bg-[#333333] px-4 py-1.5 rounded-xl border border-white/5 shadow-inner flex items-center justify-center">
+              <span className="text-[#FF6600] text-[11px] font-black uppercase tracking-widest">
+                {currentTier}
+              </span>
+            </div>
+
+            {/* ÉTAPE 3 : ROUE DENTÉE (Maximum Droite) */}
+            <button onClick={() => setView('settings')} className="opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1">
+              <img src="/gear.svg" className="w-7 h-7 invert drop-shadow-lg" alt="Settings" />
             </button>
+            
           </div>
         </header>
       )}
 
-      {/* ZONE DE CONTENU */}
-      <div className={view !== 'hub' ? 'pt-[12vh] h-full' : 'h-full'}>
+      {/* ZONE DE CONTENU (Ajustée pour le nouveau Header de 14vh) */}
+      <div className={view !== 'hub' ? 'pt-[14vh] h-full' : 'h-full'}>
         {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
 

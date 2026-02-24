@@ -11,10 +11,10 @@ const Logo: React.FC = () => {
       
       {/* Bandeau Oblique "By Systems" - Réduit de 40% (scale-0.6) et Rotation -18° */}
       {/* Ajustement léger des positions top/right pour compenser la réduction de taille */}
-      <div className="absolute top-[78%] right-[-3px] bg-[#FF6600] px-[6px] py-[2px] transform -rotate-[18deg] scale-[0.6] z-10">
+      <div className="absolute top-[78%] right-[-3px] bg-[#FF6600] px-[6px] py-[2px] transform -rotate-[0deg] scale-[0.4] z-10">
         
         {/* Texte Métallique : Dégradé Gauche (Or Foncé) -> Droite (Or Clair) */}
-        <span className="text-[10px] font-black italic tracking-[0.15em] block leading-tight bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#FDE047] bg-clip-text text-transparent">
+        <span className="text-[10px] font-black italic tracking-[0.15em] block leading-tight bg-gradient-to-r from-[#70706f] via-[#f1f1ef] to-[#FDE047] bg-clip-text text-transparent">
           By Systems
         </span>
         

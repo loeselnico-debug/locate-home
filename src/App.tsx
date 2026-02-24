@@ -99,7 +99,7 @@ const App = () => {
             inventory={inventory} 
             onStartScan={() => setView('scanner')} 
             onDelete={deleteTool}
-            onSelectCategory={handleCategorySelect}
+            onSelectCategory={handleCategorySelect} onBack={() => setView('home')}
           />
         )}
 

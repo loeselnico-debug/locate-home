@@ -9,11 +9,14 @@ const Logo: React.FC = () => {
         <span className="text-white ml-1 uppercase">Home</span>
       </div>
       
-      {/* Bandeau Oblique "By Systems" - Sous "OME" */}
-      <div className="absolute top-[80%] right-[-5px] bg-[#FF6600] px-2 py-0.5 transform -skew-x-12 border-b-2 border-r-2 border-yellow-500/40 shadow-lg z-10">
-        <span className="text-[9px] font-black text-white uppercase italic tracking-widest block leading-tight">
+      {/* Bandeau Oblique "By Systems" - Transparence 20% et Rotation 20° sous OME */}
+      <div className="absolute top-[80%] right-[-5px] bg-[#FF6600]/20 px-[6px] py-[2px] transform rotate-[20deg] z-10">
+        
+        {/* Texte Métallique : Dégradé Gauche (Or Foncé) -> Droite (Or Clair) */}
+        <span className="text-[10px] font-black italic tracking-[0.15em] block leading-tight bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#FDE047] bg-clip-text text-transparent">
           By Systems
         </span>
+        
       </div>
     </div>
   );

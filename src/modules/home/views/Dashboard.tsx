@@ -34,11 +34,8 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
       {/* EN-TÊTE PREMIUM 3D */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         
-        {/* Actions Gauche : Settings & Assurance */}
+        {/* Actions Gauche : Assurance uniquement */}
         <div className="flex gap-4">
-          <button className="w-14 h-14 active:scale-90 transition-transform">
-            <img src="/gear.png" alt="Paramètres" className="w-full h-full object-contain drop-shadow-lg" />
-          </button>
           <button className="w-14 h-14 active:scale-90 transition-transform">
             <img src="/icon-assurance.png" alt="Assurance" className="w-full h-full object-contain drop-shadow-lg" />
           </button>

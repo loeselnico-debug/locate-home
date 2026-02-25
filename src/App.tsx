@@ -88,9 +88,13 @@ const App = () => {
               </span>
             </div>
 
-            {/* ÉTAPE 3 : ROUE DENTÉE (Maximum Droite) */}
+           {/* ÉTAPE 3 : ROUE DENTÉE (Maximum Droite) */}
             <button onClick={() => setView('settings')} className="opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1">
-              <img src="/gear.png" className="w-7 h-7 invert drop-shadow-lg" alt="Settings" />
+              <img 
+                src="/gear.png" 
+                className="w-9 h-9 object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
+                alt="Settings" 
+              />
             </button>
             
           </div>

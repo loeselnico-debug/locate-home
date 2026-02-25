@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { getInventory } from '../../../core/storage/memoryService';
 import { CATEGORIES } from '../views/Dashboard'; 
 import type { InventoryItem } from '../../../types';
 
@@ -23,8 +22,8 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
 
   // Filtre Zéro-Bug (Gère les espaces et la casse)
   useEffect(() => {
-    // 1. On lit la mémoire chaude en priorité, sinon la mémoire froide
-    const data = (inventory && inventory.length > 0) ? inventory : getInventory();
+    // Le composant dépend exclusivement de l'état central injecté par App.tsx
+    const data = inventory || [];
     
     const safeCategoryId = selectedCategoryId?.trim().toLowerCase();
     

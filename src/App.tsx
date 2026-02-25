@@ -116,6 +116,7 @@ const App = () => {
             onBack={() => setView('inventory')} 
             selectedCategoryId={selectedCategory} 
             onStartScan={() => setView('scanner')}
+            inventory={inventory} 
           />
         )}
 

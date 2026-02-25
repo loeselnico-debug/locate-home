@@ -9,8 +9,8 @@ interface ScannerProps {
 
 export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) => {
   const [selectedLocation, setSelectedLocation] = useState(LOCATIONS[0].label);
-  const [frames, setFrames] = useState<string[]>([]); // Maintenant utilisé pour l'analyse
-  const [isScanning, setIsScanning] = useState(false); // Utilisé pour l'état du Burst
+  const [frames, setFrames] = useState<string[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   
@@ -51,7 +51,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   // --- LOGIQUE DE CAPTURE ---
   const handleBurst = () => {
     setFrames([]);
-    setIsScanning(true); // Utilisation de setIsScanning
+    setIsScanning(true);
     let count = 0;
     const interval = setInterval(() => {
       if (!videoRef.current) return;
@@ -60,7 +60,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       canvas.height = videoRef.current.videoHeight;
       canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
       const img = canvas.toDataURL('image/jpeg', 0.6);
-      setFrames(prev => [...prev, img]); // Utilisation de frames
+      setFrames(prev => [...prev, img]);
       count++;
       if (count >= 12) {
         clearInterval(interval);
@@ -83,7 +83,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   };
 
   const runAnalysis = async (imgs: string[]) => {
-    if (imgs.length === 0) return; // Sécurité si frames est vide
+    if (imgs.length === 0) return;
     setIsAnalyzing(true);
     try {
       const data = await geminiService.analyzeVideoBurst(imgs, selectedLocation);
@@ -94,56 +94,93 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   return (
     <div className="flex flex-col h-screen bg-[#050505] text-white p-[2vh] overflow-hidden">
       
-      <div className="flex justify-between items-center h-[8vh] mb-[1vh]">
-        <button onClick={onBack} className="p-2 text-xl">←</button>
-        <h1 className="text-[#FF6600] font-black italic text-[1.1rem]">LOCATE HOME</h1>
-        <button onClick={toggleFlash} className={`p-2 rounded-full ${flashOn ? 'bg-yellow-500 text-black' : 'text-white/50'}`}>
+      {/* HEADER */}
+      <div className="flex justify-between items-center h-[8vh] mb-[1vh] shrink-0">
+        <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-[#1E1E1E] rounded-xl border border-white/10 active:scale-95 transition-transform">
+          <span className="text-xl">←</span>
+        </button>
+        <h1 className="text-[#FF6600] font-black italic text-[1.1rem] tracking-widest">LOCATE HOME</h1>
+        <button onClick={toggleFlash} className={`w-12 h-12 flex items-center justify-center rounded-xl border border-white/10 active:scale-95 transition-colors ${flashOn ? 'bg-[#FF6600] text-black border-[#FF6600]' : 'bg-[#1E1E1E] text-white/50'}`}>
           {flashOn ? '⚡' : '🌑'}
         </button>
       </div>
 
-      <div className="relative aspect-square w-full rounded-[2rem] overflow-hidden border border-white/10 bg-black">
-        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+      {/* COCKPIT IA (LE SCANNER) */}
+      <div className="relative aspect-[4/5] w-full rounded-3xl overflow-hidden border-2 border-[#1E1E1E] bg-black shadow-[0_0_40px_rgba(255,102,0,0.05)] shrink-0 group">
+        
+        <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-90" />
+        
+        {/* Grille millimétrique */}
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:2rem_2rem]"></div>
+
+        {/* Le Collimateur & Laser */}
+        <div className="absolute inset-4 pointer-events-none z-10">
+          {/* Les 4 coins */}
+          <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-[#FF6600] rounded-tl-xl shadow-[0_0_15px_rgba(255,102,0,0.5)]"></div>
+          <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-[#FF6600] rounded-tr-xl shadow-[0_0_15px_rgba(255,102,0,0.5)]"></div>
+          <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-[#FF6600] rounded-bl-xl shadow-[0_0_15px_rgba(255,102,0,0.5)]"></div>
+          <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-[#FF6600] rounded-br-xl shadow-[0_0_15px_rgba(255,102,0,0.5)]"></div>
+
+          {/* Faisceau Animé */}
+          <div className="absolute left-0 right-0 h-[2px] bg-[#FF6600] shadow-[0_0_15px_#FF6600,0_0_30px_#FF6600] animate-scan-laser"></div>
+        </div>
+
+        {/* Badges System Ready */}
+        <div className="absolute bottom-6 w-full flex justify-center z-20 pointer-events-none">
+          <div className="bg-[#121212]/90 backdrop-blur-md border border-[#FF6600]/30 px-5 py-2 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.8)] flex flex-col items-center">
+            <span className="text-[#FF6600] font-black text-[11px] tracking-[0.2em] uppercase">System Ready</span>
+            <span className="text-white/50 text-[8px] tracking-widest uppercase mt-0.5">AI Morphological Active</span>
+          </div>
+        </div>
+
+        {/* Overlay d'Analyse (Quand Gemini réfléchit) */}
         {isAnalyzing && (
-          <div className="absolute inset-0 bg-black/70 flex items-center justify-center animate-pulse text-orange-500 font-black">
-            ANALYSE BIBLE V1.4...
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-30">
+            <div className="w-16 h-16 border-4 border-[#1E1E1E] border-t-[#FF6600] rounded-full animate-spin mb-4 shadow-[0_0_30px_rgba(255,102,0,0.4)]"></div>
+            <div className="text-[#FF6600] font-black tracking-widest text-sm animate-pulse uppercase">
+              Analyse Bible V1.4
+            </div>
           </div>
         )}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar my-[2vh] px-4">
-     {LOCATIONS.map(loc => (
-       <button 
-         key={loc.id} 
-         onClick={() => setSelectedLocation(loc.label)} 
-         className={`px-4 py-1.5 rounded-full text-[10px] whitespace-nowrap font-black border transition-colors ${selectedLocation === loc.label ? 'bg-orange-600 border-orange-600' : 'border-white/10 hover:border-orange-600/50'}`}
-       >
-         {loc.label.toUpperCase()}
-       </button>
-     ))}
-   </div>
+      {/* SÉLECTEUR DE ZONE */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar my-[3vh] px-2 shrink-0">
+        {LOCATIONS.map(loc => (
+          <button 
+            key={loc.id} 
+            onClick={() => setSelectedLocation(loc.label)} 
+            className={`px-5 py-2.5 rounded-xl text-[10px] whitespace-nowrap font-black border transition-all shadow-lg ${selectedLocation === loc.label ? 'bg-[#FF6600] border-[#FF6600] text-black' : 'bg-[#1E1E1E] border-white/5 text-white/70 hover:border-[#FF6600]/50 hover:text-white'}`}
+          >
+            {loc.label.toUpperCase()}
+          </button>
+        ))}
+      </div>
 
-      <div className="flex justify-evenly items-center h-[15vh] pb-4 border-t border-white/5 mt-auto">
-        {/* GALERIE */}
-        <button onClick={() => fileInputRef.current?.click()} className="w-[15vw] max-w-[60px] aspect-square shrink-0 relative">
-          <img src="/icon-photo.png" className="w-full h-full object-contain drop-shadow-lg" alt="Import" />
+      {/* BOUTONS D'ACTION (LE MOTEUR) */}
+      <div className="flex justify-evenly items-center mt-auto pb-4">
+        
+        {/* Bouton Galerie */}
+        <button onClick={() => fileInputRef.current?.click()} className="w-[18vw] max-w-[70px] aspect-square relative active:scale-95 transition-transform">
+          <img src="/icon-photo.png" className="w-full h-full object-contain drop-shadow-xl" alt="Import" />
           <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*" />
         </button>
 
-        {/* BURST VIDÉO */}
-        <button onClick={handleBurst} className={`w-[25vw] max-w-[90px] aspect-square shrink-0 transition-transform ${isScanning ? 'scale-110 animate-pulse' : ''}`}>
-          <img src="/icon-video.png" className="w-full h-full object-contain drop-shadow-2xl" alt="Video" />
+        {/* Bouton Burst Vidéo (Le gros central) */}
+        <button onClick={handleBurst} className={`w-[28vw] max-w-[100px] aspect-square transition-all ${isScanning ? 'scale-110 drop-shadow-[0_0_30px_rgba(255,102,0,0.6)]' : 'hover:scale-105 active:scale-90'}`}>
+          <img src="/icon-video.png" className="w-full h-full object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]" alt="Video" />
         </button>
 
-        {/* ANALYSER */}
-        <button onClick={() => runAnalysis(frames)} className="w-[15vw] max-w-[60px] aspect-square shrink-0 relative">
-          <img src="/icon-scanner.png" className={`w-full h-full object-contain drop-shadow-lg transition-opacity ${frames.length > 0 ? 'opacity-100' : 'opacity-40'}`} alt="Scan" />
+        {/* Bouton Analyser */}
+        <button onClick={() => runAnalysis(frames)} className={`w-[18vw] max-w-[70px] aspect-square relative transition-all active:scale-95 ${frames.length > 0 ? 'opacity-100 scale-105 drop-shadow-[0_0_15px_rgba(255,102,0,0.3)]' : 'opacity-40 grayscale'}`}>
+          <img src="/icon-scanner.png" className="w-full h-full object-contain drop-shadow-xl" alt="Scan" />
           {frames.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-[#FF6600] text-black text-[12px] px-2 py-0.5 rounded-full font-black border-2 border-black z-10">
+            <span className="absolute -top-1 -right-1 bg-[#FF6600] text-black text-[11px] px-2 py-0.5 rounded-md font-black border border-black z-10 shadow-lg">
               {frames.length}
             </span>
           )}
         </button>
+
       </div>
     </div>
   );

@@ -11,21 +11,14 @@ body {
   margin: 0;
 }
 
-/* Animation Laser Haute Précision */
-@keyframes laser-scan {
+/* Animation du Scanner Laser LOCATE HOME (Orange Néon) */
+@keyframes scan-laser {
   0% { top: 0%; opacity: 0; }
-  50% { opacity: 1; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
   100% { top: 100%; opacity: 0; }
 }
 
-.animate-scan-slow {
-  position: absolute;
-  animation: laser-scan 3s linear infinite;
-  z-index: 20;
-}
-
-.animate-scan-fast {
-  position: absolute;
-  animation: laser-scan 0.8s linear infinite;
-  z-index: 20;
+.animate-scan-laser {
+  animation: scan-laser 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }

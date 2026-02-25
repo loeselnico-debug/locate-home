@@ -1,5 +1,5 @@
 # 🦅 MANIFESTE DESIGN | LOCATE SYSTEMS
-**Version :** 2.1 (Interface Core & Faisceaux Lumineux - 19 Février 2026)  
+**Version :** 2.2 (Interface Inventaire & Accent Industriel - 24 Février 2026)  
 **Statut :** RÉFÉRENTIEL OFFICIEL  
 **Philosophie :** "Le Google Search de la maintenance" – Mémoire augmentée & Indexation spatiale.
 
@@ -16,6 +16,7 @@ L'écosystème repose sur des fondations fixes et un système de "Couleur Théma
 | **Fond App (OLED)** | `#121212` | Anthracite profond pour les interfaces internes. |
 | **Bordures / Cartes** | `#1E1E1E` | Gris de profondeur pour les cartes et conteneurs. |
 | **Texte Secondaire** | `#B0BEC5` | Gris bleuté clair. Lisibilité haute sans éblouissement. |
+| **Gris Industriel** | `#D3D3D3` | Premium. Usage : Barres de catégories, plaques d'identité, Bouton Assurance. |
 
 ### B. Les Variables (Couleur Thématique par Module)
 La "Couleur Thématique" s'applique au Titre, aux boutons d'action primaires, aux faisceaux d'énergie du Hub et aux icônes principales.
@@ -40,11 +41,12 @@ La "Couleur Thématique" s'applique au Titre, aux boutons d'action primaires, au
 
 ---
 
-## 📐 3. RÈGLES D'ADAPTABILITÉ (SCALING)
+## 📐 3. RÈGLES D'ADAPTABILITÉ ET PERFORMANCES (SCALING)
 
 Pour garantir un affichage parfait sur tous les terminaux de terrain :
 * **Design Liquide :** Interdiction du Pixel fixe (px). Utilisation exclusive de `rem`, `vh/vw` et `%`.
-* **Rendu CSS Actif :** Remplacement des images de fond lourdes par du code CSS pur (dégradés, halos lumineux, flous) pour garantir la netteté et soulager le processeur de l'appareil.
+* **Actifs 3D (Règle Stricte) :** Tous les exports PNG (icônes catégories, boutons) doivent impérativement être générés en **256x256 pixels** avec fond transparent pour préserver la RAM du terminal.
+* **Rendu CSS Actif :** Remplacement des images de fond lourdes par du code CSS pur (dégradés, halos lumineux, text-stroke pour les contours) pour garantir la netteté.
 * **Zones de Sécurité (Safe Areas) :** Marges dynamiques pour éviter les encoches (notches) et barres de navigation.
 
 ---
@@ -53,12 +55,16 @@ Pour garantir un affichage parfait sur tous les terminaux de terrain :
 
 ### 🔝 LE HUB (LOCATE CORE) - ÉCRAN D'ACCUEIL
 1. **Grille Supérieure :** Alignement horizontal des 5 terminaux métiers.
-2. **Faisceaux d'énergie :** Lignes de lumière CSS (Gradient to transparent) descendant de chaque module vers le centre.
-3. **Processeur Central :** Noyau UI avec halos lumineux superposés (Bleu/Orange) en arrière-plan et typographie "SYSTEMS" espacée (`tracking-widest`).
-4. **Citation Base :** "L'homme ne parle pas à l'IA pour l'écouter, mais pour qu'elle devienne le prolongement de son expertise terrain."
+2. **Faisceaux d'énergie :** Lignes de lumière CSS descendant de chaque module vers le centre.
+3. **Processeur Central :** Noyau UI avec halos lumineux superposés (Bleu/Orange) et typographie "SYSTEMS" espacée (`tracking-widest`).
 
 ### 🎛️ LES ÉCRANS INTERNES (IDENTIQUES POUR CHAQUE MODULE)
-1. **Le Header :** Badge de statut à gauche, Logo au centre, Paramètres (Roue dentée) à droite. Séparation par un trait gris (`white/10`).
-2. **Menu Module :** Grille des fonctionnalités principales (Ranger, Retrouver...).
-3. **Cockpit IA (Scanner) :** Vue caméra plein écran, zone de focus délimitée, bouton de capture central large.
-4. **Interface Retrouver :** Barre de recherche, filtres spatiaux et bouton micro d'assistance vocale.
+1. **Le Header Standard :** Badge de statut à gauche, Logo au centre, Paramètres (Roue dentée `gear.png`) à droite. Séparation par un trait gris (`white/10`).
+2. **Cockpit IA (Scanner) :** Vue caméra plein écran, zone de focus délimitée, bouton de capture central large.
+3. **Interface Retrouver :** Barre de recherche, filtres spatiaux et bouton micro d'assistance vocale.
+
+### 📋 LE FLUX INVENTAIRE (01A)
+1. **En-tête Spécifique :** Bouton Assurance à gauche (`#D3D3D3`), Bouton Retour 3D à droite (`icon-return.png`).
+2. **Dashboard Catégories (01A) :** Barres `#D3D3D3` avec numérotation `#FF6600` et fort contour noir (`-webkit-text-stroke: 1.5px #121212`).
+3. **Liste Outils (01A1) - "Accent Industriel" :** Cartes à fond `#1E1E1E` dotées d'une bordure latérale gauche épaisse orange (`border-l-4 border-[#FF6600]`). Pastilles de statuts dynamiques (Vert/Rouge).
+4. **Fiche Outil (01A-Detail) :** Plaque d'identité `#D3D3D3` couplée à un bloc de Spécifications Techniques `#1E1E1E` (intégrant le Numéro de Série) pour l'audit et l'assurance.

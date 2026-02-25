@@ -1,22 +1,25 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CATEGORIES } from '../../types';
 
-// Utilisation de ta clé officielle validée
-const apiKey = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
+// Tolérance sur le nom de la variable d'environnement (Vérifie ton .env)
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 
-// Forçage sur l'API Stable v1 pour éviter les instabilités du mode beta
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
 export const geminiService = {
   analyzeVideoBurst: async (base64Images: string[], userLocation: string = "Atelier"): Promise<any[]> => {
     if (!apiKey) {
-      console.error("CRITIQUE: Clé API manquante.");
+      console.error("CRITIQUE: Clé API manquante. Vérifie que ton fichier .env contient bien VITE_GEMINI_API_KEY=ta_cle");
       return [];
     }
 
     try {
-      // Utilisation du modèle flash version stable
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      // 1. MISE À NIVEAU : Passage au moteur 2.5 Flash Stable (Conforme à la documentation)
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        // 2. Blindage absolu : on force la réponse de l'API en JSON pur
+        generationConfig: { responseMimeType: "application/json" }
+      });
 
       const categoriesContext = CATEGORIES.map(cat => `- ID: "${cat.id}" | Label: ${cat.label}`).join('\n');
 
@@ -24,10 +27,10 @@ export const geminiService = {
 Tu es l'Expert Vision de LOCATE SYSTEMS. 
 Analyse ces images de la zone : [${userLocation.toUpperCase()}].
 
-RÈGLE ABSOLUE : Classe chaque objet détecté UNIQUEMENT dans :
+RÈGLE ABSOLUE : Classe chaque objet détecté UNIQUEMENT dans ces catégories :
 ${categoriesContext}
 
-Réponds EXCLUSIVEMENT avec un tableau JSON :
+Réponds EXCLUSIVEMENT avec un tableau JSON valide. Ne dis pas bonjour, ne fais pas d'introduction. Chaque objet doit avoir cette structure exacte :
 [
   {
     "toolName": "Nom précis de l'outil",
@@ -46,20 +49,13 @@ Réponds EXCLUSIVEMENT avec un tableau JSON :
         return { inlineData: { data: base64Data, mimeType: "image/jpeg" } };
       });
 
-      // Ajout d'une sécurité sur le timeout
       const result = await model.generateContent([prompt, ...imageParts]);
-      const response = await result.response;
-      const text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
       
+      const text = result.response.text();
       return JSON.parse(text);
 
     } catch (error: any) {
-      // Message d'alerte spécifique pour la panne Google en cours
-      if (error.message?.includes('404') || error.message?.includes('fetch')) {
-        console.warn("⚠️ ALERTE INFRA : Panne mondiale détectée sur les serveurs Google AI. Le système passera en mode attente.");
-      } else {
-        console.error("Échec de l'analyse LOCATE SYSTEMS :", error);
-      }
+      console.error("Échec de l'analyse LOCATE SYSTEMS :", error);
       return [];
     }
   }

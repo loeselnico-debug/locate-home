@@ -1,53 +1,41 @@
 # 🧭 ⚛️ 🇫🇷 LOCATE SYSTEMS | SOURCE DE VÉRITÉ V3.1
-
+24 Février 2026
 **Statut :** RÉFÉRENTIEL MAÎTRE - ARCHITECTURE MONOREPO UNIFIÉE 🟢  
 **Vision :** "L'homme ne parle pas à l'IA pour l'écouter, mais pour qu'elle devienne le prolongement de son expertise terrain."
 
 ---
 
-## 📂 1. ORGANIGRAMME TECHNIQUE (STRUCTURE VSCODE)
+## 📂 1. ORGANIGRAMME TECHNIQUE (STRUCTURE EXACTE DU REPOSITORY)
 
-```text
-📦 LOCATE-SYSTEMS (Racine du projet)
-├── 📂 public/                  # 🖼️ Actifs Visuels Bruts
-│   ├── 📁 icons-3d/            # PNG 3D de haute qualité (remplace lucide-react)
-│   └── 🌐 manifest.json        # Configuration PWA (Mode hors-ligne)
-│
-├── 📂 src/                     # ⚙️ MOTEUR DE L'APPLICATION
-│   │
-│   ├── 📂 core/                # 🛡️ M1 : TRONC COMMUN (Le Socle)
-│   │   ├── 📁 ai/              # Cerveau : geminiService.ts, expertiseRules.ts (Bible V1.4)
-│   │   ├── 📁 camera/          # Vision : ScannerHDR.tsx, Laser.tsx, flux vidéo
-│   │   ├── 📁 ui/              # Carrosserie : Boutons universels, Badges Néon, Grilles
-│   │   └── 📁 security/        # Contrôles : useUserTier.ts (Verrou Freemium/Pro)
-│   │
-│   ├── 📂 types/               # 📜 SOURCE DE VÉRITÉ (Data & Interfaces)
-│   │   ├── 📄 index.ts         # Exporte toutes les interfaces universelles
-│   │   ├── 📄 inventory.ts     # Les 9 univers (dont EPI), interface InventoryItem
-│   │   └── 📄 spatial.ts       # Les zones réelles (Garage, Atelier, Maison...)
-│   │
-│   ├── 📂 modules/             # 🏭 LES 5 VERTICALES MÉTIERS (Cloisonnées)
-│   │   │
-│   │   ├── 🏠 home/            # M2 : [HOME] (Identité : Orange Néon / Blanc)
-│   │   │   ├── 📁 views/       # Écrans principaux (Dashboard, Search vocal)
-│   │   │   └── 📁 components/  # Pièces spécifiques (Library.tsx, Ranger.tsx)
-│   │   │
-│   │   ├── 📦 asset/           # M3 : [ASSET] (Identité : Bleu Néon / Blanc)
-│   │   │   └── 📄 OcrEngine.ts # Extracteur de SKU 6 chiffres et XHANDER
-│   │   │
-│   │   ├── 🍳 kitchen/         # M4 : [KITCHEN] (Identité : Vert Émeraude Néon / Blanc)
-│   │   │
-│   │   ├── 🔧 garage/          # M5 : [GARAGE] (Identité : Rouge Néon / Blanc)
-│   │   │
-│   │   └── 🩺 care/            # M6 : [CARE] (Identité : Blanc / Gris clair)
-│   │
-│   ├── 📂 styles/              # 🎨 DESIGN LIQUIDE (Zéro Pixel)
-│   │   └── 📄 global.css       # Tailwind, classes personnalisées, adaptation J5->iPhone 17
-│   │
-│   └── 📄 App.tsx              # 🧭 CHEF D'ORCHESTRE (Aiguilleur vers les modules)
+📦 LOCATE-SYSTEMS
+├── 📂 public/                 # Actifs Visuels (Icônes 3D, manifest.json)
+├── 📂 src/                    # MOTEUR DE L'APPLICATION
+│   ├── 📂 core/               # M1 : TRONC COMMUN (Le Socle)
+│   │   ├── 📁 ai/             # decisionEngine.ts, expertiseRules.ts, geminiService.ts
+│   │   ├── 📁 camera/         # Scanner.tsx
+│   │   ├── 📁 security/       # safetyService.ts, tiers.ts, useUserTier.ts
+│   │   ├── 📁 storage/        # imageService.ts, memoryService.ts
+│   │   ├── 📁 ui/             # Hub.tsx, LocationBar.tsx, Logo.tsx, ResultModal.tsx, SafetyBadge.tsx
+│   │   └── 📄 index.ts
+│   ├── 📂 modules/            # LES 5 VERTICALES MÉTIERS
+│   │   ├── 📁 asset/          # M3 : L'Industrie (Spécifications Grands Comptes)
+│   │   ├── 📁 care/           # M6 : La Santé
+│   │   ├── 📁 garage/         # M5 : La Maintenance
+│   │   ├── 📂 home/           # M2 : Le Hub / Inventaire (Orange Néon)
+│   │   │   ├── 📁 components/ # HomeMenu.tsx, InventoryCard.tsx, Library.tsx, Search.tsx, ToolDetail.tsx
+│   │   │   └── 📁 views/      # Dashboard.tsx, SettingsPage.tsx
+│   │   └── 📁 kitchen/        # M4 : Les Flux (HACCP)
+│   ├── 📂 styles/             # App.css, index.css
+│   ├── 📂 types/              # index.ts (Source de Vérité Data)
+│   ├── 📄 App.tsx             # Chef d'orchestre
+│   └── 📄 main.tsx
+├── 📄 MANIFESTE_LOCATEHOME_PROJET.md
+├── 📄 MANIFESTE_LOCATEHOME-DESIGN.md
+└── ⚙️ [Fichiers de Config]    # .env, vite.config.ts, tailwind.config.js, package.json...
 
+---
 
-🛠️ 2. LES 6 PILIERS DU SYSTÈME
+## 🛠️ 2. LES 6 PILIERS DU SYSTÈME
 
 🛡️ M1 : TRONC COMMUN (CORE)
 Cerveau : Gemini 2.0 Flash.
@@ -101,7 +89,12 @@ Cerveau & Architecture
 [ X] Moteur IA : Tunnel Gemini 2.0 Flash opérationnel.
 [ X] Schéma Data : Interface InventoryItem verrouillée.
 [ X] Sécurité : Verrou Freemium actif dans addTool.
-
+[ X] Tunnel Gemini 2.0 Flash opérationnel. Interface InventoryItem verrouillée. Sécurité Freemium active.
+* Vision & Scan : Mode hybride (Photo/Vidéo/Import) calibré. Flux Live getUserMedia.
+* Navigation Inventaire (M2) : 
+  * Arborescence 3 niveaux validée : Accueil (01) > Dashboard (01A) > Liste Outils (01A1) > Fiche Produit (01A-Detail).
+  * Composants `Dashboard.tsx`, `Library.tsx` et `ToolDetail.tsx` intégrés et interconnectés.
+* Interface : Dashboard dynamique, CSS ultra-léger, déploiement PWA mobile sécurisé avec Safe-Areas Apple.
 Vision & Scan
 [ X] Scanner HDR : Mode hybride fonctionnel (Photo HD / Vidéo Burst / Importation).
 [ X] Étalonnage : Mode Burst calibré (12 frames / 20s).
@@ -110,6 +103,7 @@ Vision & Scan
 [ X] Zéro-Trust : Filtrage d'environnement actif pour focus exclusif sur l'objet.
 [ X] Scanner HDR : Mode hybride (Photo/Vidéo/Import) avec interface adaptative (vw).
 [ X] Étalonnage : Mode Burst calibré (12 frames / 20s).
+Mode hybride (Photo/Vidéo/Import) calibré. Flux Live getUserMedia. 
 
 Interface & UX
 [ X] Hub Central : Dashboard dynamique interactive, CSS ultra-léger.
@@ -140,4 +134,8 @@ Business & Déploiement
 [ ] Vocal Pro : Recherche "mains libres" bidirectionnelle.
 [ ] Monétisation : Transformation des QR Codes physiques en points d'accès techniques.
 
-
+🟡 EN COURS / À RÉALISER (PENDING)
+* Infrastructure : Mode Hors-ligne PWA complet (LocalStorage/IndexDB).
+* Actifs : Création des icônes `icon-assurance.png` et `gear.png` (256x256).
+* Moteur Rangement : Attribution précise aux Bacs / Étagères.
+* Business : Export PDF des rapports d'assurance depuis le module HOME

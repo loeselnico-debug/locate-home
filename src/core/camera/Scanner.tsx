@@ -14,6 +14,9 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   
+  // LE SAS DE VALIDATION (Zéro-Trust)
+  const [pendingItems, setPendingItems] = useState<any[] | null>(null);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,12 +90,15 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     setIsAnalyzing(true);
     try {
       const data = await geminiService.analyzeVideoBurst(imgs, selectedLocation);
-      if (data && data.length > 0) onAnalysisComplete(data);
+      if (data && data.length > 0) {
+        // ON BLOQUE L'ENVOI AUTOMATIQUE ET ON AFFICHE LE SAS
+        setPendingItems(data);
+      }
     } finally { setIsAnalyzing(false); }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#050505] text-white p-[2vh] overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#050505] text-white p-[2vh] overflow-hidden relative">
       
       {/* HEADER */}
       <div className="flex justify-between items-center h-[8vh] mb-[1vh] shrink-0">
@@ -105,8 +111,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         </button>
       </div>
 
-      {/* COCKPIT IA (LE SCANNER) */}
-      <div className="relative aspect-[4/5] w-full rounded-3xl overflow-hidden border-2 border-[#1E1E1E] bg-black shadow-[0_0_40px_rgba(255,102,0,0.05)] shrink-0 group">
+      {/* COCKPIT IA (LE SCANNER) - CORRIGÉ POUR LENOVO */}
+      <div className="relative flex-1 min-h-0 w-full max-w-lg mx-auto my-2 rounded-3xl overflow-hidden border-2 border-[#1E1E1E] bg-black shadow-[0_0_40px_rgba(255,102,0,0.05)] group">
         
         <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-90" />
         
@@ -158,7 +164,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       </div>
 
       {/* BOUTONS D'ACTION (LE MOTEUR) */}
-      <div className="flex justify-evenly items-center mt-auto pb-4">
+      <div className="flex justify-evenly items-center mt-auto pb-4 shrink-0">
         
         {/* Bouton Galerie */}
         <button onClick={() => fileInputRef.current?.click()} className="w-[18vw] max-w-[70px] aspect-square relative active:scale-95 transition-transform">
@@ -182,6 +188,69 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         </button>
 
       </div>
+
+      {/* ========================================= */}
+      {/* VUE 01 C1 : LE SAS DE VALIDATION (OVERLAY) */}
+      {/* ========================================= */}
+      {pendingItems && pendingItems.length > 0 && (
+        <div className="absolute inset-0 z-50 bg-[#050505]/95 backdrop-blur-xl flex flex-col p-6 animate-in fade-in zoom-in-95 duration-200">
+          
+          <div className="flex items-center justify-between mt-8 mb-6 border-b border-white/10 pb-4">
+            <div>
+              <h2 className="text-[#FF6600] font-black text-2xl tracking-widest uppercase">Rapport d'Analyse</h2>
+              <p className="text-white/50 text-xs tracking-widest uppercase mt-1">Zone : {selectedLocation}</p>
+            </div>
+            <div className="bg-[#1E1E1E] border border-[#FF6600]/30 px-4 py-2 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(255,102,0,0.2)]">
+              <span className="material-symbols-outlined text-[#FF6600]">memory</span>
+              <span className="text-[#FF6600] font-black text-lg">{pendingItems.length}</span>
+            </div>
+          </div>
+
+          {/* Liste des objets détectés */}
+          <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3">
+            {pendingItems.map((item, idx) => (
+              <div key={idx} className="bg-[#1E1E1E] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-white font-bold text-lg">{item.toolName}</span>
+                  <span className="text-[#B0BEC5] text-[10px] tracking-widest uppercase">{item.category}</span>
+                </div>
+                {/* Indicateur de confiance */}
+                <div className="flex flex-col items-end">
+                  <div className={`px-3 py-1 rounded-lg border text-xs font-black flex items-center gap-1 ${item.score_confiance > 80 ? 'bg-green-500/10 border-green-500/50 text-green-500' : 'bg-red-500/10 border-red-500/50 text-red-500'}`}>
+                    <span className="material-symbols-outlined text-[14px]">
+                      {item.score_confiance > 80 ? 'check_circle' : 'warning'}
+                    </span>
+                    {item.score_confiance}%
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Boutons d'action (Valider ou Rejeter) */}
+          <div className="flex gap-4 mt-6 pb-8">
+            <button 
+              onClick={() => {
+                setPendingItems(null);
+                setFrames([]);
+              }} 
+              className="flex-1 py-4 rounded-2xl bg-[#1E1E1E] border border-white/10 text-white font-black tracking-widest uppercase active:scale-95 transition-transform flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined">delete</span>
+              Rejeter
+            </button>
+            
+            <button 
+              onClick={() => onAnalysisComplete(pendingItems)} 
+              className="flex-[2] py-4 rounded-2xl bg-[#FF6600] text-black font-black tracking-widest uppercase shadow-[0_0_30px_rgba(255,102,0,0.4)] active:scale-95 transition-transform flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined">check_circle</span>
+              Intégrer
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

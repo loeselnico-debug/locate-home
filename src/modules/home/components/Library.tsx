@@ -7,9 +7,10 @@ interface LibraryProps {
   onBack: () => void;
   selectedCategoryId: string | null;
   onStartScan: () => void; 
+  inventory?: InventoryItem[]; // Ajout de l'inventaire en prop pour éviter le décalage mémoire
 }
 
-const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
+const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory }) => {
   const [tools, setTools] = useState<InventoryItem[]>([]);
 
   // Récupération de la catégorie active
@@ -20,24 +21,32 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId }) => {
   const categoryIcon = activeCategory ? `/${activeCategory.id}.png` : '/icon-photo.png';
   const categoryNumber = activeCategoryIndex !== -1 ? String(activeCategoryIndex + 1).padStart(2, '0') + '.' : '';
 
-  // Restauration de ta vraie fonction de lecture mémoire
+  // Filtre Zéro-Bug (Gère les espaces et la casse)
   useEffect(() => {
-    const data = getInventory();
-    const filtered = selectedCategoryId 
-      ? data.filter(t => t.category === selectedCategoryId)
+    // 1. On lit la mémoire chaude en priorité, sinon la mémoire froide
+    const data = (inventory && inventory.length > 0) ? inventory : getInventory();
+    
+    const safeCategoryId = selectedCategoryId?.trim().toLowerCase();
+    
+    const filtered = safeCategoryId 
+      ? data.filter(t => {
+          const cat = t.category?.trim().toLowerCase();
+          const label = activeCategory?.label.trim().toLowerCase();
+          // L'objet est validé s'il correspond à l'ID OU au Label de la catégorie
+          return cat === safeCategoryId || cat === label;
+        })
       : data;
+      
     setTools(filtered.sort((a, b) => a.toolName.localeCompare(b.toolName)));
-  }, [selectedCategoryId]);
+  }, [selectedCategoryId, inventory, activeCategory]);
 
   return (
     <div className="flex flex-col h-full bg-transparent">
       
-      {/* EN-TÊTE : Assurance (Gauche) / Retour vers 01A (Droite) */}
+      {/* EN-TÊTE PREMIUM 3D */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
-        <button className="w-12 h-12 bg-[#D3D3D3] rounded-xl flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.5)] active:scale-95 transition-transform border-b-2 border-gray-400">
-          <span className="text-[#121212] font-black text-[10px] uppercase tracking-widest leading-none text-center">
-            Assur<br/>ance
-          </span>
+        <button className="w-14 h-14 active:scale-90 transition-transform">
+          <img src="/icon-assurance.png" alt="Assurance" className="w-full h-full object-contain drop-shadow-lg" />
         </button>
 
         <button onClick={onBack} className="w-14 h-14 active:scale-90 transition-transform">

@@ -1,7 +1,6 @@
 import React from 'react';
 import type { InventoryItem } from '../../../types';
 
-// Intégration stricte des 9 catégories du Manifeste
 export const CATEGORIES = [
   { id: 'electro', label: 'Outillage Électroportatif' },
   { id: 'main', label: 'Outillage à main' },
@@ -11,7 +10,7 @@ export const CATEGORIES = [
   { id: 'peinture', label: 'Peinture et Finition' },
   { id: 'mesure', label: 'Mesure et Traçage' },
   { id: 'jardin', label: 'Jardin et Extérieur' },
-  { id: 'epi', label: 'Équipements De Protection' }, // La 9ème catégorie
+  { id: 'epi', label: 'Équipements De Protection' }, 
 ];
 
 interface DashboardProps {
@@ -19,31 +18,33 @@ interface DashboardProps {
   onStartScan: () => void;
   onDelete: (id: string) => void;
   onSelectCategory: (categoryId: string) => void;
-  onBack?: () => void; // Ajout sécurisé pour le retour vers 01
+  onBack?: () => void; 
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBack, onDelete }) => {
   
-  // Fonction de retour robuste
   const handleReturn = () => {
     if (onBack) onBack();
-    else window.history.back(); // Fallback de sécurité
+    else window.history.back(); 
   };
 
   return (
     <div className="flex flex-col h-full bg-transparent">
       
-      {/* EN-TÊTE : Assurance (Gauche) / Retour (Droite) */}
+      {/* EN-TÊTE PREMIUM 3D */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         
-        {/* Bouton Assurance (#D3D3D3) */}
-        <button className="w-12 h-12 bg-[#D3D3D3] rounded-xl flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.5)] active:scale-95 transition-transform border-b-2 border-gray-400">
-          <span className="text-[#121212] font-black text-[10px] uppercase tracking-widest leading-none text-center">
-            Assur<br/>ance
-          </span>
-        </button>
+        {/* Actions Gauche : Settings & Assurance */}
+        <div className="flex gap-4">
+          <button className="w-14 h-14 active:scale-90 transition-transform">
+            <img src="/gear.png" alt="Paramètres" className="w-full h-full object-contain drop-shadow-lg" />
+          </button>
+          <button className="w-14 h-14 active:scale-90 transition-transform">
+            <img src="/icon-assurance.png" alt="Assurance" className="w-full h-full object-contain drop-shadow-lg" />
+          </button>
+        </div>
 
-        {/* Bouton Retour 3D vers Accueil (01) */}
+        {/* Action Droite : Retour */}
         <button onClick={handleReturn} className="w-14 h-14 active:scale-90 transition-transform">
           <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain drop-shadow-lg" />
         </button>
@@ -53,10 +54,13 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
       <div className="flex-1 overflow-y-auto no-scrollbar px-[4vw] pb-[12vh]">
         <div className="flex flex-col gap-4">
           {CATEGORIES.map((cat, index) => {
-            // Formatage du numéro "01.", "02.", etc.
             const number = String(index + 1).padStart(2, '0') + '.';
-            // Comptage dynamique des outils
-            const itemCount = inventory.filter(item => item.category === cat.id).length;
+            
+            // Comptage Blindé (Gère la casse et les espaces)
+            const itemCount = inventory.filter(item => 
+              item.category?.trim().toLowerCase() === cat.id.toLowerCase() ||
+              item.category?.trim().toLowerCase() === cat.label.toLowerCase()
+            ).length;
 
             return (
               <button
@@ -66,12 +70,10 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
               >
                 
                 <div className="flex items-center gap-4">
-                  {/* Numérotation Orange avec fort contour Noir */}
                   <span className="text-[#FF6600] font-black italic text-2xl tracking-widest [-webkit-text-stroke:1.5px_#121212] drop-shadow-[2px_2px_0_rgba(0,0,0,0.8)]">
                     {number}
                   </span>
 
-                  {/* Titre et Compteur */}
                   <div className="flex flex-col items-start text-left">
                     <h3 className="text-[#121212] font-black uppercase text-[0.85rem] tracking-tight leading-none">
                       {cat.label}
@@ -82,7 +84,6 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
                   </div>
                 </div>
 
-                {/* Icône 3D de la rubrique */}
                 <img 
                   src={`/${cat.id}.png`} 
                   alt={cat.label} 
@@ -94,7 +95,6 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
         </div>
       </div>
 
-      {/* Nettoyage technique pour éviter un warning sur l'usage des props */}
       <div className="hidden">{onDelete.name}</div>
     </div>
   );

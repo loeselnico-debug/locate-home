@@ -47,13 +47,21 @@ const App = () => {
   };
 
   const handleAnalysisResults = (newItems: any[]) => {
-    const itemsToAdd = newItems.map(item => ({
+    // 1. Filtrage strict : on ne garde que les outils certifiés à 70% ou plus
+    const validItems = newItems.filter(item => item.score_confiance >= 70);
+
+    // 2. Formatage des données validées
+    const itemsToAdd = validItems.map(item => ({
       ...item,
       id: crypto.randomUUID(),
       date: new Date().toLocaleString(),
     }));
+
+    // 3. Mise à jour de la base de données (IndexedDB)
     setInventory(prev => [...itemsToAdd, ...prev]);
-    setView('category_detail');
+    
+    // 4. CORRECTION CRITIQUE : Retour au tableau de bord général et non au détail vide
+    setView('inventory'); 
   };
 
   return (

@@ -77,65 +77,42 @@ Unités : rem (typographie), vh/vw et % (structure).
 Netteté : Utilisation exclusive du SVG pour les icônes et logos (Optimisation J5 vers iPhone 17).
 
 🟢 ACQUIS TECHNIQUES (TERMINÉ)
+
 Cerveau & Architecture
-[ X] Moteur IA : Tunnel Gemini 2.0 Flash opérationnel (sans erreur 404/429).
-[ X] Schéma Data : Interface InventoryItem verrouillée comme référence unique.
-[ X] Types : src/types.ts à jour (inclusion de la localisation et des 9 catégories métiers).
-[ X] Sécurité (Hardening) : Blindage des appels data.candidates et extraction JSON robuste.
-[ X] Limites : Vérification Freemium (15 outils) active dans addTool.
-[ X] Nettoyage : Sémantique "LOCATEHOME" généralisée ; fonction deleteTool intégrée.
-[ X] Architecture Monorepo Modulaire : Séparation stricte Core / Modules / Types.
-[ X] Agnosticisme du Core : L'IA lit dynamiquement la source de vérité.
-[ X] Moteur IA : Tunnel Gemini 2.0 Flash opérationnel.
-[ X] Schéma Data : Interface InventoryItem verrouillée.
-[ X] Sécurité : Verrou Freemium actif dans addTool.
-[ X] Tunnel Gemini 2.0 Flash opérationnel. Interface InventoryItem verrouillée. Sécurité Freemium active.
-* Vision & Scan : Mode hybride (Photo/Vidéo/Import) calibré. Flux Live getUserMedia.
-* Navigation Inventaire (M2) : 
-  * Arborescence 3 niveaux validée : Accueil (01) > Dashboard (01A) > Liste Outils (01A1) > Fiche Produit (01A-Detail).
-  * Composants `Dashboard.tsx`, `Library.tsx` et `ToolDetail.tsx` intégrés et interconnectés.
-* Interface : Dashboard dynamique, CSS ultra-léger, déploiement PWA mobile sécurisé avec Safe-Areas Apple.
+[ X] Moteur IA : Tunnel Gemini 2.0 Flash opérationnel (sans erreur 404/429). L'IA lit dynamiquement la source de vérité.
+[ X] Schéma Data & Types : Interface `InventoryItem` verrouillée comme référence unique. Fichier `src/types.ts` à jour (inclusion de la localisation et des 9 catégories métiers).
+[ X] Sécurité (Hardening) : Blindage des appels `data.candidates` et extraction JSON robuste.
+[ X] Limites & Freemium : Vérification Freemium (15 outils) active dans la fonction `addTool`.
+[ X] Stockage Robuste : Unification totale de la base de données sur IndexedDB (`idb-keyval`), suppression définitive des conflits avec localStorage.
+[ X] Architecture Monorepo Modulaire : Séparation stricte Core / Modules / Types. Sémantique "LOCATEHOME" généralisée ; fonction `deleteTool` intégrée.
+[ X] Clé API : Mise en service de la nouvelle clé (suite à la suppression de l'ancienne).
+[ X] Persistance V2 : Système d'onglets pour le filtrage par zone (Fourgon/Atelier).
+
 Vision & Scan
-[ X] Scanner HDR : Mode hybride fonctionnel (Photo HD / Vidéo Burst / Importation).
-[ X] Étalonnage : Mode Burst calibré (12 frames / 20s).
-[ X] Flux Live : Intégration getUserMedia avec cadre de visée et filtre industriel HDR.
-[ X] Laser : Balayage dynamique synchronisé avec l'analyse.
-[ X] Zéro-Trust : Filtrage d'environnement actif pour focus exclusif sur l'objet.
-[ X] Scanner HDR : Mode hybride (Photo/Vidéo/Import) avec interface adaptative (vw).
-[ X] Étalonnage : Mode Burst calibré (12 frames / 20s).
-Mode hybride (Photo/Vidéo/Import) calibré. Flux Live getUserMedia. 
+[ X] Scanner HDR : Mode hybride fonctionnel (Photo HD / Vidéo Burst / Importation) avec interface adaptative (vw).
+[ X] Étalonnage : Mode Burst calibré (12 frames / 20s). Flux Live `getUserMedia` actif.
+[ X] Flux Live & UI : Intégration du cadre de visée, filtre industriel HDR et laser de balayage dynamique synchronisé avec l'analyse.
+[ X] Zéro-Trust : Filtrage d'environnement actif pour un focus exclusif sur l'objet scanné.
+[ X] Flux de Validation (Sas 01 C1) : Pont de données opérationnel entre le scanner et l'inventaire avec filtre de confiance IA (>= 70%).
 
 Interface & UX
-[ X] Hub Central : Dashboard dynamique interactive, CSS ultra-léger.
+[ X] Hub Central : Dashboard interactif et dynamique, CSS ultra-léger. Connexion à la base de données avec jauge orange dynamique.
+[ X] Navigation Sécurisée & Inventaire (M2) : Redirection post-scan stabilisée vers le Dashboard. Arborescence 3 niveaux validée (Accueil (01) > Dashboard (01A) > Liste Outils (01A1) > Fiche Produit (01A-Detail)). Composants `Dashboard.tsx`, `Library.tsx` et `ToolDetail.tsx` intégrés et interconnectés.
+[ X] Déploiement Mobile PWA : Manifeste, Service Worker, installable sur Android/iOS. Blindage Apple avec variables safe-area-inset et 100dvh actives.
 [ X] Vocal : Implémentation via Web Speech API dans le module "Retrouver".
-[ X] Dashboard : Connexion au memoryService avec jauge orange dynamique.
-[ X] Cohérence : Synchronisation /tiers.ts avec App.tsx et affichage des labels de catégories.
-[ X] Déploiement Mobile PWA : Manifeste, Service Worker, installable sur Android/iOS.
-[ X] Blindage Apple : Variables safe-area-inset et 100dvh actives.
-[ X] Hub Central : Dashboard dynamique, CSS ultra-léger.
+[ X] Mode Basse Lumière : Activation physique de la torche via l'interface de scan.
+[ X] Localisation de Vérité : Injecter la liste des zones réelles (Fourgon, Établi) pour éviter les inventions de l'IA.
 
 🟡 EN COURS / À RÉALISER (PENDING)
-Infrastructure & Sécurité
-[ ] Clé API : Mise en service de la nouvelle clé (suite à la suppression de l'ancienne).
-[ ] Mode Hors-ligne : Support PWA complet et stockage local des images (LocalStorage/IndexDB).
-[ ] Persistance V2 : Système d'onglets pour le filtrage par zone (Fourgon/Atelier).
 
 Interface & Actifs
-[ ] Design Actifs : Remplacement des icônes "lucide-react" et des emojis par les PNG 3D du dossier /public.
-[ ] Optimisation /tiers.ts : Affiner et compléter la structure.
-[ ] Mode Basse Lumière : Activation physique de la torche via l'interface de scan.
+[ ] Design & Actifs 3D : Création des icônes manquantes (`icon-assurance.png` et `gear.png` en 256x256) et remplacement systématique des icônes "lucide-react" / emojis par les PNG 3D du dossier `/public`.
+[ ] Optimisation `/tiers.ts` : Affiner et compléter la structure des niveaux d'accès.
 
 Intelligence Métier
-[ ] Localisation de Vérité : Injecter la liste des zones réelles (Fourgon, Établi) pour éviter les inventions de l'IA.
-[ ] Rangement : Attribution précise aux Bacs / Étagères (Pilote RANGER).
-[ ] Service [ASSET] : Développement du moteur de recherche OCR vers l'API Prolians.
+[ ] Moteur de Rangement (Pilote RANGER) : Attribution précise de l'outillage aux contenants physiques (Bacs / Étagères).
 
 Business & Déploiement
-[ ] Vocal Pro : Recherche "mains libres" bidirectionnelle.
+[ ] Export & Rapports : Génération et export PDF des rapports d'assurance depuis le module HOME.
+[ ] Vocal Pro : Recherche "mains libres" bidirectionnelle avancée.
 [ ] Monétisation : Transformation des QR Codes physiques en points d'accès techniques.
-
-🟡 EN COURS / À RÉALISER (PENDING)
-* Infrastructure : Mode Hors-ligne PWA complet (LocalStorage/IndexDB).
-* Actifs : Création des icônes `icon-assurance.png` et `gear.png` (256x256).
-* Moteur Rangement : Attribution précise aux Bacs / Étagères.
-* Business : Export PDF des rapports d'assurance depuis le module HOME

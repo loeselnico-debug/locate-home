@@ -68,41 +68,35 @@ const App = () => {
     <main className="w-screen min-h-[100dvh] bg-[#121212] text-white font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
       
       {/* ========================================== */}
-      {/* HEADER INALTÉRABLE STRICT - DESIGN REFERENCE */}
+      {/* HEADER INALTÉRABLE STRICT - V11 HUD CHÂSSIS */}
       {/* ========================================== */}
       {view !== 'hub' && (
-        <header className="fixed top-0 left-0 w-full h-[14vh] min-h-[90px] bg-[#121212] z-[100] flex flex-col justify-between px-[5vw] py-2 border-b-2 border-[#D3D3D3]">
+        <header className="fixed top-0 left-0 w-full h-[12.5vh] min-h-[70px] bg-[#121212] z-[100] border-b-2 border-[#D3D3D3] flex items-center justify-center">
           
-          {/* ÉTAPE 1 : LOGO AU CENTRE HAUT */}
-          <div className="flex justify-center items-start w-full pt-1">
-            <Logo />
+          {/* ÉTAPE 1 : LOGO (CENTRE ABSOLU, gère déjà ses 12.5vh) */}
+          <Logo />
+
+          {/* ÉTAPE 2 : BADGE PREMIUM (FLOTTANT À GAUCHE) */}
+          <div className="absolute left-[4vw] bg-[#333333] px-[3vw] sm:px-4 py-[0.5vh] rounded-xl border border-white/5 shadow-inner flex items-center justify-center">
+            <span className="text-[#FF6600] text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest">
+              {currentTier}
+            </span>
           </div>
 
-          {/* LIGNE DU BAS : PREMIUM À GAUCHE / PARAMÈTRES À DROITE */}
-          <div className="flex justify-between items-end w-full pb-1">
-            
-            {/* ÉTAPE 2 : BADGE PREMIUM (Maximum Gauche) */}
-            <div className="bg-[#333333] px-4 py-1.5 rounded-xl border border-white/5 shadow-inner flex items-center justify-center">
-              <span className="text-[#FF6600] text-[11px] font-black uppercase tracking-widest">
-                {currentTier}
-              </span>
-            </div>
-
-           {/* ÉTAPE 3 : ROUE DENTÉE (Maximum Droite) */}
-            <button onClick={() => setView('settings')} className="opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1">
-              <img 
-                src="/gear.png" 
-                className="w-9 h-9 object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
-                alt="Settings" 
-              />
-            </button>
-            
-          </div>
+          {/* ÉTAPE 3 : ROUE DENTÉE (FLOTTANT À DROITE) */}
+          <button onClick={() => setView('settings')} className="absolute right-[4vw] opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1">
+            <img 
+              src="/gear.png" 
+              className="w-[8vw] h-[8vw] max-w-[35px] max-h-[35px] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
+              alt="Settings" 
+            />
+          </button>
+          
         </header>
       )}
 
-      {/* ZONE DE CONTENU (Ajustée pour le nouveau Header de 14vh) */}
-      <div className={view !== 'hub' ? 'pt-[14vh] h-full' : 'h-full'}>
+      {/* ZONE DE CONTENU (Ajustée pour le nouveau Header de 12.5vh, avec flex-col pour que mt-auto fonctionne) */}
+      <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
         {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
 

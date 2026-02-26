@@ -87,6 +87,7 @@ Cerveau & Architecture
 [ X] Architecture Monorepo Modulaire : Séparation stricte Core / Modules / Types. Sémantique "LOCATEHOME" généralisée ; fonction `deleteTool` intégrée.
 [ X] Clé API : Mise en service de la nouvelle clé (suite à la suppression de l'ancienne).
 [ X] Persistance V2 : Système d'onglets pour le filtrage par zone (Fourgon/Atelier).
+[X] Moteur IA & Expertise : Refonte de `geminiService.ts`. Unification totale sur Gemini 2.0 Flash. Injection stricte de la Bible Métier (`expertiseRules.ts`) dans le System Prompt. Format JSON verrouillé (`score_confiance`, `nom`, `marque`) pour interdire les hallucinations et fiabiliser la règle du Zéro-Trust (>= 70%).
 
 Vision & Scan
 [ X] Scanner HDR : Mode hybride fonctionnel (Photo HD / Vidéo Burst / Importation) avec interface adaptative (vw).

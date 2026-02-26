@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { get, set } from 'idb-keyval';
 import { geminiService } from '../ai/geminiService';
 import { LOCATIONS } from '../../types';
 import { validateLocateObject } from '../ai/decisionEngine';
@@ -16,6 +17,9 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   const [flashOn, setFlashOn] = useState(false);
   const [pendingItems, setPendingItems] = useState<any[] | null>(null);
   
+  // NOUVEAU : État du consentement légal
+  const [hasConsented, setHasConsented] = useState<boolean | null>(null);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,14 +32,29 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     } catch (err) { console.error("Accès caméra refusé", err); }
   };
 
+  // Initialisation : Vérification du consentement avant d'allumer la caméra
   useEffect(() => {
-    startCamera();
+    get('locate_ai_consent').then((val) => {
+      if (val === true) {
+        setHasConsented(true);
+        startCamera();
+      } else {
+        setHasConsented(false); // Affiche la modale
+      }
+    });
+
     return () => {
       if (videoRef.current?.srcObject) {
         (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
       }
     };
   }, []);
+
+  const handleConsent = async () => {
+    await set('locate_ai_consent', true);
+    setHasConsented(true);
+    startCamera();
+  };
 
   const toggleTorch = async () => {
     if (!videoRef.current?.srcObject) return;
@@ -51,7 +70,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   };
 
   const handlePhotoClick = async () => {
-    if (!flashOn) await toggleTorch(); // Allume si éteint
+    if (!flashOn) await toggleTorch();
     setTimeout(async () => {
       if (!videoRef.current) return;
       const canvas = document.createElement('canvas');
@@ -59,7 +78,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       canvas.height = videoRef.current.videoHeight;
       canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
       const img = canvas.toDataURL('image/jpeg', 0.9);
-      if (flashOn) await toggleTorch(); // Éteint après photo
+      if (flashOn) await toggleTorch();
       runAnalysis(img, true);
     }, 500);
   };
@@ -133,6 +152,38 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
   return (
     <div className="fixed inset-0 z-[100] bg-black text-white overflow-hidden flex flex-col font-sans">
+      
+      {/* ========================================== */}
+      {/* SAS LÉGAL - CONSENTEMENT IA OBLIGATOIRE    */}
+      {/* ========================================== */}
+      {hasConsented === false && (
+        <div className="absolute inset-0 z-[300] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-[6vw] text-center">
+          <div className="bg-[#1E1E1E] border border-[#FF6600]/30 rounded-2xl p-[6vw] max-w-sm w-full shadow-[0_0_30px_rgba(255,102,0,0.15)] flex flex-col items-center">
+            <div className="w-[15vw] h-[15vw] max-w-[60px] max-h-[60px] bg-[#FF6600]/10 rounded-full flex items-center justify-center mb-[3vh] border border-[#FF6600]/50">
+              <span className="text-[#FF6600] text-2xl font-black">!</span>
+            </div>
+            <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.2rem,5vw,1.5rem)] mb-[2vh]">
+              Consentement IA
+            </h2>
+            <p className="text-white/70 text-[clamp(0.85rem,3vw,1rem)] leading-relaxed mb-[4vh]">
+              Locate Home utilise l'IA pour identifier vos outils. L'image est analysée puis <strong className="text-white">immédiatement supprimée</strong>. Aucune photo n'est stockée sur nos serveurs.
+            </p>
+            <button 
+              onClick={handleConsent}
+              className="w-full bg-[#FF6600] text-white py-[2vh] rounded-xl font-black uppercase tracking-widest text-[clamp(0.8rem,3vw,1rem)] shadow-[0_0_15px_rgba(255,102,0,0.3)] active:scale-95 transition-transform"
+            >
+              J'accepte et j'active
+            </button>
+            <button 
+              onClick={onBack}
+              className="w-full mt-[2vh] bg-transparent text-white/50 py-[1.5vh] rounded-xl font-bold uppercase tracking-widest text-[clamp(0.7rem,2.5vw,0.9rem)] active:scale-95 transition-transform"
+            >
+              Refuser & Quitter
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* INJECTION CSS POUR LE LASER FLUIDE */}
       <style>{`
         .laser-sweep { animation: sweep 2.5s ease-in-out infinite alternate; }
@@ -163,30 +214,24 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
       {/* VISEUR TACTIQUE (CENTRE) */}
       <div className="absolute inset-x-[8vw] top-[20vh] bottom-[30vh] pointer-events-none z-10 flex flex-col justify-between">
-        {/* Info Target au dessus */}
         <div className="bg-[#FF6600] text-black font-black text-[2vw] sm:text-[10px] uppercase tracking-widest self-start px-2 py-1 rounded shadow-[0_0_10px_rgba(255,102,0,0.6)]">
           {isScanning ? 'ACQUISITION VIDÉO...' : 'EN ATTENTE CIBLE'}
         </div>
 
-        {/* Cadre central */}
         <div className="relative flex-1 my-4 border border-white/10 bg-black/10 rounded-lg">
-          {/* Coins Néon */}
           <div className="absolute top-0 left-0 w-[8vw] h-[8vw] border-t-4 border-l-4 border-[#FF6600] rounded-tl-lg shadow-[0_0_15px_#FF6600,inset_0_0_10px_#FF6600]"></div>
           <div className="absolute top-0 right-0 w-[8vw] h-[8vw] border-t-4 border-r-4 border-[#FF6600] rounded-tr-lg shadow-[0_0_15px_#FF6600,inset_0_0_10px_#FF6600]"></div>
           <div className="absolute bottom-0 left-0 w-[8vw] h-[8vw] border-b-4 border-l-4 border-[#FF6600] rounded-bl-lg shadow-[0_0_15px_#FF6600,inset_0_0_10px_#FF6600]"></div>
           <div className="absolute bottom-0 right-0 w-[8vw] h-[8vw] border-b-4 border-r-4 border-[#FF6600] rounded-br-lg shadow-[0_0_15px_#FF6600,inset_0_0_10px_#FF6600]"></div>
           
-          {/* Réticule (Croix centrale) */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[6vw] h-[6vw] flex items-center justify-center opacity-40">
             <div className="absolute w-full h-[1px] bg-[#FF6600]"></div>
             <div className="absolute h-full w-[1px] bg-[#FF6600]"></div>
             <div className="absolute w-1/3 h-1/3 border border-[#FF6600] rounded-full"></div>
           </div>
 
-          {/* Laser CSS */}
           <div className="absolute left-0 right-0 h-[2px] bg-[#FF6600] shadow-[0_0_20px_#FF6600] laser-sweep"></div>
 
-          {/* Analyse Overlay */}
           {isAnalyzing && (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center z-30 rounded-lg">
               <div className="w-[12vw] h-[12vw] border-4 border-black border-t-[#FF6600] rounded-full animate-spin mb-4"></div>
@@ -198,8 +243,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
       {/* CONSOLE DE COMMANDE INFERIEURE */}
       <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-[10vh] pb-[env(safe-area-inset-bottom,4vh)] px-[4vw] z-20 flex flex-col gap-[3vh]">
-        
-        {/* Sélecteur de Zone */}
         <div className="flex gap-[2vw] overflow-x-auto no-scrollbar w-full px-[2vw]">
           {LOCATIONS.map(loc => (
             <button 
@@ -212,9 +255,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           ))}
         </div>
 
-        {/* Actions Principales */}
         <div className="flex justify-between items-end w-full px-[2vw]">
-          
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={() => fileInputRef.current?.click()} className="w-[14vw] h-[14vw] max-w-[60px] max-h-[60px] bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-90 backdrop-blur">
               <img src="/icon-import.png" className="w-[60%] h-[60%] object-contain" alt="Import" />
@@ -236,11 +277,10 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">{isScanning ? 'SCAN...' : 'DIRECT 10S'}</span>
           </div>
-
         </div>
       </div>
 
-      {/* MODAL RÉSULTATS ( inchangé mais z-index géré) */}
+      {/* MODAL RÉSULTATS */}
       {pendingItems && (
         <div className="absolute inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col p-[4vw] animate-in fade-in zoom-in-95">
           <div className="flex items-center justify-between mt-[6vh] mb-[4vh] border-b border-white/10 pb-[2vh]">

@@ -12,14 +12,17 @@ import Library from './modules/home/components/Library';
 import { Scanner } from './core/camera/Scanner';
 import Search from './modules/home/components/Search';
 import SettingsPage from './modules/home/views/SettingsPage';
+import ValidationSas from './modules/home/views/ValidationSas';
+import type { AIScanResult } from './modules/home/views/ValidationSas';
 
-type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail';
+type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation';
 
 const App = () => {
   const [view, setView] = useState<ViewState>('hub');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [pendingItems, setPendingItems] = useState<AIScanResult[]>([]);
   const { currentTier } = useUserTier();
 
   useEffect(() => {
@@ -46,22 +49,31 @@ const App = () => {
     }
   };
 
-  const handleAnalysisResults = (newItems: any[]) => {
-    // 1. Filtrage strict : on ne garde que les outils certifiés à 70% ou plus
-    const validItems = newItems.filter(item => item.score_confiance >= 70);
+  const handleAnalysisResults = (newItems: AIScanResult[]) => {
+    setPendingItems(newItems);
+    setView('validation');
+  };
 
-    // 2. Formatage des données validées
-    const itemsToAdd = validItems.map(item => ({
-      ...item,
-      id: crypto.randomUUID(),
-      date: new Date().toLocaleString(),
-    }));
+  const handleValidatePending = (validatedItems: AIScanResult[]) => {
+    const itemsToAdd: InventoryItem[] = validatedItems.map(item => ({
+  id: crypto.randomUUID(),
+  date: new Date().toLocaleString(),
+  toolName: item.nom || 'Outil Inconnu',
+  brand: item.marque || 'Marque N/A',
+  category: item.categorie_id || 'main',
+  location: 'Atelier', // Obligatoire selon ton interface
+  condition: item.etat || 'Bon état',
+  notes: item.description || ''
+}));
 
-    // 3. Mise à jour de la base de données (IndexedDB)
     setInventory(prev => [...itemsToAdd, ...prev]);
-    
-    // 4. CORRECTION CRITIQUE : Retour au tableau de bord général et non au détail vide
-    setView('inventory'); 
+    setPendingItems([]);
+    setView('inventory');
+  };
+
+  const handleRejectPending = () => {
+    setPendingItems([]);
+    setView('home');
   };
 
   return (
@@ -73,7 +85,7 @@ const App = () => {
       {view !== 'hub' && (
         <header className="fixed top-0 left-0 w-full h-[12.5vh] min-h-[70px] bg-[#121212] z-[100] border-b-2 border-[#D3D3D3] flex items-center justify-center">
           
-          {/* ÉTAPE 1 : LOGO (CENTRE ABSOLU, gère déjà ses 12.5vh) */}
+          {/* ÉTAPE 1 : LOGO (CENTRE ABSOLU) */}
           <Logo />
 
           {/* ÉTAPE 2 : BADGE PREMIUM (FLOTTANT À GAUCHE) */}
@@ -95,7 +107,7 @@ const App = () => {
         </header>
       )}
 
-      {/* ZONE DE CONTENU (Ajustée pour le nouveau Header de 12.5vh, avec flex-col pour que mt-auto fonctionne) */}
+      {/* ZONE DE CONTENU */}
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
         {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
@@ -105,7 +117,8 @@ const App = () => {
             inventory={inventory} 
             onStartScan={() => setView('scanner')} 
             onDelete={deleteTool}
-            onSelectCategory={handleCategorySelect} onBack={() => setView('home')}
+            onSelectCategory={handleCategorySelect} 
+            onBack={() => setView('home')}
           />
         )}
 
@@ -120,6 +133,14 @@ const App = () => {
 
         {view === 'scanner' && <Scanner onBack={() => setView('home')} onAnalysisComplete={handleAnalysisResults} />}
         {view === 'search' && <Search onBack={() => setView('home')} inventory={inventory} />}
+        
+        {view === 'validation' && (
+          <ValidationSas 
+            pendingItems={pendingItems} 
+            onValidateAll={handleValidatePending} 
+            onRejectAll={handleRejectPending} 
+          />
+        )}
 
         {view === 'settings' && (
           <div className="absolute inset-0 z-50 bg-[#121212]">

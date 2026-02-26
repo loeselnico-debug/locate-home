@@ -96,6 +96,7 @@ Vision & Scan
 [ X] Flux de Validation (Sas 01 C1) : Pont de données opérationnel entre le scanner et l'inventaire avec filtre de confiance IA (>= 70%).
 [X] UI Scanner V11 : Refonte totale (100% fluide, zéro pixel). Intégration des icônes 3D (photo, vidéo, import), suppression du header pour gain d'espace vertical, optimisation du flexbox de localisation (anti-scroll) et animation dynamique du laser de balayage.
 [X] UI Scanner HUD : Interface immersive (100dvh, calque z-100) façon HUD industriel. Réticule central, boutons flottants 3D, animation laser CSS perpétuelle, et affichage tête haute (Top Bar) intégrant le contrôle de torche.
+[X] Architecture App V11 : Châssis parent recalibré à 12.5vh. Alignement absolu du Badge et Settings pour libérer le flux central. Cohésion visuelle totale du Logo avec le HomeMenu.
 
 Interface & UX
 [ X] Hub Central : Dashboard interactif et dynamique, CSS ultra-léger. Connexion à la base de données avec jauge orange dynamique.

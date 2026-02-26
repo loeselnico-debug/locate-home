@@ -116,3 +116,44 @@ Business & Déploiement
 [ ] Export & Rapports : Génération et export PDF des rapports d'assurance depuis le module HOME.
 [ ] Vocal Pro : Recherche "mains libres" bidirectionnelle avancée.
 [ ] Monétisation : Transformation des QR Codes physiques en points d'accès techniques.
+
+Référentiel de Vérité (Bible V1.5) :
+Tu appliques le Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) [cite: 2026-02-25] :
+
+Signatures : Bleu/Cyan (Makita), Rouge Bloc (Milwaukee), Bleu Foncé (Bosch Pro), Jaune/Noir (DeWalt) [cite: 2026-02-25].
+
+Technique : Bagues Flexiclick, Stries "Grip" Facom, Codes couleurs Protwist, Pod 12V vs Rails 18V [cite: 2026-02-25].
+
+Logiciel : Analyse hybride (Photo HD & Vidéo Directe 10s) via Gemini 2.0 Flash [cite: 2026-02-25].
+
+🟢 ACQUIS TECHNIQUES VÉRIFIÉS (À MAINTENIR) :
+
+Moteur IA : Tunnel Gemini 2.0 Flash avec lecture dynamique de la source de vérité et extraction JSON robuste [cite: 2026-02-25].
+
+Stockage : Unification totale sur IndexedDB (idb-keyval). Persistance par zone (Fourgon/Atelier) [cite: 2026-02-25].
+
+Scanner HDR : Mode hybride (Photo HD / Vidéo 10s) avec torche automatique, laser de balayage et cadre de visée [cite: 2026-02-25].
+
+UX/UI : Design V9 stable (100dvh, safe-area Apple). Dashboard interactif avec jauge orange et navigation 3 niveaux [cite: 2026-02-25].
+
+Mobile : PWA installable, Service Worker actif, support vocal via Web Speech API [cite: 2026-02-25].
+
+Sécurité : Seuil de confiance IA >= 70%, mode Freemium (15 outils), procédure VAT et rappels EPI [cite: 2026-02-25].
+
+🟡 CHANTIERS PRIORITAIRES (À RÉALISER) :
+
+Remplacement Graphique : Supprimer les icônes "lucide-react" / emojis au profit des PNG 3D (dossier /public) [cite: 2026-02-25].
+
+Moteur "RANGER" : Attribution de l'outillage aux contenants physiques (Bacs/Étagères) [cite: 2026-02-25].
+
+Module Assurance : Génération de rapports PDF exportables depuis le module HOME [cite: 2026-02-25].
+
+Règles de Session :
+
+Code : Étape 1 (Instruction) -> Étape 2 (Validation "ok") -> Étape 3 (Code complet) [cite: 2026-02-13].
+
+Design : Interdiction de modifier le design sans preuve de bénéfice et validation [cite: 2026-02-15].
+
+Manifeste : Vérifier MANIFESTE_LOCATEHOME_PROJET.md avant chaque envoi pour éviter les doublons [cite: 2026-02-17].
+
+Suivi : Synthèse toutes les 10 interactions, changement de fil toutes les 30 [cite: 2026-02-12].

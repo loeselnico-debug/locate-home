@@ -1,4 +1,4 @@
-// Logique de validation selon la "Charte de Vérité" Phoenix
+// Logique de validation selon la Charte de Vérité LOCATEHOME
 export interface ScanResult {
   typography?: string;  // Étape 4 : Modèle exact (ex: DHP484)
   zoomDetail?: string;  // Étape 3 : Mandrin, sabot, etc.
@@ -7,7 +7,7 @@ export interface ScanResult {
   confidence: number;   // Seuil de certitude
 }
 
-export const validatePhoenixObject = (data: ScanResult) => {
+export const validateLocateObject = (data: ScanResult) => {
   // Seuil de Vigilance : 70% minimum pour agir
   if (data.confidence < 0.70) {
     return { status: "MANUAL_VALIDATION", message: "Certitude insuffisante" };

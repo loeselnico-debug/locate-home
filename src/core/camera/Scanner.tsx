@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { geminiService } from '../ai/geminiService';
 import { LOCATIONS } from '../../types';
+import { validateLocateObject } from '../ai/decisionEngine';
+import type { ScanResult } from '../ai/decisionEngine';
 
 interface ScannerProps {
   onBack: () => void;
@@ -102,11 +104,35 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   const runAnalysis = async (data: string, isImage: boolean) => {
     setIsAnalyzing(true);
     try {
-      const results = isImage 
-        ? await geminiService.analyzeVideoBurst([data], selectedLocation) // Réutilise la logique image si besoin
+      // 1. Récupération des données brutes de l'IA
+      const rawResults = isImage 
+        ? await geminiService.analyzeVideoBurst([data], selectedLocation)
         : await geminiService.analyzeVideo(data, selectedLocation);
-      if (results && results.length > 0) setPendingItems(results);
-    } finally { setIsAnalyzing(false); }
+
+      if (rawResults && rawResults.length > 0) {
+        // 2. Passage dans le sas de sécurité Zéro-Trust (PAVP V5.0)
+        const certifiedItems = rawResults.map((item: any) => {
+          const validation = validateLocateObject(item as ScanResult);
+          return {
+            ...item,
+            _validationStatus: validation.status,
+            _validationMessage: validation.message,
+            // Si certifié, le label officiel devient la typographie exacte trouvée
+            label: validation.status === "CERTIFIED" ? validation.label : item.label
+          };
+        }).filter((item: any) => item._validationStatus === "CERTIFIED"); // 3. On ne garde que ceux >= 70%
+
+        // 4. Envoi à l'inventaire uniquement si la pièce est conforme
+        if (certifiedItems.length > 0) {
+          setPendingItems(certifiedItems);
+        } else {
+          console.warn("LOCATEHOME: Aucun objet n'a passé le sas de sécurité (seuil < 70%).");
+          // Optionnel pour plus tard : Afficher une alerte visuelle à l'utilisateur ici
+        }
+      }
+    } finally { 
+      setIsAnalyzing(false); 
+    }
   };
 
   return (

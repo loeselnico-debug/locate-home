@@ -9,11 +9,10 @@ interface ScannerProps {
   onAnalysisComplete: (newItems: any[]) => void;
 }
 
-export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) => {
+export const Scanner: React.FC<ScannerProps> = ({  onAnalysisComplete }) => {
   const [selectedLocation, setSelectedLocation] = useState(LOCATIONS[0].label);
   const [isScanning, setIsScanning] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [flashOn, setFlashOn] = useState(false);
   const [pendingItems, setPendingItems] = useState<any[] | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -44,7 +43,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     if (capabilities.torch) {
       try {
         await track.applyConstraints({ advanced: [{ torch: state }] } as any);
-        setFlashOn(state);
       } catch (err) { console.error("Erreur Torche:", err); }
     }
   };
@@ -104,30 +102,25 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   const runAnalysis = async (data: string, isImage: boolean) => {
     setIsAnalyzing(true);
     try {
-      // 1. Récupération des données brutes de l'IA
       const rawResults = isImage 
         ? await geminiService.analyzeVideoBurst([data], selectedLocation)
         : await geminiService.analyzeVideo(data, selectedLocation);
 
       if (rawResults && rawResults.length > 0) {
-        // 2. Passage dans le sas de sécurité Zéro-Trust (PAVP V5.0)
         const certifiedItems = rawResults.map((item: any) => {
           const validation = validateLocateObject(item as ScanResult);
           return {
             ...item,
             _validationStatus: validation.status,
             _validationMessage: validation.message,
-            // Si certifié, le label officiel devient la typographie exacte trouvée
             label: validation.status === "CERTIFIED" ? validation.label : item.label
           };
-        }).filter((item: any) => item._validationStatus === "CERTIFIED"); // 3. On ne garde que ceux >= 70%
+        }).filter((item: any) => item._validationStatus === "CERTIFIED");
 
-        // 4. Envoi à l'inventaire uniquement si la pièce est conforme
         if (certifiedItems.length > 0) {
           setPendingItems(certifiedItems);
         } else {
           console.warn("LOCATEHOME: Aucun objet n'a passé le sas de sécurité (seuil < 70%).");
-          // Optionnel pour plus tard : Afficher une alerte visuelle à l'utilisateur ici
         }
       }
     } finally { 
@@ -137,15 +130,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
   return (
     <div className="flex flex-col h-screen bg-[#050505] text-white p-[2vh] overflow-hidden relative">
-      <div className="flex justify-between items-center h-[8vh] mb-[1vh] shrink-0">
-        <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-[#1E1E1E] rounded-xl border border-white/10 active:scale-95">
-          <span className="text-xl">←</span>
-        </button>
-        <h1 className="text-[#FF6600] font-black italic text-[1.1rem] tracking-widest">LOCATE HOME</h1>
-        <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-[#1E1E1E] border border-white/10 opacity-30">
-          {flashOn ? '⚡' : '🌑'}
-        </div>
-      </div>
+      {/* HEADER SUPPRIMÉ COMME DEMANDÉ */}
 
       <div className="relative flex-1 min-h-0 w-full max-w-lg mx-auto my-2 rounded-3xl overflow-hidden border-2 border-[#1E1E1E] bg-black shadow-[0_0_40px_rgba(255,102,0,0.05)]">
         <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-90" />
@@ -155,8 +140,11 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-[#FF6600] rounded-tr-xl shadow-[0_0_15px_rgba(255,102,0,0.5)]"></div>
           <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-[#FF6600] rounded-bl-xl shadow-[0_0_15px_rgba(255,102,0,0.5)]"></div>
           <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-[#FF6600] rounded-br-xl shadow-[0_0_15px_rgba(255,102,0,0.5)]"></div>
-          <div className={`absolute left-0 right-0 h-[2px] bg-[#FF6600] shadow-[0_0_15px_#FF6600] ${isScanning ? 'animate-scan-laser' : 'top-1/2 opacity-20'}`}></div>
+          
+          {/* ANIMATION DU LASER (ÉTAPE 6) */}
+          <div className="absolute left-0 right-0 h-[2px] bg-[#FF6600] shadow-[0_0_15px_#FF6600] top-[10%] animate-[bounce_2s_infinite]"></div>
         </div>
+        
         {isAnalyzing && (
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-30">
             <div className="w-16 h-16 border-4 border-[#1E1E1E] border-t-[#FF6600] rounded-full animate-spin mb-4"></div>
@@ -165,39 +153,47 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         )}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar my-[2vh] px-2 shrink-0">
+      {/* BARRE DE LOCALISATION OPTIMISÉE POUR ÉVITER LE SCROLL (ÉTAPE 5) */}
+      <div className="flex justify-between w-full my-[2vh] shrink-0">
         {LOCATIONS.map(loc => (
           <button 
             key={loc.id} 
             onClick={() => setSelectedLocation(loc.label)} 
-            className={`px-5 py-2 rounded-xl text-[10px] font-black border transition-all ${selectedLocation === loc.label ? 'bg-[#FF6600] border-[#FF6600] text-black' : 'bg-[#1E1E1E] border-white/5 text-white/50'}`}
+            className={`flex-1 mx-[1vw] py-[1vh] rounded-xl text-[2.5vw] sm:text-[10px] font-black border transition-all ${selectedLocation === loc.label ? 'bg-[#FF6600] border-[#FF6600] text-black' : 'bg-[#1E1E1E] border-white/5 text-white/50'}`}
           >
             {loc.label.toUpperCase()}
           </button>
         ))}
       </div>
 
-      <div className="flex justify-between items-end px-4 pb-10 mt-auto shrink-0 gap-4">
-        <div className="flex flex-col items-center gap-2">
-          <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-[#1E1E1E] border border-white/10 rounded-2xl flex items-center justify-center active:scale-90">
-            <img src="/icon-photo.png" className="w-8 h-8 opacity-60" alt="Galerie" />
+      {/* BARRE D'ACTIONS INFERIEURE REFONDUE (ÉTAPES 2, 3, 4) */}
+      <div className="flex justify-between items-end px-[2vw] pb-[2vh] mt-auto shrink-0 gap-[4vw]">
+        
+        {/* BOUTON IMPORT */}
+        <div className="flex flex-col items-center gap-1 w-1/4">
+          <button onClick={() => fileInputRef.current?.click()} className="w-[12vw] h-[12vw] max-w-[60px] max-h-[60px] bg-transparent flex items-center justify-center active:scale-90">
+            <img src="/icon-import.png" className="w-full h-full object-contain" alt="Import" />
           </button>
-          <span className="text-[8px] text-white/30 font-bold uppercase tracking-widest">MAX 5MO</span>
+          <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center">MAX 5MO</span>
           <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*" />
         </div>
 
-        <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="flex-1 h-20 bg-[#FF6600] rounded-2xl flex flex-col items-center justify-center shadow-[0_10px_20px_rgba(255,102,0,0.2)] active:scale-95">
-          <span className="text-black font-black uppercase text-sm">PHOTO</span>
-          <span className="text-black/60 text-[8px] font-bold tracking-widest">HD MODE</span>
-        </button>
-
-        <div className="flex-1 flex flex-col items-center gap-2">
-          <button onClick={handleVideoRecord} disabled={isScanning || isAnalyzing} className={`w-full h-20 rounded-2xl flex flex-col items-center justify-center transition-all active:scale-95 ${isScanning ? 'bg-white text-black animate-pulse' : 'bg-[#FF6600] text-black shadow-[0_10px_20px_rgba(255,102,0,0.2)]'}`}>
-            <span className="font-black uppercase text-sm">VIDÉO</span>
-            <span className="text-[8px] font-bold opacity-60 uppercase">{isScanning ? 'En cours...' : '10S Direct'}</span>
+        {/* BOUTON PHOTO */}
+        <div className="flex flex-col items-center gap-1 w-1/4">
+          <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-[16vw] h-[16vw] max-w-[80px] max-h-[80px] bg-transparent flex items-center justify-center active:scale-95">
+            <img src="/icon-photo.png" className="w-full h-full object-contain" alt="Photo" />
           </button>
-          <span className="text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 10S</span>
+          <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center">MAX 5MO</span>
         </div>
+
+        {/* BOUTON VIDÉO */}
+        <div className="flex flex-col items-center gap-1 w-1/4">
+          <button onClick={handleVideoRecord} disabled={isScanning || isAnalyzing} className={`w-[16vw] h-[16vw] max-w-[80px] max-h-[80px] bg-transparent flex items-center justify-center active:scale-95 ${isScanning ? 'animate-pulse opacity-50' : ''}`}>
+            <img src="/icon-video.png" className="w-full h-full object-contain" alt="Vidéo" />
+          </button>
+          <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center">MAX 10S</span>
+        </div>
+
       </div>
 
       {pendingItems && (

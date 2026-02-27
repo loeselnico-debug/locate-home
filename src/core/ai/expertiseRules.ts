@@ -61,10 +61,12 @@ export const INDUSTRIAL_RULES = {
     battery_status: "Rails visibles sans batterie = 'Électroportatif non opérationnel'."
   },
 
-  // 7. CONSOMMABLES
+  // 7. CONSOMMABLES ET JAUGE DE DROPSHIPPING
   consumables: {
     mastic_silicone: "Canule pointue = Neuf / Canule coupée ou biseautée = Entamé (Priorité d'utilisation).",
     visserie_joints: "Quantité en % du volume. Joints par profilage des strates (éviter les ombres).",
-    contenants: "Scellé rompu / rabats entrouverts = 'Présence à confirmer physiquement'."
+    contenants: "Scellé rompu / rabats entrouverts = 'Présence à confirmer physiquement'.",
+    // VERROUILLAGE INFORMATIQUE STRICT :
+    format_obligatoire: "Si l'objet analysé est un consommable, tu DOIS évaluer le volume restant selon les strates et l'air. Tu retourneras UNIQUEMENT un nombre entier compris entre 0 et 100 pour définir le niveau. Interdiction stricte d'utiliser le symbole '%' ou du texte."
   }
 };

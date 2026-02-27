@@ -1,9 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Mic, MicOff, Search as SearchIcon, MapPin } from 'lucide-react';
-// On importe le type Location, et non plus la constante
 import type { InventoryItem, Location } from '../../../types';
-// On importe notre moteur dynamique
-import { getCustomLocations } from '../../../core/storage/memoryService'; 
+import { getCustomLocations } from '../../../core/storage/memoryService';
 
 interface SearchProps {
   onBack: () => void;
@@ -14,16 +12,42 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
   const [isListening, setIsListening] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<string | 'ALL'>('ALL');
-  
-  // NOUVEAU : État pour stocker les zones personnalisées
   const [locations, setLocations] = useState<Location[]>([]);
 
-  // NOUVEAU : Chargement des zones au montage du composant
   useEffect(() => {
     setLocations(getCustomLocations());
   }, []);
 
-  // --- LOGIQUE VOCALE ---
+  // --- VOCAL PRO : PARSEUR D'INTENTION LOCAL ---
+  const analyzeIntent = (transcript: string) => {
+    let cleanedQuery = transcript.toLowerCase();
+    let detectedLocation: string | null = null;
+
+    // 1. Détection de la Zone (Location dynamique)
+    locations.forEach(loc => {
+      const locName = loc.label.toLowerCase();
+      if (cleanedQuery.includes(locName)) {
+        detectedLocation = loc.label;
+        // On retire le nom de la zone de la recherche texte
+        cleanedQuery = cleanedQuery.replace(locName, '').trim();
+      }
+    });
+
+    // 2. Nettoyage des mots de liaison inutiles pour une recherche propre
+    const stopWords = ['dans le', 'dans la', 'dans', 'sur le', 'sur la', 'sur', 'montre-moi', 'cherche', 'trouve', 'les', 'des'];
+    stopWords.forEach(word => {
+      cleanedQuery = cleanedQuery.replace(new RegExp(`\\b${word}\\b`, 'gi'), '').trim();
+    });
+
+    // 3. Application automatique des filtres HUD
+    if (detectedLocation) {
+      setSelectedLocation(detectedLocation);
+    }
+
+    // 4. On injecte l'essence de la recherche (ex: "perceuse bosch") dans l'input
+    setQuery(cleanedQuery.replace(/\s+/g, ' ').trim());
+  };
+
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitRecognition;
     if (!SpeechRecognition) {
@@ -33,22 +57,32 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'fr-FR';
+    recognition.continuous = false; // Arrêt auto après la phrase
+    recognition.interimResults = false;
+
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
+    
     recognition.onresult = (event: any) => {
-      setQuery(event.results[0][0].transcript);
+      const transcript = event.results[0][0].transcript;
+      analyzeIntent(transcript); // Injection dans le parseur au lieu de setQuery direct
     };
+
     recognition.start();
   };
 
-  // --- FILTRAGE INTELLIGENT ---
+  // --- FILTRAGE INTELLIGENT MULTI-CRITÈRES ---
   const results = useMemo(() => {
     return inventory.filter(tool => {
-      const matchesQuery = query.trim() === '' || 
-        tool.toolName.toLowerCase().includes(query.toLowerCase()) || 
-        tool.category.toLowerCase().includes(query.toLowerCase());
+      // Découpage de la requête en mots pour une recherche plus tolérante (ex: "bosch perceuse" trouve "Perceuse Bosch")
+      const searchTerms = query.toLowerCase().split(' ').filter(word => word.length > 2);
       
-      // On compare avec le label de la localisation
+      const matchesQuery = query.trim() === '' || searchTerms.every(term => 
+        tool.toolName.toLowerCase().includes(term) || 
+        tool.category.toLowerCase().includes(term) ||
+        (tool.sku && tool.sku.toLowerCase().includes(term))
+      );
+      
       const matchesLocation = selectedLocation === 'ALL' || tool.location === selectedLocation;
       return matchesQuery && matchesLocation;
     });
@@ -67,7 +101,7 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
         <div className="flex flex-col items-end text-right">
           <h2 className="text-[1.5rem] font-black italic uppercase tracking-tighter leading-none">Retrouver</h2>
           <div className="bg-[#FF6600] px-[1rem] py-[0.1rem] -rotate-2 mt-[0.5rem] shadow-[2px_2px_0px_rgba(0,0,0,0.5)]">
-            <span className="text-[0.5rem] font-black text-white italic uppercase tracking-[0.2em]">Assistant Vocal</span>
+            <span className="text-[0.5rem] font-black text-white italic uppercase tracking-[0.2em]">Vocal Pro</span>
           </div>
         </div>
       </div>
@@ -95,7 +129,7 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
         </button>
       </div>
 
-      {/* FILTRES DE ZONES (Source de Vérité Dynamique) */}
+      {/* FILTRES DE ZONES DYNAMIQUES */}
       <div className="flex overflow-x-auto no-scrollbar gap-[1rem] mb-[5vh] pb-[1vh] snap-x">
         <button 
           onClick={() => setSelectedLocation('ALL')}
@@ -106,7 +140,6 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
           TOUT
         </button>
         
-        {/* NOUVEAU : On map sur l'état local 'locations' */}
         {locations.map(loc => (
           <button 
             key={loc.id}

@@ -42,6 +42,8 @@ export interface InventoryItem {
   price?: number;           // Valeur estimée de remplacement
   serialNumber?: string;    // Numéro de série (S/N)
   condition?: string;       // État : Neuf, Usagé, etc.
+  isConsumable?: boolean;   // Détermine si l'objet est un consommable (vis, mastic...)
+  consumableLevel?: number; // Jauge de remplissage stricte de 0 à 100 (Entier pur)
 }
 
 // Alias de compatibilité pour les anciens fichiers (à supprimer en V2.0)

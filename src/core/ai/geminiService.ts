@@ -20,22 +20,22 @@ RÈGLE ABSOLUE : Tu dois retourner UNIQUEMENT un tableau JSON valide. Pas de tex
 Chaque outil détecté doit être un objet avec cette structure EXACTE :
 [
   {
-    "nom": "Nom technique précis (ex: Perceuse Visseuse DDF484)",
+    "nom": "Nom technique précis (ex: Boîte de Vis Spax 5x50)",
     "marque": "Marque identifiée (selon l'ADN métier de la Bible)",
     "categorie_id": "ID exact de la catégorie correspondante",
-    "score_confiance": Nombre entier entre 0 et 100 (Calcule-le selon le niveau du PAVP validé),
+    "score_confiance": 95,
     "etat": "Bon état / Usagé / Neuf",
-    "description": "Justification métier (ex: 'Batterie LXT détectée, mandrin auto-serrant, étape 3 validée')"
+    "description": "Justification métier (ex: 'Batterie LXT détectée' ou 'Analyse des strates de vis')",
+    "isConsumable": true,
+    "consumableLevel": 65
   }
 ]
 `;
 
 export const geminiService = {
-  // --- MODE PHOTO HD / IMPORT ---
   analyzeVideoBurst: async (base64Images: string[], userLocation: string = "Atelier"): Promise<any[]> => {
     if (!apiKey) return [];
     try {
-      // MISE À JOUR : Standardisation sur le modèle 2.0 Flash
       const model = genAI.getGenerativeModel({ 
         model: "gemini-2.0-flash", 
         generationConfig: { responseMimeType: "application/json" } 
@@ -44,6 +44,7 @@ export const geminiService = {
       const categoriesContext = CATEGORIES.map(cat => `- ID: "${cat.id}" | Label: ${cat.label}`).join('\n');
       const rulesContext = JSON.stringify(INDUSTRIAL_RULES, null, 2);
 
+      // On utilise bien la fonction ici !
       const prompt = getSystemPrompt(userLocation, rulesContext, categoriesContext);
       
       const imageParts = base64Images.map(base64 => ({
@@ -58,7 +59,6 @@ export const geminiService = {
     }
   },
 
-  // --- MODE VIDÉO DIRECTE 10S ---
   analyzeVideo: async (videoBase64: string, userLocation: string = "Atelier"): Promise<any[]> => {
     if (!apiKey) return [];
     try {
@@ -70,6 +70,7 @@ export const geminiService = {
       const categoriesContext = CATEGORIES.map(cat => `- ID: "${cat.id}" | Label: ${cat.label}`).join('\n');
       const rulesContext = JSON.stringify(INDUSTRIAL_RULES, null, 2);
 
+      // Appel de la fonction pour la vidéo
       const prompt = getSystemPrompt(userLocation, rulesContext, categoriesContext);
 
       const videoPart = {

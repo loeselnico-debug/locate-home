@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { get, set } from 'idb-keyval';
 import { geminiService } from '../ai/geminiService';
-import { LOCATIONS } from '../../types';
+import { getCustomLocations } from '../../core/storage/memoryService';
 import { validateLocateObject } from '../ai/decisionEngine';
 import type { ScanResult } from '../ai/decisionEngine';
 
@@ -11,7 +11,7 @@ interface ScannerProps {
 }
 
 export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) => {
-  const [selectedLocation, setSelectedLocation] = useState(LOCATIONS[0].label);
+  const [selectedLocation, setSelectedLocation] = useState(getCustomLocations()[0].label);
   const [isScanning, setIsScanning] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
@@ -244,7 +244,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       {/* CONSOLE DE COMMANDE INFERIEURE */}
       <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-[10vh] pb-[env(safe-area-inset-bottom,4vh)] px-[4vw] z-20 flex flex-col gap-[3vh]">
         <div className="flex gap-[2vw] overflow-x-auto no-scrollbar w-full px-[2vw]">
-          {LOCATIONS.map(loc => (
+          {getCustomLocations().map(loc => (
             <button 
               key={loc.id} 
               onClick={() => setSelectedLocation(loc.label)} 

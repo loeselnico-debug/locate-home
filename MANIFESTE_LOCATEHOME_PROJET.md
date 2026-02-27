@@ -91,16 +91,16 @@ A. Stratégie des Noms de Domaine (12 Domaines Sécurisés)
 Le verrouillage des domaines est effectif pour protéger la propriété intellectuelle et anticiper les lancements jusqu'en 2030 :
 
 Locate Systems (Critique - Identité Holding) : locatesystems.com / locatesystems.fr
+Locate Home: locatehome.com / locatehome.fr
+Locate Kitchen: locatekitchen.com / locatekitchen.fr
+Locate Care: locatecare.com / locatecare.fr
+Locate Asset: locateasset.com / locateasset.fr
+Locate Garage: locategarage.com / locategarage.fr
 
-Locate Home (Immédiat - Bêta en cours) : locatehome.com / locatehome.fr
-
-Locate Kitchen (Stratégique 2030) : locatekitchen.com / locatekitchen.fr
-
-Locate Care (Stratégique 2030) : locatecare.com / locatecare.fr
-
-Locate Asset (Protection Industrielle) : locateasset.com / locateasset.fr
-
-Locate Garage (Protection Mécanique) : locategarage.com / locategarage.fr
+Cadre Juridique : Validation des CGU/CGV, de la Politique de Confidentialité RGPD et de la stratégie d'entreprise (choix LegalTech/Paris pour la domiciliation).
+Mise à jour Data : Typage strict de InventoryItem avec l'intégration des variables juridiques optionnelles (price, serialNumber, condition).
+Moteur PDF (Module Assurance) : Intégration de @react-pdf/renderer respectant la structure exigée par les assurances.
+Optimisation Runtime : Déploiement du Lazy Loading (Suspense) pour le bouton PDF, évitant le crash de React 18 au démarrage de l'application.
 
 B. Architecture "Privacy by Design" (RGPD)
 

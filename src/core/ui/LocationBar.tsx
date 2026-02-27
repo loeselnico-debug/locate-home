@@ -1,5 +1,6 @@
-import React from 'react';
-import { LOCATIONS } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { getCustomLocations, addCustomLocation } from '../storage/memoryService';
+import type { Location } from '../../types';
 
 interface LocationBarProps {
   selectedLocation: string;
@@ -7,9 +8,34 @@ interface LocationBarProps {
 }
 
 export const LocationBar: React.FC<LocationBarProps> = ({ selectedLocation, setSelectedLocation }) => {
+  const [locations, setLocations] = useState<Location[]>([]);
+
+  useEffect(() => {
+    // Charge les lieux depuis le Zéro-Serveur (IndexedDB/LocalStorage) au montage
+    setLocations(getCustomLocations());
+  }, []);
+
+  const handleAddLocation = () => {
+    if (locations.length >= 4) {
+      alert("Limite système : 4 zones maximum. Pour le détail (bacs/boîtes), utilisez notre système d'étiquettes QR.");
+      return;
+    }
+    
+    // UI native simple pour ne pas alourdir l'application
+    const newLabel = window.prompt("Nom de la nouvelle zone d'intervention (ex: Chantier B) :");
+    
+    if (newLabel && newLabel.trim() !== '') {
+      const success = addCustomLocation(newLabel);
+      if (success) {
+        setLocations(getCustomLocations()); // Rafraîchit l'affichage HUD
+        setSelectedLocation(newLabel.trim()); // Auto-focus sur la nouvelle zone
+      }
+    }
+  };
+
   return (
-    <div className="flex overflow-x-auto gap-[0.8rem] mb-[3vh] no-scrollbar">
-      {LOCATIONS.map((loc) => (
+    <div className="flex overflow-x-auto gap-[0.8rem] mb-[3vh] no-scrollbar px-[4vw]">
+      {locations.map((loc) => (
         <button
           key={loc.id}
           onClick={() => setSelectedLocation(loc.label)}
@@ -22,6 +48,17 @@ export const LocationBar: React.FC<LocationBarProps> = ({ selectedLocation, setS
           {loc.label.toUpperCase()}
         </button>
       ))}
+      
+      {/* Rendu conditionnel du bouton d'ajout si limite non atteinte */}
+      {locations.length < 4 && (
+        <button
+          onClick={handleAddLocation}
+          className="w-8 h-8 rounded-full border border-dashed border-gray-500 flex items-center justify-center text-gray-400 hover:text-[#FF6600] hover:border-[#FF6600] transition-colors shrink-0"
+          title="Ajouter une nouvelle zone"
+        >
+          +
+        </button>
+      )}
     </div>
   );
 };

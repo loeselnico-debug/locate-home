@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Mic, MicOff, Search as SearchIcon, MapPin } from 'lucide-react';
-import type { InventoryItem } from '../../../types';
-// IMPORT DE LA SOURCE DE VÉRITÉ (Synchronisation V3.1)
-import { LOCATIONS } from '../../../types'; 
+// On importe le type Location, et non plus la constante
+import type { InventoryItem, Location } from '../../../types';
+// On importe notre moteur dynamique
+import { getCustomLocations } from '../../../core/storage/memoryService'; 
 
 interface SearchProps {
   onBack: () => void;
@@ -13,6 +14,14 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
   const [isListening, setIsListening] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<string | 'ALL'>('ALL');
+  
+  // NOUVEAU : État pour stocker les zones personnalisées
+  const [locations, setLocations] = useState<Location[]>([]);
+
+  // NOUVEAU : Chargement des zones au montage du composant
+  useEffect(() => {
+    setLocations(getCustomLocations());
+  }, []);
 
   // --- LOGIQUE VOCALE ---
   const startListening = () => {
@@ -48,7 +57,7 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
   return (
     <div className="min-h-screen bg-[#121212] text-white p-[4vh] font-sans pb-[15vh]">
       
-      {/* HEADER & RETOUR (Conforme Étape 3) */}
+      {/* HEADER & RETOUR */}
       <div className="flex justify-between items-center mb-[4vh]">
         <button onClick={onBack} className="flex items-center gap-[2vw] active:scale-90 transition-transform">
           <img src="/icon-return.png" alt="Retour" className="w-[2.5rem] h-[2.5rem] object-contain" />
@@ -97,7 +106,8 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
           TOUT
         </button>
         
-        {LOCATIONS.map(loc => (
+        {/* NOUVEAU : On map sur l'état local 'locations' */}
+        {locations.map(loc => (
           <button 
             key={loc.id}
             onClick={() => setSelectedLocation(loc.label)}
@@ -110,18 +120,16 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
         ))}
       </div>
 
-      {/* LISTE DES RÉSULTATS (Détourage Effet Waouh - Publicité) */}
+      {/* LISTE DES RÉSULTATS */}
       <div className="grid gap-[2vh]">
         {results.length > 0 ? (
           results.map(tool => (
             <div key={tool.id} className="relative bg-[#1E1E1E] border border-white/5 rounded-[1.5rem] p-[1rem] flex items-center gap-[4vw] overflow-hidden group active:scale-[0.98] transition-transform">
               
-              {/* Effet Laser HDR au clic */}
               <div className="absolute top-0 left-0 w-full h-[1px] bg-[#FF6600] shadow-[0_0_10px_#FF6600] opacity-0 group-active:opacity-100"></div>
               
               <div className="w-[5rem] h-[5rem] rounded-[1rem] overflow-hidden bg-black border border-white/10 flex-shrink-0 relative">
                 <img src={tool.imageUrl || "/placeholder-tool.png"} alt={tool.toolName} className="w-full h-full object-cover opacity-80" />
-                {/* Badge Icône Catégorie (Optionnel) */}
                 <div className="absolute bottom-1 right-1 w-4 h-4">
                   <img src={`/${tool.category}.png`} className="w-full h-full object-contain" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
                 </div>

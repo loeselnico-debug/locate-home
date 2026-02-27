@@ -47,6 +47,9 @@ export interface InventoryItem {
   imageUrl?: string;
   date: string;
   confidence?: number; // <--- Ajout de la propriété manquante (optionnelle avec ?)
+  price?: number;           // Valeur estimée de remplacement
+  serialNumber?: string;    // Numéro de série (S/N)
+  condition?: string;       // État : Neuf, Usagé, etc.
 }
 
 // Alias de compatibilité pour les anciens fichiers (à supprimer en V2.0)

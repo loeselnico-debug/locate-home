@@ -1,4 +1,8 @@
 import React from 'react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { InsuranceReport } from '../components/InsuranceReport';
+// Assure-toi que ce chemin correspond bien à ton architecture
+import { useUserTier } from '../../../core/security/useUserTier'; 
 import type { InventoryItem } from '../../../types';
 
 export const CATEGORIES = [
@@ -22,6 +26,15 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBack, onDelete }) => {
+  // Initialisation de la sécurité (Tiers)
+  const { currentTier } = useUserTier();
+  const canExportPdf = currentTier === 'PREMIUM' || currentTier === 'PRO';
+
+  // Données factices pour l'en-tête du PDF (à relier plus tard aux vrais paramètres utilisateur)
+  const dummyUserInfo = { 
+    name: 'Utilisateur Premium', 
+    address: 'Atelier Principal / Fourgon' 
+  };
   
   const handleReturn = () => {
     if (onBack) onBack();
@@ -36,9 +49,33 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
         
         {/* Actions Gauche : Assurance uniquement */}
         <div className="flex gap-4">
-          <button className="w-14 h-14 active:scale-90 transition-transform">
-            <img src="/icon-assurance.png" alt="Assurance" className="w-full h-full object-contain drop-shadow-lg" />
-          </button>
+          {canExportPdf ? (
+            <PDFDownloadLink
+              document={<InsuranceReport items={inventory} userInfo={dummyUserInfo} />}
+              fileName={`LocateHome_Assurance_${new Date().toISOString().split('T')[0]}.pdf`}
+              className="w-14 h-14 active:scale-90 transition-transform"
+            >
+              {({ loading }) => (
+                <img 
+                  src="/icon-assurance.png" 
+                  alt="Assurance" 
+                  className={`w-full h-full object-contain drop-shadow-lg ${loading ? 'opacity-50 animate-pulse' : ''}`} 
+                />
+              )}
+            </PDFDownloadLink>
+          ) : (
+            <button 
+              onClick={() => alert("L'export PDF Assurance est réservé aux comptes PREMIUM et PRO.")}
+              className="w-14 h-14 active:scale-90 transition-transform opacity-50 cursor-not-allowed"
+              title="Passer Premium pour exporter"
+            >
+              <img 
+                src="/icon-assurance.png" 
+                alt="Assurance (Verrouillé)" 
+                className="w-full h-full object-contain drop-shadow-lg grayscale" 
+              />
+            </button>
+          )}
         </div>
 
         {/* Action Droite : Retour */}

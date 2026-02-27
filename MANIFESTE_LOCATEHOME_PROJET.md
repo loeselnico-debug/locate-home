@@ -136,13 +136,16 @@ Vision & Interface (Scanner & Hub)
 [X] Mobile & Vocal : Déploiement PWA installable (Service Worker actif). Implémentation vocale via Web Speech API.
 
 🟡 CHANTIERS PRIORITAIRES (À RÉALISER)
-Remplacement Graphique (Actifs 3D) : Création des icônes manquantes (icon-assurance.png en 256x256) et remplacement systématique des icônes "lucide-react" / emojis par les PNG 3D du dossier /public.
 
 Moteur de Rangement (Pilote RANGER) : Attribution précise de l'outillage aux contenants physiques (Bacs / Étagères).
 
 Module Assurance : Génération et export PDF des rapports d'assurance depuis le module HOME (réservé Premium/Pro).
 
 Vocal Pro : Recherche "mains libres" bidirectionnelle avancée.
+
+Révision su systeme "src\core\security\tiers.ts et src\core\security\useUserTier.ts"
+
+
 
 📜 RÈGLES DE SESSION (POUR L'IA)
 Code : Étape 1 (Instruction) -> Étape 2 (Validation par "ok") -> Étape 3 (Code complet).

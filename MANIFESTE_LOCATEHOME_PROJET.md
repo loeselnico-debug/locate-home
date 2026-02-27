@@ -1,38 +1,34 @@
-# 🧭 ⚛️ 🇫🇷 LOCATE SYSTEMS | SOURCE DE VÉRITÉ V3.1
-24 Février 2026
-**Statut :** RÉFÉRENTIEL MAÎTRE - ARCHITECTURE MONOREPO UNIFIÉE 🟢  
-**Vision :** "L'homme ne parle pas à l'IA pour l'écouter, mais pour qu'elle devienne le prolongement de son expertise terrain."
+🧭 ⚛️ 🇫🇷 LOCATE SYSTEMS | SOURCE DE VÉRITÉ V3.2
+26 Février 2026
+Statut : RÉFÉRENTIEL MAÎTRE - ARCHITECTURE MONOREPO UNIFIÉE 🟢  
+Vision : "L'homme ne parle pas à l'IA pour l'écouter, mais pour qu'elle devienne le prolongement de son expertise terrain."
 
----
-
-## 📂 1. ORGANIGRAMME TECHNIQUE (STRUCTURE EXACTE DU REPOSITORY)
-
+📂 1. ORGANIGRAMME TECHNIQUE (STRUCTURE EXACTE DU REPOSITORY)
 📦 LOCATE-SYSTEMS
-├── 📂 public/                 # Actifs Visuels (Icônes 3D, manifest.json)
-├── 📂 src/                    # MOTEUR DE L'APPLICATION
-│   ├── 📂 core/               # M1 : TRONC COMMUN (Le Socle)
-│   │   ├── 📁 ai/             # decisionEngine.ts, expertiseRules.ts, geminiService.ts
-│   │   ├── 📁 camera/         # Scanner.tsx
-│   │   ├── 📁 security/       # safetyService.ts, tiers.ts, useUserTier.ts
-│   │   ├── 📁 storage/        # imageService.ts, memoryService.ts
-│   │   ├── 📁 ui/             # Hub.tsx, LocationBar.tsx, Logo.tsx, ResultModal.tsx, SafetyBadge.tsx
-│   │   └── 📄 index.ts
-│   ├── 📂 modules/            # LES 5 VERTICALES MÉTIERS
-│   │   ├── 📁 asset/          # M3 : L'Industrie (Spécifications Grands Comptes)
-│   │   ├── 📁 care/           # M6 : La Santé
-│   │   ├── 📁 garage/         # M5 : La Maintenance
-│   │   ├── 📂 home/           # M2 : Le Hub / Inventaire (Orange Néon)
-│   │   │   ├── 📁 components/ # HomeMenu.tsx, InventoryCard.tsx, Library.tsx, Search.tsx, ToolDetail.tsx
-│   │   │   └── 📁 views/      # Dashboard.tsx, SettingsPage.tsx
-│   │   └── 📁 kitchen/        # M4 : Les Flux (HACCP)
-│   ├── 📂 styles/             # App.css, index.css
-│   ├── 📂 types/              # index.ts (Source de Vérité Data)
-│   ├── 📄 App.tsx             # Chef d'orchestre
-│   └── 📄 main.tsx
+├── 📂 public/                 # Actifs Visuels (Icônes 3D, manifest.json)
+├── 📂 src/                    # MOTEUR DE L'APPLICATION
+│   ├── 📂 core/               # M1 : TRONC COMMUN (Le Socle)
+│   │   ├── 📁 ai/             # decisionEngine.ts, expertiseRules.ts, geminiService.ts
+│   │   ├── 📁 camera/         # Scanner.tsx
+│   │   ├── 📁 security/       # safetyService.ts, tiers.ts, useUserTier.ts
+│   │   ├── 📁 storage/        # imageService.ts, memoryService.ts
+│   │   ├── 📁 ui/             # Hub.tsx, LocationBar.tsx, Logo.tsx, ResultModal.tsx, SafetyBadge.tsx
+│   │   └── 📄 index.ts
+│   ├── 📂 modules/            # LES 5 VERTICALES MÉTIERS
+│   │   ├── 📁 asset/          # M3 : L'Industrie (Spécifications Grands Comptes)
+│   │   ├── 📁 care/           # M6 : La Santé
+│   │   ├── 📁 garage/         # M5 : La Maintenance
+│   │   ├── 📂 home/           # M2 : Le Hub / Inventaire (Orange Néon)
+│   │   │   ├── 📁 components/ # HomeMenu.tsx, InventoryCard.tsx, Library.tsx, Search.tsx, ToolDetail.tsx
+│   │   │   └── 📁 views/      # Dashboard.tsx, PrivacyPolicy.tsx, SettingsPage.tsx, ValidationSas.tsx
+│   │   └── 📁 kitchen/        # M4 : Les Flux (HACCP)
+│   ├── 📂 styles/             # App.css, index.css
+│   ├── 📂 types/              # index.ts (Source de Vérité Data)
+│   ├── 📄 App.tsx             # Chef d'orchestre
+│   └── 📄 main.tsx
 ├── 📄 MANIFESTE_LOCATEHOME_PROJET.md
 ├── 📄 MANIFESTE_LOCATEHOME-DESIGN.md
-└── ⚙️ [Fichiers de Config]    # .env, vite.config.ts, tailwind.config.js, package.json...
-
+└── ⚙️ [Fichiers de Config]    # .env, vite.config.ts, tailwind.config.js, package.json...
 ---
 
 ## 🛠️ 2. LES 6 PILIERS DU SYSTÈME
@@ -64,100 +60,95 @@ Analyse : Détecter finement les nuances de coloration d'un métal suite échauf
 🩺 M6 : [CARE] (La Santé)
 Fonction :Santé et services à la personne, incluant la gestion documentaire, le rappel de posologie et l'indexation de calendrier (Lancement France 2030),Génération d’un fichier OMS (Organisation Mondiale de la Santé) pour recevoir les meilleurs soins adaptés à son propre historique médical. Multilingue FR, UK, DE…( les 20 langues les plus utilisées dans le monde).
 
-📐 3. CHARTE DE VÉRITÉ (RÈGLES DE CODAGE)
-
+📐 3. CHARTE DE VÉRITÉ (RÈGLES DE CODAGE & MÉTIER)
 A. Branding & Logotypage
+
 Structure : LOCATE (#FF6600) HOME (#FFFFFF).
-Signature : Bandeau oblique orange sous le "E" de HOME avec texte "by Systems" en dégradé métallique doré.
-Tiers : Badges Néon FREE | PREMIUM | PRO (Dégradé Jaune vers Orange).
+
+Signature : Bandeau oblique orange sous le "E" de HOME avec texte "by Systems".
+
+Tiers : Badges Néon FREE (15 outils max) | PREMIUM | PRO.
 
 B. Adaptabilité Liquide (Scaling)
-Interdiction du Pixel (px) : Strictement banni pour les dimensions et conteneurs.
-Unités : rem (typographie), vh/vw et % (structure).
-Netteté : Utilisation exclusive du SVG pour les icônes et logos (Optimisation J5 vers iPhone 17).
+
+Interdiction du Pixel (px) : Unités obligatoires = rem (typographie), vh/vw et % (structure). 100dvh et safe-area-inset gérés pour iOS.
+
+Netteté : Utilisation exclusive d'images vectorielles ou PNG HD (optimisation multi-écrans).
+
+C. Intelligence Métier (Bible V1.5)
+Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par l'IA :
+
+Étape 4 (Juge de paix) : Nomenclatures OCR (ex: DDF, DTD, suffixes J/Coffret).
+
+Étape 3 : Sous-systèmes (Bagues Flexiclick, Pod 12V vs Rails 18V).
+
+Étape 2 : Morphologie (Mandrins, sabots).
+
+Étape 1 : Signatures Marques (Bleu/Cyan Makita, Rouge Bloc Milwaukee, Bleu Foncé Bosch Pro, Jaune/Noir DeWalt).
+
+⚖️ 4. JURIDIQUE ET INFRASTRUCTURE WEB (RÉSEAU OVH)
+A. Stratégie des Noms de Domaine (12 Domaines Sécurisés)
+Le verrouillage des domaines est effectif pour protéger la propriété intellectuelle et anticiper les lancements jusqu'en 2030 :
+
+Locate Systems (Critique - Identité Holding) : locatesystems.com / locatesystems.fr
+
+Locate Home (Immédiat - Bêta en cours) : locatehome.com / locatehome.fr
+
+Locate Kitchen (Stratégique 2030) : locatekitchen.com / locatekitchen.fr
+
+Locate Care (Stratégique 2030) : locatecare.com / locatecare.fr
+
+Locate Asset (Protection Industrielle) : locateasset.com / locateasset.fr
+
+Locate Garage (Protection Mécanique) : locategarage.com / locategarage.fr
+
+B. Architecture "Privacy by Design" (RGPD)
+
+Local-First : L'inventaire est stocké à 100% sur l'appareil de l'utilisateur (IndexedDB). Zéro serveur de base de données.
+
+Consentement IA : Les images scannées sont envoyées de manière éphémère et supprimées immédiatement. L'utilisateur doit obligatoirement valider le consentement IA avant l'activation du flux vidéo.
+
+Responsabilité Humaine : L'IA ne sert que de brouillon. L'opérateur est le seul décisionnaire de l'insertion en base de données via le Sas de Validation (Zéro-Trust).
 
 🟢 ACQUIS TECHNIQUES (TERMINÉ)
+Cerveau, Architecture & Métier
 
-Cerveau & Architecture
-[ X] Moteur IA : Tunnel Gemini 2.0 Flash opérationnel (sans erreur 404/429). L'IA lit dynamiquement la source de vérité.
-[ X] Schéma Data & Types : Interface `InventoryItem` verrouillée comme référence unique. Fichier `src/types.ts` à jour (inclusion de la localisation et des 9 catégories métiers).
-[ X] Sécurité (Hardening) : Blindage des appels `data.candidates` et extraction JSON robuste.
-[ X] Limites & Freemium : Vérification Freemium (15 outils) active dans la fonction `addTool`.
-[ X] Stockage Robuste : Unification totale de la base de données sur IndexedDB (`idb-keyval`), suppression définitive des conflits avec localStorage.
-[ X] Architecture Monorepo Modulaire : Séparation stricte Core / Modules / Types. Sémantique "LOCATEHOME" généralisée ; fonction `deleteTool` intégrée.
-[ X] Clé API : Mise en service de la nouvelle clé (suite à la suppression de l'ancienne).
-[ X] Persistance V2 : Système d'onglets pour le filtrage par zone (Fourgon/Atelier).
-[X] Moteur IA & Expertise : Refonte de `geminiService.ts`. Unification totale sur Gemini 2.0 Flash. Injection stricte de la Bible Métier (`expertiseRules.ts`) dans le System Prompt. Format JSON verrouillé (`score_confiance`, `nom`, `marque`) pour interdire les hallucinations et fiabiliser la règle du Zéro-Trust (>= 70%).
+[X] Moteur IA & Expertise : Refonte de geminiService.ts. Unification totale sur Gemini 2.0 Flash. Injection stricte de la Bible Métier (expertiseRules.ts) dans le System Prompt. Format JSON verrouillé (score_confiance, nom, marque) pour interdire les hallucinations.
 
-Vision & Scan
-[ X] Scanner HDR : Mode hybride fonctionnel (Photo HD / Vidéo Burst / Importation) avec interface adaptative (vw).
-[ X] Étalonnage : Mode Burst calibré (12 frames / 20s). Flux Live `getUserMedia` actif.
-[ X] Flux Live & UI : Intégration du cadre de visée, filtre industriel HDR et laser de balayage dynamique synchronisé avec l'analyse.
-[ X] Zéro-Trust : Filtrage d'environnement actif pour un focus exclusif sur l'objet scanné.
-[ X] Flux de Validation (Sas 01 C1) : Pont de données opérationnel entre le scanner et l'inventaire avec filtre de confiance IA (>= 70%).
-[X] UI Scanner V11 : Refonte totale (100% fluide, zéro pixel). Intégration des icônes 3D (photo, vidéo, import), suppression du header pour gain d'espace vertical, optimisation du flexbox de localisation (anti-scroll) et animation dynamique du laser de balayage.
-[X] UI Scanner HUD : Interface immersive (100dvh, calque z-100) façon HUD industriel. Réticule central, boutons flottants 3D, animation laser CSS perpétuelle, et affichage tête haute (Top Bar) intégrant le contrôle de torche.
-[X] Architecture App V11 : Châssis parent recalibré à 12.5vh. Alignement absolu du Badge et Settings pour libérer le flux central. Cohésion visuelle totale du Logo avec le HomeMenu.
+[X] Schéma Data & Types : Interface InventoryItem verrouillée. Fichier types.ts à jour avec localisation (Fourgon/Atelier) et 9 catégories métiers.
 
-Interface & UX
-[ X] Hub Central : Dashboard interactif et dynamique, CSS ultra-léger. Connexion à la base de données avec jauge orange dynamique.
-[ X] Navigation Sécurisée & Inventaire (M2) : Redirection post-scan stabilisée vers le Dashboard. Arborescence 3 niveaux validée (Accueil (01) > Dashboard (01A) > Liste Outils (01A1) > Fiche Produit (01A-Detail)). Composants `Dashboard.tsx`, `Library.tsx` et `ToolDetail.tsx` intégrés et interconnectés.
-[ X] Déploiement Mobile PWA : Manifeste, Service Worker, installable sur Android/iOS. Blindage Apple avec variables safe-area-inset et 100dvh actives.
-[ X] Vocal : Implémentation via Web Speech API dans le module "Retrouver".
-[ X] Mode Basse Lumière : Activation physique de la torche via l'interface de scan.
-[ X] Localisation de Vérité : Injecter la liste des zones réelles (Fourgon, Établi) pour éviter les inventions de l'IA.
+[X] Zéro-Trust & Validation (Sas 01 C1) : Interface HUD intermédiaire créée (ValidationSas.tsx). L'IA soumet un brouillon, l'opérateur valide/rejette visuellement. Mapping typographique strict avec InventoryItem (toolName, category, location) garanti sans erreur TypeScript.
 
-🟡 EN COURS / À RÉALISER (PENDING)
+[X] Stockage Robuste : Unification totale sur IndexedDB (idb-keyval). Persistance avec système d'onglets pour le filtrage par zone.
 
-Interface & Actifs
-[ ] Design & Actifs 3D : Création des icônes manquantes (`icon-assurance.png` et `gear.png` en 256x256) et remplacement systématique des icônes "lucide-react" / emojis par les PNG 3D du dossier `/public`.
-[ ] Optimisation `/tiers.ts` : Affiner et compléter la structure des niveaux d'accès.
+[X] Sécurité & Privacy by Design : Implémentation du Consentement IA obligatoire bloquant le flux vidéo (Scanner.tsx). Création de la Politique de Confidentialité intégrée (PrivacyPolicy.tsx) et calcul en temps réel du stockage local Zéro-Serveur dans les paramètres (SettingsPage.tsx). Limites Freemium (15 outils) actives.
 
-Intelligence Métier
-[ ] Moteur de Rangement (Pilote RANGER) : Attribution précise de l'outillage aux contenants physiques (Bacs / Étagères).
+Vision & Interface (Scanner & Hub)
 
-Business & Déploiement
-[ ] Export & Rapports : Génération et export PDF des rapports d'assurance depuis le module HOME.
-[ ] Vocal Pro : Recherche "mains libres" bidirectionnelle avancée.
-[ ] Monétisation : Transformation des QR Codes physiques en points d'accès techniques.
+[X] Scanner HDR : Mode hybride (Photo HD / Vidéo 10s / Import) calibré (12 frames / 20s). Torche auto et filtrage Zéro-Trust de l'environnement actif.
 
-Référentiel de Vérité (Bible V1.5) :
-Tu appliques le Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) [cite: 2026-02-25] :
+[X] UI Scanner V11 (HUD) : Interface immersive 100dvh sans pixels. Réticule central, boutons flottants 3D, animation laser CSS perpétuelle, affichage tête haute (Top Bar) et cadre de visée dynamique.
 
-Signatures : Bleu/Cyan (Makita), Rouge Bloc (Milwaukee), Bleu Foncé (Bosch Pro), Jaune/Noir (DeWalt) [cite: 2026-02-25].
+[X] Architecture App V11 : Châssis parent recalibré à 12.5vh. Alignement absolu du Badge Premium et bouton Settings pour libérer le flux central.
 
-Technique : Bagues Flexiclick, Stries "Grip" Facom, Codes couleurs Protwist, Pod 12V vs Rails 18V [cite: 2026-02-25].
+[X] Hub Central & Inventaire (M2) : Dashboard interactif (jauge orange). Navigation 3 niveaux (Accueil > Dashboard > Liste > Détail). Redirection post-scan stabilisée. Composants interconnectés.
 
-Logiciel : Analyse hybride (Photo HD & Vidéo Directe 10s) via Gemini 2.0 Flash [cite: 2026-02-25].
+[X] Mobile & Vocal : Déploiement PWA installable (Service Worker actif). Implémentation vocale via Web Speech API.
 
-🟢 ACQUIS TECHNIQUES VÉRIFIÉS (À MAINTENIR) :
+🟡 CHANTIERS PRIORITAIRES (À RÉALISER)
+Remplacement Graphique (Actifs 3D) : Création des icônes manquantes (icon-assurance.png en 256x256) et remplacement systématique des icônes "lucide-react" / emojis par les PNG 3D du dossier /public.
 
-Moteur IA : Tunnel Gemini 2.0 Flash avec lecture dynamique de la source de vérité et extraction JSON robuste [cite: 2026-02-25].
+Moteur de Rangement (Pilote RANGER) : Attribution précise de l'outillage aux contenants physiques (Bacs / Étagères).
 
-Stockage : Unification totale sur IndexedDB (idb-keyval). Persistance par zone (Fourgon/Atelier) [cite: 2026-02-25].
+Module Assurance : Génération et export PDF des rapports d'assurance depuis le module HOME (réservé Premium/Pro).
 
-Scanner HDR : Mode hybride (Photo HD / Vidéo 10s) avec torche automatique, laser de balayage et cadre de visée [cite: 2026-02-25].
+Vocal Pro : Recherche "mains libres" bidirectionnelle avancée.
 
-UX/UI : Design V9 stable (100dvh, safe-area Apple). Dashboard interactif avec jauge orange et navigation 3 niveaux [cite: 2026-02-25].
+📜 RÈGLES DE SESSION (POUR L'IA)
+Code : Étape 1 (Instruction) -> Étape 2 (Validation par "ok") -> Étape 3 (Code complet).
 
-Mobile : PWA installable, Service Worker actif, support vocal via Web Speech API [cite: 2026-02-25].
+Design : Interdiction de modifier le design sans preuve de bénéfice et validation explicite.
 
-Sécurité : Seuil de confiance IA >= 70%, mode Freemium (15 outils), procédure VAT et rappels EPI [cite: 2026-02-25].
+Manifeste : Vérifier MANIFESTE_LOCATEHOME_PROJET.md avant chaque envoi pour éviter les doublons et ne jamais supprimer d'acquis.
 
-🟡 CHANTIERS PRIORITAIRES (À RÉALISER) :
-
-Remplacement Graphique : Supprimer les icônes "lucide-react" / emojis au profit des PNG 3D (dossier /public) [cite: 2026-02-25].
-
-Moteur "RANGER" : Attribution de l'outillage aux contenants physiques (Bacs/Étagères) [cite: 2026-02-25].
-
-Module Assurance : Génération de rapports PDF exportables depuis le module HOME [cite: 2026-02-25].
-
-Règles de Session :
-
-Code : Étape 1 (Instruction) -> Étape 2 (Validation "ok") -> Étape 3 (Code complet) [cite: 2026-02-13].
-
-Design : Interdiction de modifier le design sans preuve de bénéfice et validation [cite: 2026-02-15].
-
-Manifeste : Vérifier MANIFESTE_LOCATEHOME_PROJET.md avant chaque envoi pour éviter les doublons [cite: 2026-02-17].
-
-Suivi : Synthèse toutes les 10 interactions, changement de fil toutes les 30 [cite: 2026-02-12].
+Suivi : Synthèse toutes les 10 interactions, changement de fil toutes les 30.

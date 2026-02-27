@@ -7,20 +7,35 @@ interface HomeMenuProps {
 
 const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate }) => {
   return (
-    // 1. flex-1 pour prendre tout l'espace sous le logo, pb fluide pour le safe-area
-    <div className="flex-1 flex flex-col justify-end bg-transparent px-[8vw] pb-[calc(2vh+env(safe-area-inset-bottom))]">
+    <div className="flex-1 flex flex-col items-center justify-between px-[5vw] pt-[4vh] pb-[calc(4vh+env(safe-area-inset-bottom))]">
       
-      {/* 2. mt-auto agit comme un ressort pour plaquer le bloc en bas */}
-      <div className="w-full flex flex-col items-center mt-auto">
+      {/* ========================================== */}
+      {/* LE MANIFESTE (Citation & Signature Métal)  */}
+      {/* ========================================== */}
+      <div className="text-center w-full max-w-[85vw]">
+        <p className="text-white font-black uppercase tracking-wide leading-tight text-[clamp(0.6rem,2.5vw,0.9rem)] drop-shadow-md">
+          "L'homme ne parle pas à l'IA pour l'écouter,<br />
+          mais pour qu'elle devienne le prolongement de son<br />
+          expertise terrain."
+        </p>
+        <p className="mt-[1.5vh] font-black uppercase tracking-[0.2em] text-[clamp(0.6rem,2vw,0.8rem)] bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent drop-shadow-sm">
+          - Locate Systems -
+        </p>
+      </div>
+
+      {/* ========================================== */}
+      {/* LA GRILLE DE COMMANDE (Boutons 3D & Labels) */}
+      {/* ========================================== */}
+      <div className="w-full flex flex-col items-center gap-[4vh] mt-auto">
         
-        {/* NIVEAU 2 : RANGER / SCANNER (Espacement de 4vh avec Retrouver) */}
-        <div className="flex justify-between w-full max-w-sm px-[2vw] mb-[4vh]">
+        {/* LIGNE 1 : RANGER / SCANNER */}
+        <div className="flex justify-between w-full max-w-[80vw] sm:max-w-sm">
           <button 
             onClick={() => onNavigate('inventory')} 
             className="flex flex-col items-center gap-[1.5vh] active:scale-95 transition-transform w-[45%]"
           >
-            <img src="/icon-ranger.png" alt="Ranger" className="w-[32vw] max-w-[130px] object-contain drop-shadow-2xl" />
-            <span className="text-[#FF6600] font-black uppercase tracking-[0.2em] text-[clamp(0.6rem,2vw,0.8rem)]">
+            <img src="/icon-ranger.png" alt="Ranger" className="w-[28vw] max-w-[120px] object-contain drop-shadow-[0_15px_15px_rgba(0,0,0,0.6)]" />
+            <span className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(0.7rem,2.5vw,1rem)]">
               Ranger
             </span>
           </button>
@@ -29,21 +44,21 @@ const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate }) => {
             onClick={() => onNavigate('scanner')} 
             className="flex flex-col items-center gap-[1.5vh] active:scale-95 transition-transform w-[45%]"
           >
-            <img src="/icon-scanner.png" alt="Scanner" className="w-[32vw] max-w-[130px] object-contain drop-shadow-2xl" />
-            <span className="text-[#FF6600] font-black uppercase tracking-[0.2em] text-[clamp(0.6rem,2vw,0.8rem)]">
+            <img src="/icon-scanner.png" alt="Scanner" className="w-[28vw] max-w-[120px] object-contain drop-shadow-[0_15px_15px_rgba(0,0,0,0.6)]" />
+            <span className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(0.7rem,2.5vw,1rem)]">
               Scanner
             </span>
           </button>
         </div>
 
-        {/* NIVEAU 1 : RETROUVER (Action Maîtresse isolée au plus près du pouce) */}
-        <div className="flex justify-center w-full">
+        {/* LIGNE 2 : RETROUVER (Action Maîtresse) */}
+        <div className="flex justify-center w-full mt-[1vh]">
           <button 
             onClick={() => onNavigate('search')} 
             className="flex flex-col items-center gap-[1.5vh] active:scale-95 transition-transform"
           >
-            <img src="/icon-retrouver.png" alt="Retrouver" className="w-[38vw] max-w-[150px] object-contain drop-shadow-2xl" />
-            <span className="text-[#FF6600] font-black uppercase tracking-[0.3em] text-[clamp(0.7rem,2.5vw,0.9rem)]">
+            <img src="/icon-retrouver.png" alt="Retrouver" className="w-[32vw] max-w-[140px] object-contain drop-shadow-[0_15px_15px_rgba(0,0,0,0.6)]" />
+            <span className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(0.8rem,3vw,1.1rem)]">
               Retrouver
             </span>
           </button>

@@ -88,9 +88,9 @@ const App = () => {
           {/* ÉTAPE 1 : LOGO (CENTRE ABSOLU) */}
           <Logo />
 
-          {/* ÉTAPE 2 : BADGE PREMIUM (FLOTTANT À GAUCHE) */}
-          <div className="absolute left-[4vw] bg-[#333333] px-[3vw] sm:px-4 py-[0.5vh] rounded-xl border border-white/5 shadow-inner flex items-center justify-center">
-            <span className="text-[#FF6600] text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest">
+          {/* ÉTAPE 2 : BADGE NIVEAU (FLOTTANT À GAUCHE) - EFFET CHROME */}
+          <div className="absolute left-[4vw] bg-[#1E1E1E] px-[3vw] sm:px-4 py-[0.5vh] rounded-xl border border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] flex items-center justify-center">
+            <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent">
               {currentTier}
             </span>
           </div>

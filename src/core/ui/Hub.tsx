@@ -11,7 +11,8 @@ export default function Hub({ onSelectModule }: HubProps) {
   const modules = [
     { id: 'home', name: 'HOME', color: '#FF6600', iconName: 'home', active: true },
     { id: 'asset', name: 'ASSET', color: '#007BFF', iconName: 'asset', active: false },
-    { id: 'garage', name: 'GARAGE', color: '#DC3545', iconName: 'garage', active: false },
+    // MODIFICATION ICI : On passe active à true pour déverrouiller la section
+    { id: 'garage', name: 'GARAGE', color: '#DC3545', iconName: 'garage', active: true },
     { id: 'kitchen', name: 'KITCHEN', color: '#28A745', iconName: 'kitchen', active: false },
     { id: 'care', name: 'CARE', color: '#E0E0E0', iconName: 'care', active: false }
   ];

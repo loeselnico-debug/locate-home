@@ -1,10 +1,10 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.0)
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.1)
  * Architecture : WebSocket Multimodal (Gemini 2.0 Flash)
  * Standard : OSA/CBM & RGPD Zéro-Trace
  */
 
-// CORRECTION : Suppression de l'import inutile InventoryItem
+import { INDUSTRIAL_RULES } from './expertiseRules';
 
 export interface LiveDiagnostic {
   hypothesis: string;
@@ -18,27 +18,57 @@ class LiveService {
   private frameInterval: number | null = null;
 
   async connect(mode: 'maintenance' | 'mecanique', onMessage: (data: LiveDiagnostic) => void) {
+    // 1. Récupération de la clé API
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
+    
+    if (!apiKey) {
+      console.error("Clé d'API manquante. Vérifiez le fichier .env.");
+      throw new Error("Impossible d'établir le tunnel sécurisé.");
+    }
+
     const systemInstruction = `
       Tu es l'Expert de Maintenance Industrielle LOCATE. 
       Mode actuel : ${mode.toUpperCase()}.
+      Protocole de sécurité strict : ${INDUSTRIAL_RULES.security.epi_alert}
+      Utilise la méthode AMDEC pour le diagnostic.
     `;
 
     try {
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BiDiGenerateContent`;
+      // 2. Injection de la clé directement dans l'URL (Requis par Gemini WebSocket)
+      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BiDiGenerateContent?key=${apiKey}`;
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
-        // CORRECTION : On utilise la variable pour faire taire TypeScript
-        console.log("🔗 Tunnel Live LOCATE établi avec les instructions :", systemInstruction);
+        console.log("🔗 Tunnel Live LOCATE établi.");
+        
+        // 3. Envoi du Setup Message avec le Manifeste Métier
+        const setupMessage = {
+          setup: {
+            model: "models/gemini-2.0-flash",
+            systemInstruction: {
+              parts: [{ text: systemInstruction }]
+            }
+          }
+        };
+        this.socket?.send(JSON.stringify(setupMessage));
       };
 
       this.socket.onmessage = (event) => {
-        const response = JSON.parse(event.data);
-        onMessage({
-          hypothesis: response.text || "Analyse des folios en cours...",
-          confidence: 0.95,
-          nextStep: "Vérifiez la sonde d'oxygénation sur l'aéroflot 3."
-        });
+        try {
+          const response = JSON.parse(event.data);
+          
+          // Log brut pour surveiller les retours complexes de l'API Bidi
+          console.log("Trame IA reçue :", response);
+
+          // Remplacement du hardcoding par un retour générique en attendant le parsing complet des 'serverContent'
+          onMessage({
+            hypothesis: "Analyse du flux visuel en cours...",
+            confidence: 0.90,
+            nextStep: "Attente de votre directive vocale ou visuelle."
+          });
+        } catch (error) {
+          console.error("Erreur de lecture de la trame IA :", error);
+        }
       };
 
     } catch (error) {
@@ -49,20 +79,31 @@ class LiveService {
 
   sendVideoFrame(canvas: HTMLCanvasElement) {
     if (this.socket?.readyState === WebSocket.OPEN) {
-      const base64Frame = canvas.toDataURL('image/jpeg', 0.5);
-      this.socket.send(JSON.stringify({
-        realtime_input: { media_chunks: [{ data: base64Frame, mime_type: "image/jpeg" }] }
-      }));
+      // 4. Nettoyage du signal : Gemini refuse l'en-tête "data:image/jpeg;base64,"
+      const base64Data = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
+      
+      const message = {
+        realtimeInput: {
+          mediaChunks: [{
+            mimeType: "image/jpeg",
+            data: base64Data
+          }]
+        }
+      };
+      this.socket.send(JSON.stringify(message));
     }
   }
 
   terminate() {
-    if (this.frameInterval) window.clearInterval(this.frameInterval);
+    if (this.frameInterval) {
+      window.clearInterval(this.frameInterval);
+      this.frameInterval = null;
+    }
     if (this.socket) {
       this.socket.close();
       this.socket = null;
     }
-    console.log("🔒 Session terminée. Buffer vidéo détruit (RGPD).");
+    console.log("🔒 [ZÉRO-TRACE] Session terminée. Buffer vidéo détruit.");
   }
 }
 

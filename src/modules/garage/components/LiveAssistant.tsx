@@ -169,7 +169,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              {/* NOUVEAU BOUTON D'EXPORT PDF */}
+              {/* LE VRAI BOUTON D'EXPORT PDF */}
               <PDFDownloadLink
                 document={<GarageReport reportData={finalReport} />}
                 fileName={`${finalReport.metadata.reportId}.pdf`}
@@ -178,7 +178,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
                 {({ loading }) => (
                   <>
                     <FileDown size={18} />
-                    {loading ? "Génération PDF..." : "Télécharger Rapport PDF"}
+                    {loading ? "Génération PDF en cours..." : "Télécharger Rapport PDF"}
                   </>
                 )}
               </PDFDownloadLink>

@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-// Utilisation stricte d'icônes génériques Lucide React
 import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, FileDown, CheckSquare, LogOut } from 'lucide-react';
 import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
 import { reportService } from '../services/reportService';
+
+// NOUVEAUX IMPORTS POUR L'EXPORT PDF
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { GarageReport } from './GarageReport';
 
 interface LiveAssistantProps {
   mode: 'maintenance' | 'mecanique';
@@ -12,8 +15,8 @@ interface LiveAssistantProps {
 const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const [isLive, setIsLive] = useState(false);
   const [showSafety, setShowSafety] = useState(true);
-  const [sessionClosed, setSessionClosed] = useState(false); // Nouvel état pour l'écran GMAO
-  const [finalReport, setFinalReport] = useState<any>(null); // Stockage du rapport final
+  const [sessionClosed, setSessionClosed] = useState(false);
+  const [finalReport, setFinalReport] = useState<any>(null);
   
   const [diagnosticText, setDiagnosticText] = useState(`Système ${mode.toUpperCase()} en attente. Sécurisez la zone.`);
   const [currentDiagnostic, setCurrentDiagnostic] = useState<LiveDiagnostic>({
@@ -25,7 +28,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameIntervalRef = useRef<number | null>(null);
-  const startTimeRef = useRef<Date | null>(null); // Chronomètre MTTR
+  const startTimeRef = useRef<Date | null>(null);
 
   const [checks, setChecks] = useState([
     { id: 'loto', label: 'Consignation LOTO effectuée', icon: <Power size={18} />, validated: false },
@@ -38,7 +41,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
   useEffect(() => {
     return () => {
-      // Purge de sécurité si le composant est détruit violemment
       if (isLive) forceTerminate();
     };
   }, [isLive]);
@@ -79,13 +81,13 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       
       if (cameraStarted) {
         setIsLive(true);
-        startTimeRef.current = new Date(); // Début de l'intervention (MTTR)
+        startTimeRef.current = new Date();
         setDiagnosticText("Initialisation du tunnel sécurisé...");
 
         try {
           await liveService.connect(mode, (data) => {
             setDiagnosticText(data.hypothesis);
-            setCurrentDiagnostic(data); // On garde le dernier diag en mémoire pour le rapport
+            setCurrentDiagnostic(data);
           });
 
           frameIntervalRef.current = window.setInterval(() => {
@@ -110,12 +112,12 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   };
 
   const closeAndGenerateReport = async () => {
-    forceTerminate(); // On coupe tout de suite la caméra et le réseau (Zéro-Trace)
+    forceTerminate();
     
-    // Génération du rapport GMAO
     const endTime = new Date();
     const reportData = {
-      technicianId: "TECH-M5-001", // Code générique temporaire
+      mode: mode, // <--- CORRECTION DE L'ERREUR TYPESCRIPT ICI
+      technicianId: "TECH-M5-001",
       location: "Zone d'Intervention",
       equipmentId: "EQ-INCONNU",
       safetyChecks: checks,
@@ -126,11 +128,11 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
     const generatedReport = await reportService.generateMaintenanceReport(reportData);
     setFinalReport(generatedReport);
-    setSessionClosed(true); // Bascule sur l'écran GMAO
+    setSessionClosed(true);
   };
 
   // ==========================================
-  // ÉCRAN 3 : POST-INTERVENTION (GMAO)
+  // ÉCRAN DE CLÔTURE (GMAO & PDF)
   // ==========================================
   if (sessionClosed && finalReport) {
     return (
@@ -150,11 +152,11 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-[#121212] p-4 rounded-lg border border-white/5">
                   <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider block mb-1">MTTR (Temps de réparation)</span>
-                  <span className="text-white font-mono text-lg">{finalReport.metadata.mttr}</span>
+                  <span className="text-white font-mono text-lg">{finalReport.metadata.duration}</span>
                 </div>
                 <div className="bg-[#121212] p-4 rounded-lg border border-white/5">
-                  <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider block mb-1">Niveau AFNOR</span>
-                  <span className="text-white font-mono text-xs leading-tight block">{finalReport.context.afnorClassification}</span>
+                  <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider block mb-1">{finalReport.context.classificationLabel}</span>
+                  <span className="text-white font-mono text-xs leading-tight block">{finalReport.context.classificationValue}</span>
                 </div>
               </div>
             </div>
@@ -167,12 +169,19 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <button
-                onClick={() => reportService.exportReportLocally(finalReport)}
+              {/* NOUVEAU BOUTON D'EXPORT PDF */}
+              <PDFDownloadLink
+                document={<GarageReport reportData={finalReport} />}
+                fileName={`${finalReport.metadata.reportId}.pdf`}
                 className="flex-1 bg-[#DC2626] hover:bg-red-700 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.3)] active:scale-95"
               >
-                <FileDown size={18} /> Télécharger Fichier GMAO
-              </button>
+                {({ loading }) => (
+                  <>
+                    <FileDown size={18} />
+                    {loading ? "Génération PDF..." : "Télécharger Rapport PDF"}
+                  </>
+                )}
+              </PDFDownloadLink>
               
               <button
                 onClick={onExit}
@@ -188,7 +197,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   }
 
   // ==========================================
-  // ÉCRAN 1 & 2 : SAFETY GATES & LIVE COCKPIT
+  // COCKPIT IA (Caméra)
   // ==========================================
   return (
     <div className="fixed inset-0 bg-black flex flex-col font-sans overflow-hidden">
@@ -279,7 +288,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
             <Mic size={32} className="text-white" />
           </button>
 
-          {/* Bouton de clôture modifié pour lancer le rapport */}
           <button
             onClick={closeAndGenerateReport}
             className="flex-1 bg-[#121212] py-4 rounded-xl flex flex-col items-center gap-1 border border-white/5 active:scale-95"

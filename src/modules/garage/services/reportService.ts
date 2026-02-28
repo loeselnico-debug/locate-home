@@ -1,15 +1,15 @@
 /**
- * LOCATE GARAGE - REPORT SERVICE (V1.1)
- * Génération de rapports d'intervention certifiés GMAO
- * Norme : AFNOR & OSA/CBM
+ * LOCATE GARAGE - REPORT SERVICE (V1.2 - Dualité Métier)
+ * Génération de rapports : Maintenance Industrielle (AFNOR) & Mécanique (OBD2)
  */
 
 import type { LiveDiagnostic } from '../../../core/ai/liveService';
 
 export interface ReportData {
+  mode: 'maintenance' | 'mecanique'; // <-- NOUVEAU : On exige le mode
   technicianId: string;
   location: string;
-  equipmentId: string;
+  equipmentId: string; // Sert aussi d'Immatriculation pour la mécanique
   safetyChecks: { id: string; label: string; validated: boolean }[];
   diagnostic: LiveDiagnostic;
   startTime: Date;
@@ -17,37 +17,39 @@ export interface ReportData {
 }
 
 class ReportService {
-  // Calcul précis du MTTR (Temps Moyen de Réparation)
-  private calculateMTTR(start: Date, end: Date): string {
+  private calculateDuration(start: Date, end: Date): string {
     const diffMs = Math.max(0, end.getTime() - start.getTime());
     const diffMins = Math.floor(diffMs / 60000);
     const diffSecs = Math.floor((diffMs % 60000) / 1000);
     return `${diffMins}m ${diffSecs}s`;
   }
 
-  // Classification AFNOR (Norme NF EN 13306) selon la confiance IA
   private estimateAfnorLevel(confidence: number): string {
-    if (confidence >= 0.95) return "Niveau 2 (Dépannage par échange standard / Procédure simple)";
+    if (confidence >= 0.95) return "Niveau 2 (Dépannage par échange standard)";
     if (confidence >= 0.80) return "Niveau 3 (Identification d'origine de panne complexe)";
-    return "Niveau 4/5 (Travaux importants / Retour en atelier requis)";
+    return "Niveau 4/5 (Travaux importants / Atelier)";
   }
 
   async generateMaintenanceReport(data: ReportData) {
-    const mttr = this.calculateMTTR(data.startTime, data.endTime);
-    const afnorLevel = this.estimateAfnorLevel(data.diagnostic.confidence);
+    const duration = this.calculateDuration(data.startTime, data.endTime);
+    const isMeca = data.mode === 'mecanique';
 
     const reportContent = {
       metadata: {
-        reportId: `M5-GMAO-${Date.now()}`,
+        reportId: `M5-${isMeca ? 'MEC' : 'IND'}-${Date.now()}`,
         timestamp: new Date().toISOString(),
         technician: data.technicianId,
-        mttr: mttr,
-        standard: "OSA/CBM"
+        duration: duration,
+        mode: data.mode, // On passe le mode au PDF
+        standard: isMeca ? "Standard Garagiste" : "OSA/CBM"
       },
       context: {
         location: data.location,
+        // Adaptation du vocabulaire selon le métier
+        equipmentLabel: isMeca ? "Véhicule / Plaque" : "Équipement ID",
         equipmentId: data.equipmentId,
-        afnorClassification: afnorLevel
+        classificationLabel: isMeca ? "Type d'intervention" : "Niveau AFNOR",
+        classificationValue: isMeca ? "Diagnostic & Contrôle Visuel" : this.estimateAfnorLevel(data.diagnostic.confidence)
       },
       safetyGates: data.safetyChecks.map(check => ({
         step: check.label,
@@ -60,17 +62,16 @@ class ReportService {
       }
     };
 
-    console.log("📄 [GMAO] Rapport généré :", reportContent);
+    console.log("📄 [GMAO] Rapport formaté :", reportContent);
     return reportContent;
   }
 
-  // Protocole Souverain : Téléchargement local (Simulation d'injection GMAO externe)
   exportReportLocally(report: any) {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", `${report.metadata.reportId}.json`);
-    document.body.appendChild(downloadAnchorNode); // Requis pour compatibilité navigateur
+    document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
   }

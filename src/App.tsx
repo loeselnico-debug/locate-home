@@ -14,8 +14,11 @@ import Search from './modules/home/components/Search';
 import SettingsPage from './modules/home/views/SettingsPage';
 import ValidationSas from './modules/home/views/ValidationSas';
 import type { AIScanResult } from './modules/home/views/ValidationSas';
+// MODIFICATION 1 : On importe le GarageDashboard
+import GarageDashboard from './modules/garage/views/GarageDashboard';
 
-type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation';
+// MODIFICATION 2 : On ajoute 'garage' aux vues possibles
+type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'garage';
 
 const App = () => {
   const [view, setView] = useState<ViewState>('hub');
@@ -56,15 +59,15 @@ const App = () => {
 
   const handleValidatePending = (validatedItems: AIScanResult[]) => {
     const itemsToAdd: InventoryItem[] = validatedItems.map(item => ({
-  id: crypto.randomUUID(),
-  date: new Date().toLocaleString(),
-  toolName: item.nom || 'Outil Inconnu',
-  brand: item.marque || 'Marque N/A',
-  category: item.categorie_id || 'main',
-  location: 'Atelier', // Obligatoire selon ton interface
-  condition: item.etat || 'Bon état',
-  notes: item.description || ''
-}));
+      id: crypto.randomUUID(),
+      date: new Date().toLocaleString(),
+      toolName: item.nom || 'Outil Inconnu',
+      brand: item.marque || 'Marque N/A',
+      category: item.categorie_id || 'main',
+      location: 'Atelier',
+      condition: item.etat || 'Bon état',
+      notes: item.description || ''
+    }));
 
     setInventory(prev => [...itemsToAdd, ...prev]);
     setPendingItems([]);
@@ -85,22 +88,19 @@ const App = () => {
       {view !== 'hub' && (
         <header className="fixed top-0 left-0 w-full h-[12.5vh] min-h-[70px] bg-[#121212] z-[100] border-b-2 border-[#D3D3D3] flex items-center justify-center">
           
-          {/* ÉTAPE 1 : LOGO (CENTRE ABSOLU) */}
           <Logo />
 
-          {/* ÉTAPE 2 : BADGE NIVEAU (FLOTTANT À GAUCHE) - EFFET CHROME */}
           <div className="absolute left-[4vw] bg-[#1E1E1E] px-[3vw] sm:px-4 py-[0.5vh] rounded-xl border border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] flex items-center justify-center">
             <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent">
               {currentTier}
             </span>
           </div>
 
-          {/* ÉTAPE 3 : ROUE DENTÉE (FLOTTANT À DROITE) */}
           <button onClick={() => setView('settings')} className="absolute right-[4vw] opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1">
-            <img 
-              src="/gear.png" 
-              className="w-[8vw] h-[8vw] max-w-[35px] max-h-[35px] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
-              alt="Settings" 
+            <img
+              src="/gear.png"
+              className="w-[8vw] h-[8vw] max-w-[35px] max-h-[35px] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+              alt="Settings"
             />
           </button>
           
@@ -109,25 +109,32 @@ const App = () => {
 
       {/* ZONE DE CONTENU */}
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
-        {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
+        {/* MODIFICATION 3 : On écoute aussi 'garage' */}
+        {view === 'hub' && <Hub onSelectModule={(m: string) => {
+          if (m === 'home' || m === 'garage') setView(m as ViewState);
+        }} />}
+        
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
 
+        {/* MODIFICATION 4 : On affiche le GarageDashboard */}
+        {view === 'garage' && <GarageDashboard />}
+
         {view === 'inventory' && (
-          <Dashboard 
-            inventory={inventory} 
-            onStartScan={() => setView('scanner')} 
+          <Dashboard
+            inventory={inventory}
+            onStartScan={() => setView('scanner')}
             onDelete={deleteTool}
-            onSelectCategory={handleCategorySelect} 
+            onSelectCategory={handleCategorySelect}
             onBack={() => setView('home')}
           />
         )}
 
         {view === 'category_detail' && (
-          <Library 
-            onBack={() => setView('inventory')} 
-            selectedCategoryId={selectedCategory} 
+          <Library
+            onBack={() => setView('inventory')}
+            selectedCategoryId={selectedCategory}
             onStartScan={() => setView('scanner')}
-            inventory={inventory} 
+            inventory={inventory}
           />
         )}
 
@@ -135,10 +142,10 @@ const App = () => {
         {view === 'search' && <Search onBack={() => setView('home')} inventory={inventory} />}
         
         {view === 'validation' && (
-          <ValidationSas 
-            pendingItems={pendingItems} 
-            onValidateAll={handleValidatePending} 
-            onRejectAll={handleRejectPending} 
+          <ValidationSas
+            pendingItems={pendingItems}
+            onValidateAll={handleValidatePending}
+            onRejectAll={handleRejectPending}
           />
         )}
 

@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, FileDown, CheckSquare, LogOut } from 'lucide-react';
+import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
+import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CheckSquare, LogOut } from 'lucide-react';
 import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
 import { reportService } from '../services/reportService';
 
-// NOUVEAUX IMPORTS POUR L'EXPORT PDF
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import { GarageReport } from './GarageReport';
+// IMPORT DIFFÉRÉ DU BOUTON PDF (LAZY LOADING)
+const GaragePdfButton = lazy(() => import('./GaragePdfButton'));
 
 interface LiveAssistantProps {
   mode: 'maintenance' | 'mecanique';
@@ -116,7 +115,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     
     const endTime = new Date();
     const reportData = {
-      mode: mode, // <--- CORRECTION DE L'ERREUR TYPESCRIPT ICI
+      mode: mode,
       technicianId: "TECH-M5-001",
       location: "Zone d'Intervention",
       equipmentId: "EQ-INCONNU",
@@ -169,19 +168,15 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              {/* LE VRAI BOUTON D'EXPORT PDF */}
-              <PDFDownloadLink
-                document={<GarageReport reportData={finalReport} />}
-                fileName={`${finalReport.metadata.reportId}.pdf`}
-                className="flex-1 bg-[#DC2626] hover:bg-red-700 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.3)] active:scale-95"
-              >
-                {({ loading }) => (
-                  <>
-                    <FileDown size={18} />
-                    {loading ? "Génération PDF en cours..." : "Télécharger Rapport PDF"}
-                  </>
-                )}
-              </PDFDownloadLink>
+              
+              {/* INTÉGRATION DU BOUTON EN LAZY LOADING */}
+              <Suspense fallback={
+                <div className="flex-1 bg-[#DC2626]/50 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 animate-pulse">
+                  Chargement Moteur PDF...
+                </div>
+              }>
+                <GaragePdfButton reportData={finalReport} />
+              </Suspense>
               
               <button
                 onClick={onExit}

@@ -1,23 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera } from 'lucide-react';
-import { liveService } from '../../../core/ai/liveService'; // Ajout de l'import du cerveau IA
+// Utilisation stricte d'icônes génériques Lucide React
+import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, FileDown, CheckSquare, LogOut } from 'lucide-react';
+import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
+import { reportService } from '../services/reportService';
 
-// 1. DÉFINITION DES PRISES (PROPS)
 interface LiveAssistantProps {
   mode: 'maintenance' | 'mecanique';
   onExit: () => void;
 }
 
-// 2. INJECTION DES PROPS DANS LE COMPOSANT
 const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const [isLive, setIsLive] = useState(false);
   const [showSafety, setShowSafety] = useState(true);
-  const [diagnosticText, setDiagnosticText] = useState(`Système ${mode.toUpperCase()} en attente. Sécurisez la zone.`);
+  const [sessionClosed, setSessionClosed] = useState(false); // Nouvel état pour l'écran GMAO
+  const [finalReport, setFinalReport] = useState<any>(null); // Stockage du rapport final
   
-  // Références pour la capture vidéo (Zéro-Trace)
+  const [diagnosticText, setDiagnosticText] = useState(`Système ${mode.toUpperCase()} en attente. Sécurisez la zone.`);
+  const [currentDiagnostic, setCurrentDiagnostic] = useState<LiveDiagnostic>({
+    hypothesis: "En attente de flux...",
+    confidence: 0,
+    nextStep: "-"
+  });
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameIntervalRef = useRef<number | null>(null);
+  const startTimeRef = useRef<Date | null>(null); // Chronomètre MTTR
 
   const [checks, setChecks] = useState([
     { id: 'loto', label: 'Consignation LOTO effectuée', icon: <Power size={18} />, validated: false },
@@ -28,12 +36,12 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
   const allValidated = checks.every(c => c.validated);
 
-  // Sécurité anti-fuite : Purge globale au démontage inattendu du composant
   useEffect(() => {
     return () => {
-      stopLiveSession();
+      // Purge de sécurité si le composant est détruit violemment
+      if (isLive) forceTerminate();
     };
-  }, []);
+  }, [isLive]);
 
   const captureAndSendFrame = () => {
     if (videoRef.current && canvasRef.current) {
@@ -41,14 +49,10 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
 
-      // Vérification que la vidéo est bien initialisée
       if (context && video.videoWidth > 0) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        // Capture de l'image sur le canvas caché
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Envoi silencieux au WebSocket
         liveService.sendVideoFrame(canvas);
       }
     }
@@ -60,12 +64,10 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      if (videoRef.current) videoRef.current.srcObject = stream;
       return true;
     } catch (err) {
-      setDiagnosticText("Erreur Flux Vidéo : Vérifiez les permissions de la caméra.");
+      setDiagnosticText("Erreur Flux Vidéo : Vérifiez les permissions.");
       return false;
     }
   };
@@ -77,59 +79,122 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       
       if (cameraStarted) {
         setIsLive(true);
+        startTimeRef.current = new Date(); // Début de l'intervention (MTTR)
         setDiagnosticText("Initialisation du tunnel sécurisé...");
 
         try {
-          // Connexion au WebSocket avec callback pour mettre à jour le HUD
           await liveService.connect(mode, (data) => {
             setDiagnosticText(data.hypothesis);
+            setCurrentDiagnostic(data); // On garde le dernier diag en mémoire pour le rapport
           });
 
-          // Lancement de l'échantillonnage vidéo : 12 frames / 20 secondes (~1 frame toutes les 1600ms)
           frameIntervalRef.current = window.setInterval(() => {
             captureAndSendFrame();
           }, 1600);
-
         } catch (error) {
-          setDiagnosticText("Échec de connexion au réseau industriel (Edge Timeout).");
+          setDiagnosticText("Échec réseau. Mode Edge asynchrone activé.");
         }
       }
     }
   };
 
-  const stopLiveSession = () => {
-    // 1. Arrêt du timer d'extraction
+  const forceTerminate = () => {
     if (frameIntervalRef.current) {
       window.clearInterval(frameIntervalRef.current);
       frameIntervalRef.current = null;
     }
-
-    // 2. Destruction du tunnel WebSocket (Zéro-Trace)
     liveService.terminate();
-
-    // 3. Coupure matérielle de la caméra
     const stream = videoRef.current?.srcObject as MediaStream;
     stream?.getTracks().forEach(track => track.stop());
-    
     setIsLive(false);
-    onExit();
   };
 
+  const closeAndGenerateReport = async () => {
+    forceTerminate(); // On coupe tout de suite la caméra et le réseau (Zéro-Trace)
+    
+    // Génération du rapport GMAO
+    const endTime = new Date();
+    const reportData = {
+      technicianId: "TECH-M5-001", // Code générique temporaire
+      location: "Zone d'Intervention",
+      equipmentId: "EQ-INCONNU",
+      safetyChecks: checks,
+      diagnostic: currentDiagnostic,
+      startTime: startTimeRef.current || endTime,
+      endTime: endTime
+    };
+
+    const generatedReport = await reportService.generateMaintenanceReport(reportData);
+    setFinalReport(generatedReport);
+    setSessionClosed(true); // Bascule sur l'écran GMAO
+  };
+
+  // ==========================================
+  // ÉCRAN 3 : POST-INTERVENTION (GMAO)
+  // ==========================================
+  if (sessionClosed && finalReport) {
+    return (
+      <div className="fixed inset-0 bg-[#050505] z-50 flex flex-col p-6 overflow-y-auto font-sans">
+        <div className="max-w-2xl mx-auto w-full mt-8">
+          <div className="flex items-center gap-4 mb-8 border-b border-[#DC2626]/30 pb-4">
+            <CheckSquare className="text-[#DC2626] w-10 h-10" />
+            <div>
+              <h1 className="text-white font-black text-2xl uppercase tracking-widest">Intervention Clôturée</h1>
+              <p className="text-gray-400 text-xs font-mono mt-1">ID: {finalReport.metadata.reportId}</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-black border border-white/10 rounded-xl p-5 shadow-[0_0_15px_rgba(220,38,38,0.1)]">
+              <h3 className="text-[#DC2626] font-bold text-xs uppercase tracking-widest mb-4">Indicateurs de Performance (KPI)</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#121212] p-4 rounded-lg border border-white/5">
+                  <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider block mb-1">MTTR (Temps de réparation)</span>
+                  <span className="text-white font-mono text-lg">{finalReport.metadata.mttr}</span>
+                </div>
+                <div className="bg-[#121212] p-4 rounded-lg border border-white/5">
+                  <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider block mb-1">Niveau AFNOR</span>
+                  <span className="text-white font-mono text-xs leading-tight block">{finalReport.context.afnorClassification}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-black border border-white/10 rounded-xl p-5">
+              <h3 className="text-[#DC2626] font-bold text-xs uppercase tracking-widest mb-3">Synthèse Diag. IA</h3>
+              <p className="text-gray-300 text-sm italic border-l-2 border-[#DC2626] pl-3">
+                "{finalReport.diagnostic.hypothesis}"
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <button
+                onClick={() => reportService.exportReportLocally(finalReport)}
+                className="flex-1 bg-[#DC2626] hover:bg-red-700 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.3)] active:scale-95"
+              >
+                <FileDown size={18} /> Télécharger Fichier GMAO
+              </button>
+              
+              <button
+                onClick={onExit}
+                className="flex-1 bg-[#121212] border border-white/10 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-colors hover:bg-[#1a1a1a] active:scale-95"
+              >
+                <LogOut size={18} /> Quitter le terminal
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // ÉCRAN 1 & 2 : SAFETY GATES & LIVE COCKPIT
+  // ==========================================
   return (
     <div className="fixed inset-0 bg-black flex flex-col font-sans overflow-hidden">
-      
       <div className="relative flex-1 bg-[#0a0a0a] overflow-hidden">
-        {/* Caméra */}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-60"
-        />
-        
-        {/* Canvas de capture invisible (Zéro-Trace) */}
+        <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-60" />
         <canvas ref={canvasRef} className="hidden" />
-        
         <div className="absolute inset-0 border-[1px] border-white/5 pointer-events-none grid grid-cols-3 grid-rows-3" />
         
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border border-[#DC2626]/20 rounded-full flex items-center justify-center">
@@ -139,9 +204,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         <div className="absolute top-6 left-6 right-6 flex justify-between items-start pointer-events-none z-10">
           <div className="bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl">
             <h1 className="text-white font-black text-[10px] uppercase tracking-[0.2em]">Locate Garage</h1>
-            <p className="text-[9px] font-bold uppercase mt-1 italic text-[#DC2626]">
-              M5 - Live {mode}
-            </p>
+            <p className="text-[9px] font-bold uppercase mt-1 italic text-[#DC2626]">M5 - Live {mode}</p>
           </div>
           {isLive && (
             <div className="bg-red-600/90 px-3 py-1 rounded-full animate-pulse border border-red-400">
@@ -216,8 +279,9 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
             <Mic size={32} className="text-white" />
           </button>
 
+          {/* Bouton de clôture modifié pour lancer le rapport */}
           <button
-            onClick={stopLiveSession}
+            onClick={closeAndGenerateReport}
             className="flex-1 bg-[#121212] py-4 rounded-xl flex flex-col items-center gap-1 border border-white/5 active:scale-95"
           >
             <X size={18} className="text-red-500" />

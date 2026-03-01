@@ -11,7 +11,6 @@ export default function Hub({ onSelectModule }: HubProps) {
   const modules = [
     { id: 'home', name: 'HOME', color: '#FF6600', iconName: 'home', active: true },
     { id: 'asset', name: 'ASSET', color: '#007BFF', iconName: 'asset', active: false },
-    // CORRECTION : Déblocage du module GARAGE (M5)
     { id: 'garage', name: 'GARAGE', color: '#DC3545', iconName: 'garage', active: true },
     { id: 'kitchen', name: 'KITCHEN', color: '#28A745', iconName: 'kitchen', active: false },
     { id: 'care', name: 'CARE', color: '#E0E0E0', iconName: 'care', active: false }
@@ -82,7 +81,7 @@ export default function Hub({ onSelectModule }: HubProps) {
           style={{ backgroundColor: activeColor, opacity: 0.25 }}
         ></div>
 
-        {/* CORRECTION : Texte SYSTEMS sorti du conteneur et placé au-dessus */}
+        {/* Texte SYSTEMS sorti du conteneur et placé au-dessus */}
         <span className="text-white font-black tracking-[0.2em] text-[0.8rem] sm:text-[1rem] relative z-10 drop-shadow-md mb-[2vh]">
           SYSTEMS
         </span>
@@ -95,8 +94,8 @@ export default function Hub({ onSelectModule }: HubProps) {
             {/* Reflet de vitre 3D */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
             
-            {/* Cœur 3D (core.png) proportionnel */}
-            <div className="relative w-[60%] h-[60%] flex items-center justify-center filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+            {/* Cœur 3D (core.png) poussé à 80% du conteneur */}
+            <div className="relative w-[80%] h-[80%] flex items-center justify-center filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
               <img src="/core.png" alt="Core Scanner" className="w-full h-full object-contain" />
             </div>
         </div>
@@ -128,7 +127,7 @@ export default function Hub({ onSelectModule }: HubProps) {
                   boxShadow: isHovered ? `0 0 20px ${mod.color}80, inset 0 2px 10px rgba(255,255,255,0.1)` : '0 4px 6px rgba(0,0,0,0.3)'
                 }}
               >
-                {/* CORRECTION : Icône étendue à 95% de la base */}
+                {/* Icône étendue à 95% de la base */}
                 <img
                   src={`/${mod.iconName}.png`}
                   alt={mod.name}

@@ -11,7 +11,8 @@ export default function Hub({ onSelectModule }: HubProps) {
   const modules = [
     { id: 'home', name: 'HOME', color: '#FF6600', iconName: 'home', active: true },
     { id: 'asset', name: 'ASSET', color: '#007BFF', iconName: 'asset', active: false },
-    { id: 'garage', name: 'GARAGE', color: '#DC3545', iconName: 'garage', active: false },
+    // CORRECTION : Déblocage du module GARAGE (M5)
+    { id: 'garage', name: 'GARAGE', color: '#DC3545', iconName: 'garage', active: true },
     { id: 'kitchen', name: 'KITCHEN', color: '#28A745', iconName: 'kitchen', active: false },
     { id: 'care', name: 'CARE', color: '#E0E0E0', iconName: 'care', active: false }
   ];
@@ -64,45 +65,45 @@ export default function Hub({ onSelectModule }: HubProps) {
         })}
       </svg>
 
-      {/* 1/3 HAUT : LA CITATION (+10% de taille) */}
-      <div className="z-10 text-center mt-[2vh] px-[4vw] max-w-[90%]">
-        <p className="text-[#B0BEC5] text-[0.66rem] sm:text-[0.88rem] font-medium italic leading-loose tracking-wide">
+      {/* 1/3 HAUT : LA CITATION (Augmentée de +10%) */}
+      <div className="z-10 text-center mt-[4vh] px-[4vw] max-w-[90%]">
+        <p className="text-[#B0BEC5] text-[0.7rem] sm:text-[0.9rem] font-medium italic leading-loose tracking-wide">
           "L'homme ne parle pas à l'IA pour l'écouter, <br className="hidden sm:block"/>
           mais pour qu'elle devienne le prolongement de son expertise terrain."
         </p>
       </div>
 
-      {/* 1/3 CENTRAL : NOYAU LOCATE SYSTEMS (Texte au-dessus) */}
-      <div className="relative z-10 flex flex-col items-center flex-1 justify-center">
+      {/* 1/3 CENTRAL : NOYAU LOCATE SYSTEMS (Scaling augmenté) */}
+      <div className="relative z-10 flex flex-col items-center flex-1 justify-center mt-[2vh]">
         
-        {/* Halo Pulsant (Couleur dynamique selon le module actif) */}
+        {/* Halo Pulsant (Couleur dynamique) adapté au nouveau gabarit */}
         <div
-          className="absolute inset-0 blur-[50px] rounded-full w-[40vw] h-[40vw] max-w-[14rem] max-h-[14rem] -z-10 animate-pulse transition-colors duration-500 m-auto"
+          className="absolute inset-0 blur-[60px] rounded-full w-[45vw] h-[45vw] max-w-[16rem] max-h-[16rem] -z-10 animate-pulse transition-colors duration-500 m-auto"
           style={{ backgroundColor: activeColor, opacity: 0.25 }}
         ></div>
 
-        {/* Le Processeur */}
+        {/* CORRECTION : Texte SYSTEMS sorti du conteneur et placé au-dessus */}
+        <span className="text-white font-black tracking-[0.2em] text-[0.8rem] sm:text-[1rem] relative z-10 drop-shadow-md mb-[2vh]">
+          SYSTEMS
+        </span>
+
+        {/* Le Processeur (Gabarit augmenté : w-32vw / max-12rem) */}
         <div
-          className="w-[28vw] h-[28vw] max-w-[10rem] max-h-[10rem] bg-[#121212] border-t-[0.15rem] border-b-[0.35rem] rounded-[2rem] flex flex-col items-center justify-center shadow-2xl relative overflow-hidden group transition-colors duration-500"
+          className="w-[32vw] h-[32vw] max-w-[12rem] max-h-[12rem] bg-[#121212] border-t-[0.15rem] border-b-[0.35rem] rounded-[2.5rem] flex flex-col items-center justify-center shadow-2xl relative overflow-hidden group transition-colors duration-500"
           style={{ borderColor: activeColor }}
         >
             {/* Reflet de vitre 3D */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
             
-            {/* Texte SYSTEMS remonté au-dessus du noyau */}
-            <span className="text-white font-black tracking-[0.2em] text-[0.55rem] sm:text-[0.7rem] relative z-10 drop-shadow-md mb-[1vh]">
-              SYSTEMS
-            </span>
-
-            {/* Cœur 3D (core.png) */}
-            <div className="relative w-[50%] h-[50%] flex items-center justify-center filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+            {/* Cœur 3D (core.png) proportionnel */}
+            <div className="relative w-[60%] h-[60%] flex items-center justify-center filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
               <img src="/core.png" alt="Core Scanner" className="w-full h-full object-contain" />
             </div>
         </div>
       </div>
 
-      {/* 1/3 BAS : LES 5 MODULES (Dans la Thumb Zone, texte en dessous, icônes à 95%) */}
-      <div className="flex justify-between items-end w-full max-w-[95%] z-10 mb-[2vh] px-[2vw]">
+      {/* 1/3 BAS : LES 5 MODULES (Thumb Zone, gabarits augmentés, icônes à 95%) */}
+      <div className="flex justify-between items-end w-full max-w-[95%] z-10 mb-[4vh] px-[2vw]">
         {modules.map((mod) => {
           const isHovered = mod.id === hoveredModule;
           return (
@@ -115,9 +116,9 @@ export default function Hub({ onSelectModule }: HubProps) {
                 if (mod.active) onSelectModule(mod.id as any);
               }}
             >
-              {/* Bouton du module avec rendu 3D */}
+              {/* Bouton du module (Gabarit augmenté : w-16vw / max-6rem) */}
               <button
-                className={`relative w-[13vw] h-[13vw] max-w-[4.5rem] max-h-[4.5rem] rounded-2xl border-b-[0.25rem] flex items-center justify-center transition-all duration-300
+                className={`relative w-[16vw] h-[16vw] max-w-[6rem] max-h-[6rem] rounded-2xl border-b-[0.25rem] flex items-center justify-center transition-all duration-300
                   ${mod.active ? 'cursor-pointer' : 'cursor-not-allowed opacity-40 grayscale'}
                   ${isHovered && mod.active ? 'translate-y-[-0.5vh]' : ''}
                 `}
@@ -127,6 +128,7 @@ export default function Hub({ onSelectModule }: HubProps) {
                   boxShadow: isHovered ? `0 0 20px ${mod.color}80, inset 0 2px 10px rgba(255,255,255,0.1)` : '0 4px 6px rgba(0,0,0,0.3)'
                 }}
               >
+                {/* CORRECTION : Icône étendue à 95% de la base */}
                 <img
                   src={`/${mod.iconName}.png`}
                   alt={mod.name}
@@ -134,8 +136,8 @@ export default function Hub({ onSelectModule }: HubProps) {
                 />
               </button>
 
-              {/* Titre du module repoussé en dessous */}
-              <h3 className={`text-[0.55rem] sm:text-[0.75rem] font-black uppercase tracking-widest mt-[1.5vh] text-center h-[2vh] transition-colors duration-300 ${isHovered ? 'text-white' : 'text-[#B0BEC5]'}`}>
+              {/* Titre du module ajusté en dessous */}
+              <h3 className={`text-[0.6rem] sm:text-[0.8rem] font-black uppercase tracking-widest mt-[1.5vh] text-center h-[2vh] transition-colors duration-300 ${isHovered ? 'text-white' : 'text-[#B0BEC5]'}`}>
                 {mod.name}
               </h3>
             </div>

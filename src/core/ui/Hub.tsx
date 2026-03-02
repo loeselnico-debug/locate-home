@@ -95,7 +95,7 @@ export default function Hub({ onSelectModule }: HubProps) {
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
             
             {/* Cœur 3D (core.png) poussé à 80% du conteneur */}
-            <div className="relative w-[80%] h-[80%] flex items-center justify-center filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+            <div className="relative w-[90%] h-[90%] flex items-center justify-center filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
               <img src="/core.png" alt="Core Scanner" className="w-full h-full object-contain" />
             </div>
         </div>

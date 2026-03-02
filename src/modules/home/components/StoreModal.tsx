@@ -1,5 +1,6 @@
 import React from 'react';
 import { LOCATE_CATALOG } from '../../../data/catalog';
+import { useAppSettings } from '../../../core/storage/useAppSettings'; // NOUVEAU : Import de nos paramètres
 
 interface StoreModalProps {
   isOpen: boolean;
@@ -7,26 +8,38 @@ interface StoreModalProps {
 }
 
 const StoreModal: React.FC<StoreModalProps> = ({ isOpen, onClose }) => {
+  const { settings } = useAppSettings(); // NOUVEAU : Récupération du choix de l'utilisateur
+
   if (!isOpen) return null;
+
+  // NOUVEAU : Fonction utilitaire pour convertir dynamiquement les mm en inches
+  const formatDimension = (valueInMm: number) => {
+    if (settings.unitSystem === 'IMPERIAL') {
+      return (valueInMm / 25.4).toFixed(1); // Conversion avec 1 chiffre après la virgule
+    }
+    return valueInMm;
+  };
+
+  const unitLabel = settings.unitSystem === 'IMPERIAL' ? 'in' : 'mm';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       {/* Overlay flouté (cliquable pour fermer) */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       {/* Conteneur de la Modale (Slide up) */}
       <div className="relative w-full max-w-md bg-[#121212] rounded-t-3xl sm:rounded-3xl border border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[85vh] animate-slide-up">
-        
+
         {/* En-tête du magasin */}
         <div className="flex justify-between items-center p-6 border-b border-white/5 bg-[#0a0a0a]">
           <div>
             <h2 className="text-white font-black text-xl tracking-widest uppercase">Boutique LOCATE</h2>
             <p className="text-gray-500 text-[10px] uppercase tracking-widest mt-1">Écosystème Certifié IA</p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="w-10 h-10 bg-[#1E1E1E] rounded-full flex items-center justify-center text-white active:scale-90 transition-transform"
           >
@@ -38,7 +51,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ isOpen, onClose }) => {
         <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
           {LOCATE_CATALOG.map((product) => (
             <div key={product.id} className="bg-[#1E1E1E] rounded-2xl p-4 border border-white/5 shadow-lg flex flex-col gap-3 group">
-              
+
               <div className="flex gap-4">
                 {/* Image Produit */}
                 <div className="w-24 h-24 bg-[#0a0a0a] rounded-xl border border-white/5 flex items-center justify-center shrink-0 overflow-hidden relative">
@@ -52,11 +65,11 @@ const StoreModal: React.FC<StoreModalProps> = ({ isOpen, onClose }) => {
                   <p className="text-gray-400 text-[10px] leading-snug line-clamp-2 mb-2">
                     {product.description}
                   </p>
-                  
-                  {/* Badge Dimension si c'est un contenant */}
+
+                  {/* Badge Dimension Dynamique */}
                   {product.isContainer && product.dimensions && (
-                    <span className="self-start px-2 py-0.5 bg-black/50 border border-white/10 rounded text-[9px] text-[#FF6600] font-mono tracking-wider">
-                      {product.dimensions.length}x{product.dimensions.width}x{product.dimensions.height} mm
+                    <span className="self-start px-2 py-0.5 bg-black/50 border border-white/10 rounded text-[9px] text-[#FF6600] font-mono tracking-wider transition-all">
+                      {formatDimension(product.dimensions.length)}x{formatDimension(product.dimensions.width)}x{formatDimension(product.dimensions.height)} {unitLabel}
                     </span>
                   )}
                 </div>

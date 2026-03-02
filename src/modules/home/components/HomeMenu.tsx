@@ -1,32 +1,56 @@
 import React from 'react';
 
 interface HomeMenuProps {
-  onNavigate: (view: 'inventory' | 'scanner' | 'search') => void;
+  onNavigate: (view: 'inventory' | 'scanner' | 'search' | 'settings' | any) => void;
   tier: string;
 }
 
-const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate }) => {
+const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
   return (
-    <div className="flex-1 flex flex-col items-center justify-between px-[5vw] pt-[4vh] pb-[calc(4vh+env(safe-area-inset-bottom))]">
+    <div className="flex-1 flex flex-col px-[5vw] pt-[2vh] pb-[calc(4vh+env(safe-area-inset-bottom))]">
       
       {/* ========================================== */}
-      {/* LE MANIFESTE (Citation & Signature Métal)  */}
+      {/* STRATE HAUTE (Contrôles du Module)         */}
       {/* ========================================== */}
-      <div className="text-center w-full max-w-[85vw]">
-        <p className="text-white font-black uppercase tracking-wide leading-tight text-[clamp(0.6rem,2.5vw,0.9rem)] drop-shadow-md">
+      <div className="w-full flex justify-between items-center shrink-0">
+        {/* BADGE TIERS */}
+        <div className="bg-[#1E1E1E] px-[3vw] sm:px-4 py-[0.5vh] rounded-xl border border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] flex items-center justify-center">
+          <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent">
+            {tier}
+          </span>
+        </div>
+
+        {/* BOUTON PARAMÈTRES */}
+        <button 
+          onClick={() => onNavigate('settings')} 
+          className="opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1"
+        >
+          <img 
+            src="/gear.png" 
+            className="w-[8vw] h-[8vw] max-w-[35px] max-h-[35px] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
+            alt="Paramètres" 
+          />
+        </button>
+      </div>
+
+      {/* ========================================== */}
+      {/* STRATE MÉDIANE (Le Manifeste)              */}
+      {/* ========================================== */}
+      <div className="flex-1 flex flex-col justify-center items-center w-full max-w-[85vw] mx-auto min-h-[15vh]">
+        <p className="text-center text-white font-black uppercase tracking-wide leading-tight text-[clamp(0.6rem,2.5vw,0.9rem)] drop-shadow-md">
           "L'homme ne parle pas à l'IA pour l'écouter,<br />
           mais pour qu'elle devienne le prolongement de son<br />
           expertise terrain."
         </p>
-        <p className="mt-[1.5vh] font-black uppercase tracking-[0.2em] text-[clamp(0.6rem,2vw,0.8rem)] bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent drop-shadow-sm">
+        <p className="mt-[1.5vh] text-center font-black uppercase tracking-[0.2em] text-[clamp(0.6rem,2vw,0.8rem)] bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent drop-shadow-sm">
           - Locate Systems -
         </p>
       </div>
 
       {/* ========================================== */}
-      {/* LA GRILLE DE COMMANDE (Boutons 3D & Labels) */}
+      {/* STRATE BASSE (Thumb Zone - Boutons 3D)     */}
       {/* ========================================== */}
-      <div className="w-full flex flex-col items-center gap-[4vh] mt-auto">
+      <div className="w-full flex flex-col items-center gap-[4vh] shrink-0 mt-auto">
         
         {/* LIGNE 1 : RANGER / SCANNER */}
         <div className="flex justify-between w-full max-w-[80vw] sm:max-w-sm">

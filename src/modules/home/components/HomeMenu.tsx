@@ -7,20 +7,19 @@ interface HomeMenuProps {
 
 const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
   return (
-    <div className="flex-1 flex flex-col px-[5vw] pt-[2vh] pb-[calc(4vh+env(safe-area-inset-bottom))]">
+    // NOUVEAU : Hauteur absolue calculée (Écran total - Header) et padding bas réduit
+    <div className="h-[calc(100dvh-12.5vh)] w-full flex flex-col px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))]">
       
       {/* ========================================== */}
       {/* STRATE HAUTE (Contrôles du Module)         */}
       {/* ========================================== */}
       <div className="w-full flex justify-between items-center shrink-0">
-        {/* BADGE TIERS */}
         <div className="bg-[#1E1E1E] px-[3vw] sm:px-4 py-[0.5vh] rounded-xl border border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] flex items-center justify-center">
           <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent">
             {tier}
           </span>
         </div>
 
-        {/* BOUTON PARAMÈTRES */}
         <button 
           onClick={() => onNavigate('settings')} 
           className="opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1"
@@ -34,8 +33,9 @@ const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
       </div>
 
       {/* ========================================== */}
-      {/* STRATE MÉDIANE (Le Manifeste)              */}
+      {/* STRATE MÉDIANE (Le Manifeste - "Le Ressort") */}
       {/* ========================================== */}
+      {/* NOUVEAU : Le flex-1 est ici pour pousser le contenu bas vers le fond */}
       <div className="flex-1 flex flex-col justify-center items-center w-full max-w-[85vw] mx-auto min-h-[15vh]">
         <p className="text-center text-white font-black uppercase tracking-wide leading-tight text-[clamp(0.6rem,2.5vw,0.9rem)] drop-shadow-md">
           "L'homme ne parle pas à l'IA pour l'écouter,<br />
@@ -50,7 +50,7 @@ const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
       {/* ========================================== */}
       {/* STRATE BASSE (Thumb Zone - Boutons 3D)     */}
       {/* ========================================== */}
-      <div className="w-full flex flex-col items-center gap-[4vh] shrink-0 mt-auto">
+      <div className="w-full flex flex-col items-center gap-[4vh] shrink-0">
         
         {/* LIGNE 1 : RANGER / SCANNER */}
         <div className="flex justify-between w-full max-w-[80vw] sm:max-w-sm">

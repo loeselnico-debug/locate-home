@@ -13,18 +13,18 @@ import { Scanner } from './core/camera/Scanner';
 import Search from './modules/home/components/Search';
 import SettingsPage from './modules/home/views/SettingsPage';
 import ValidationSas from './modules/home/views/ValidationSas';
+import ToolDetail from './modules/home/components/ToolDetail'; // NOUVEAU : Import de la vue détail
 import type { AIScanResult } from './modules/home/views/ValidationSas';
-// MODIFICATION 1 : On importe le GarageDashboard
-import GarageDashboard from './modules/garage/views/GarageDashboard';
 
-// MODIFICATION 2 : On ajoute 'garage' aux vues possibles
-type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'garage';
+// NOUVEAU : Ajout de 'tool_detail' dans le ViewState
+type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
 
 const App = () => {
   const [view, setView] = useState<ViewState>('hub');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedTool, setSelectedTool] = useState<InventoryItem | null>(null); // NOUVEAU : État pour l'outil sélectionné
   const [pendingItems, setPendingItems] = useState<AIScanResult[]>([]);
   const { currentTier } = useUserTier();
 
@@ -64,9 +64,12 @@ const App = () => {
       toolName: item.nom || 'Outil Inconnu',
       brand: item.marque || 'Marque N/A',
       category: item.categorie_id || 'main',
-      location: 'Atelier',
+      location: 'Atelier', 
       condition: item.etat || 'Bon état',
-      notes: item.description || ''
+      notes: item.description || '',
+      isConsumable: item.isConsumable,
+      consumableLevel: item.consumableLevel,
+      score_confiance: item.score_confiance
     }));
 
     setInventory(prev => [...itemsToAdd, ...prev]);
@@ -81,21 +84,18 @@ const App = () => {
 
   return (
     <main className="w-screen min-h-[100dvh] bg-[#121212] text-white font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
-      
+
       {/* ========================================== */}
       {/* HEADER INALTÉRABLE STRICT - V11 HUD CHÂSSIS */}
       {/* ========================================== */}
       {view !== 'hub' && (
         <header className="fixed top-0 left-0 w-full h-[12.5vh] min-h-[70px] bg-[#121212] z-[100] border-b-2 border-[#D3D3D3] flex items-center justify-center">
-          
           <Logo />
-
           <div className="absolute left-[4vw] bg-[#1E1E1E] px-[3vw] sm:px-4 py-[0.5vh] rounded-xl border border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] flex items-center justify-center">
             <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent">
               {currentTier}
             </span>
           </div>
-
           <button onClick={() => setView('settings')} className="absolute right-[4vw] opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1">
             <img
               src="/gear.png"
@@ -103,21 +103,13 @@ const App = () => {
               alt="Settings"
             />
           </button>
-          
         </header>
       )}
 
       {/* ZONE DE CONTENU */}
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
-        {/* MODIFICATION 3 : On écoute aussi 'garage' */}
-        {view === 'hub' && <Hub onSelectModule={(m: string) => {
-          if (m === 'home' || m === 'garage') setView(m as ViewState);
-        }} />}
-        
+        {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
-
-        {/* MODIFICATION 4 : On affiche le GarageDashboard */}
-        {view === 'garage' && <GarageDashboard />}
 
         {view === 'inventory' && (
           <Dashboard
@@ -135,12 +127,25 @@ const App = () => {
             selectedCategoryId={selectedCategory}
             onStartScan={() => setView('scanner')}
             inventory={inventory}
+            // NOUVEAU : Branchement de la fonction de sélection
+            onSelectTool={(tool) => {
+              setSelectedTool(tool);
+              setView('tool_detail');
+            }}
+          />
+        )}
+
+        {/* NOUVEAU : Rendu de la vue de détail */}
+        {view === 'tool_detail' && selectedTool && (
+          <ToolDetail 
+            tool={selectedTool} 
+            onBack={() => setView('category_detail')} 
           />
         )}
 
         {view === 'scanner' && <Scanner onBack={() => setView('home')} onAnalysisComplete={handleAnalysisResults} />}
         {view === 'search' && <Search onBack={() => setView('home')} inventory={inventory} />}
-        
+
         {view === 'validation' && (
           <ValidationSas
             pendingItems={pendingItems}

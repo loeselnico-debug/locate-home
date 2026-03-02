@@ -1,53 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { CATEGORIES } from '../views/Dashboard'; 
+import { CATEGORIES } from '../views/Dashboard';
 import type { InventoryItem } from '../../../types';
 
 interface LibraryProps {
   onBack: () => void;
   selectedCategoryId: string | null;
-  onStartScan: () => void; 
-  inventory?: InventoryItem[]; // Ajout de l'inventaire en prop pour éviter le décalage mémoire
+  onStartScan: () => void;
+  inventory?: InventoryItem[];
+  // NOUVEAU : Fonction pour gérer le clic sur un outil
+  onSelectTool: (tool: InventoryItem) => void; 
 }
 
-const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory }) => {
+const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory, onSelectTool }) => {
   const [tools, setTools] = useState<InventoryItem[]>([]);
 
   // Récupération de la catégorie active
   const activeCategoryIndex = CATEGORIES.findIndex(c => c.id === selectedCategoryId);
   const activeCategory = CATEGORIES[activeCategoryIndex];
-  
+
   const categoryLabel = activeCategory ? activeCategory.label : 'TOUT L\'INVENTAIRE';
   const categoryIcon = activeCategory ? `/${activeCategory.id}.png` : '/icon-photo.png';
   const categoryNumber = activeCategoryIndex !== -1 ? String(activeCategoryIndex + 1).padStart(2, '0') + '.' : '';
 
   // Filtre Zéro-Bug (Gère les espaces et la casse)
   useEffect(() => {
-    // Le composant dépend exclusivement de l'état central injecté par App.tsx
     const data = inventory || [];
-    
     const safeCategoryId = selectedCategoryId?.trim().toLowerCase();
-    
-    const filtered = safeCategoryId 
+
+    const filtered = safeCategoryId
       ? data.filter(t => {
           const cat = t.category?.trim().toLowerCase();
           const label = activeCategory?.label.trim().toLowerCase();
-          // L'objet est validé s'il correspond à l'ID OU au Label de la catégorie
           return cat === safeCategoryId || cat === label;
         })
       : data;
-      
+
     setTools(filtered.sort((a, b) => a.toolName.localeCompare(b.toolName)));
   }, [selectedCategoryId, inventory, activeCategory]);
 
   return (
     <div className="flex flex-col h-full bg-transparent">
-      
       {/* EN-TÊTE PREMIUM 3D */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         <button className="w-14 h-14 active:scale-90 transition-transform">
           <img src="/icon-assurance.png" alt="Assurance" className="w-full h-full object-contain drop-shadow-lg" />
         </button>
-
         <button onClick={onBack} className="w-14 h-14 active:scale-90 transition-transform">
           <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain drop-shadow-lg" />
         </button>
@@ -75,9 +72,10 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
         {tools.length > 0 ? (
           <div className="flex flex-col gap-4">
             {tools.map((tool) => (
-              <div 
-                key={tool.id} 
-                className="bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
+              <div
+                key={tool.id}
+                onClick={() => onSelectTool(tool)} // NOUVEAU : Action de clic ajoutée
+                className="bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] transition-transform"
               >
                 {/* Photo miniature */}
                 <div className="w-16 h-16 rounded-lg bg-black/50 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
@@ -98,7 +96,7 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                       📍 {tool.location || 'ZONE NON DÉFINIE'}
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center justify-between mt-2">
                     <span className={`px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
                       {tool.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
@@ -113,9 +111,9 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
           </div>
         ) : (
           <div className="h-[40vh] flex flex-col items-center justify-center opacity-30">
-             <div className="w-16 h-16 border-2 border-dashed border-white/50 rounded-full flex items-center justify-center mb-4">
-                <span className="text-white text-2xl">?</span>
-             </div>
+            <div className="w-16 h-16 border-2 border-dashed border-white/50 rounded-full flex items-center justify-center mb-4">
+              <span className="text-white text-2xl">?</span>
+            </div>
             <p className="text-sm font-bold uppercase tracking-widest text-center text-white">Inventaire Vide</p>
             <p className="text-[10px] mt-2 text-center text-white">Aucun outil scanné dans cette catégorie.</p>
           </div>

@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 
 // 1. Définition stricte du format renvoyé par l'IA Gemini
 export interface AIScanResult {
-  nom?: string;
-  marque?: string;
-  categorie_id?: string;
-  score_confiance?: number;
-  etat?: string;
-  description?: string;
+  nom: string;
+  marque: string;
+  categorie_id: string;
+  etat: string;
+  description: string;
+  score_confiance: number;
+  isConsumable?: boolean;
+  consumableLevel?: number;
 }
 
 interface ValidationSasProps {

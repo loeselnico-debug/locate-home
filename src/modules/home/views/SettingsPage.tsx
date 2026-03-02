@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useUserTier } from '../../../core/security/useUserTier';
 import { TIERS_CONFIG, type UserTier } from '../../../core/security/tiers';
 import PrivacyPolicy from './PrivacyPolicy';
+import { useAppSettings } from '../../../core/storage/useAppSettings';
 
 export default function SettingsPage() {
   const { currentTier, setTier } = useUserTier();
+  const { settings, updateSettings } = useAppSettings();
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [storageSize, setStorageSize] = useState<string>('< 0.1 Mo');
 
@@ -33,6 +35,59 @@ export default function SettingsPage() {
         <p className="text-xs text-gray-500">Configuration du système Locate Home</p>
       </div>
 
+      {/* --- PRÉFÉRENCES INTERNATIONALES (M2) --- */}
+      <div className="mb-8 space-y-4">
+        <h3 className="text-sm font-bold text-white/70 uppercase tracking-widest border-l-2 border-[#FF6600] pl-2">
+          Internationalisation
+        </h3>
+        <div className="bg-[#1E1E1E] border border-white/10 p-4 rounded-lg flex flex-col gap-4 shadow-lg">
+          
+          {/* Langue */}
+          <div className="flex justify-between items-center">
+            <div className="pr-4">
+              <span className="font-bold text-white text-sm uppercase tracking-wide">Langue Interface</span>
+              <p className="text-[10px] text-white/50 uppercase tracking-widest mt-1">Français ou Anglais</p>
+            </div>
+            <div className="flex bg-[#121212] rounded-lg p-1 border border-white/5 shrink-0">
+              <button
+                onClick={() => updateSettings({ language: 'FR' })}
+                className={`px-3 py-1.5 rounded text-xs font-black transition-all ${settings.language === 'FR' ? 'bg-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'text-gray-500'}`}
+              >
+                FR
+              </button>
+              <button
+                onClick={() => updateSettings({ language: 'UK' })}
+                className={`px-3 py-1.5 rounded text-xs font-black transition-all ${settings.language === 'UK' ? 'bg-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'text-gray-500'}`}
+              >
+                UK
+              </button>
+            </div>
+          </div>
+
+          {/* Unités de mesure */}
+          <div className="flex justify-between items-center pt-4 border-t border-white/5">
+            <div className="pr-4">
+              <span className="font-bold text-white text-sm uppercase tracking-wide">Système de Mesure</span>
+              <p className="text-[10px] text-white/50 uppercase tracking-widest mt-1">Métrique (cm) / Impérial (inch)</p>
+            </div>
+            <div className="flex bg-[#121212] rounded-lg p-1 border border-white/5 shrink-0">
+              <button
+                onClick={() => updateSettings({ unitSystem: 'METRIC' })}
+                className={`px-3 py-1.5 rounded text-xs font-black transition-all ${settings.unitSystem === 'METRIC' ? 'bg-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'text-gray-500'}`}
+              >
+                MM
+              </button>
+              <button
+                onClick={() => updateSettings({ unitSystem: 'IMPERIAL' })}
+                className={`px-3 py-1.5 rounded text-xs font-black transition-all ${settings.unitSystem === 'IMPERIAL' ? 'bg-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'text-gray-500'}`}
+              >
+                INCH
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* --- ZONE PRIVACY BY DESIGN --- */}
       <div className="mb-8 space-y-4">
         <h3 className="text-sm font-bold text-white/70 uppercase tracking-widest border-l-2 border-[#FF6600] pl-2">
@@ -55,7 +110,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Bouton CGU / Privacy */}
-        <button 
+        <button
           onClick={() => setShowPrivacy(true)}
           className="w-full bg-[#1E1E1E] border border-white/10 hover:border-[#FF6600]/50 p-4 rounded-lg flex justify-between items-center transition-colors active:scale-95"
         >
@@ -63,7 +118,7 @@ export default function SettingsPage() {
             <span className="font-bold text-white text-sm uppercase tracking-wide">Politique de Confidentialité</span>
             <span className="text-xs text-white/50 mt-1">CGU, CGV & Gestion des données</span>
           </div>
-          <span className="text-[#FF6600] font-bold">→</span>
+          <span className="text-[#FF6600] font-bold"> → </span>
         </button>
       </div>
 
@@ -72,7 +127,7 @@ export default function SettingsPage() {
         <h3 className="text-xs font-mono text-gray-500 mb-4 uppercase tracking-widest">
           Dev Debug Zone (Simulation Tiers)
         </h3>
-        
+
         <div className="grid grid-cols-3 gap-2">
           {(Object.keys(TIERS_CONFIG) as UserTier[]).map((tier) => (
             <button
@@ -80,8 +135,8 @@ export default function SettingsPage() {
               onClick={() => setTier(tier)}
               className={`
                 px-3 py-2 text-xs font-bold rounded border transition-colors
-                ${currentTier === tier 
-                  ? 'bg-[#FF6600] border-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.5)]' 
+                ${currentTier === tier
+                  ? 'bg-[#FF6600] border-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.5)]'
                   : 'bg-transparent border-gray-700 text-gray-500 hover:border-gray-500'}
               `}
             >

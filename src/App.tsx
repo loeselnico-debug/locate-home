@@ -82,6 +82,14 @@ const App = () => {
     setView('home');
   };
 
+  // Détermination du module actif pour le Logo
+  const getActiveModule = () => {
+    if (view.includes('garage')) return 'GARAGE';
+    return 'HOME'; 
+  };
+  const currentModule = getActiveModule();
+
+
   return (
     <main className="w-screen min-h-[100dvh] bg-[#121212] text-white font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
 
@@ -89,20 +97,8 @@ const App = () => {
       {/* HEADER INALTÉRABLE STRICT - V11 HUD CHÂSSIS */}
       {/* ========================================== */}
       {view !== 'hub' && (
-        <header className="fixed top-0 left-0 w-full h-[12.5vh] min-h-[70px] bg-[#121212] z-[100] border-b-2 border-[#D3D3D3] flex items-center justify-center">
-          <Logo />
-          <div className="absolute left-[4vw] bg-[#1E1E1E] px-[3vw] sm:px-4 py-[0.5vh] rounded-xl border border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] flex items-center justify-center">
-            <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent">
-              {currentTier}
-            </span>
-          </div>
-          <button onClick={() => setView('settings')} className="absolute right-[4vw] opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1">
-            <img
-              src="/gear.png"
-              className="w-[8vw] h-[8vw] max-w-[35px] max-h-[35px] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
-              alt="Settings"
-            />
-          </button>
+        <header className="fixed top-0 left-0 w-full h-[12.5vh] min-h-[70px] bg-[#121212] z-[100] border-b-2 border-[#D3D3D3]">
+          <Logo activeModule={currentModule as any} />
         </header>
       )}
 

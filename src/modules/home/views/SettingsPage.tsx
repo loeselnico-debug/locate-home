@@ -1,153 +1,130 @@
-import { useState, useEffect } from 'react';
-import { useUserTier } from '../../../core/security/useUserTier';
-import { TIERS_CONFIG, type UserTier } from '../../../core/security/tiers';
-import PrivacyPolicy from './PrivacyPolicy';
+import React, { useState, useEffect } from 'react';
 import { useAppSettings } from '../../../core/storage/useAppSettings';
 
-export default function SettingsPage() {
-  const { currentTier, setTier } = useUserTier();
-  const { settings, updateSettings } = useAppSettings();
-  const [showPrivacy, setShowPrivacy] = useState(false);
-  const [storageSize, setStorageSize] = useState<string>('< 0.1 Mo');
+interface SettingsPageProps {
+  onBack: () => void;
+}
 
-  // Calcul en temps réel du poids de la base de données locale
+export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
+  // Récupération globale via la structure exacte de ton store
+  const { settings, updateSettings } = useAppSettings();
+  const [storageUsed, setStorageUsed] = useState<string>("0.00");
+
+  // Calcul du stockage local Zéro-Serveur
   useEffect(() => {
     if (navigator.storage && navigator.storage.estimate) {
       navigator.storage.estimate().then(({ usage }) => {
         if (usage) {
-          const mb = (usage / (1024 * 1024)).toFixed(2);
-          setStorageSize(`${mb} Mo`);
+          setStorageUsed((usage / (1024 * 1024)).toFixed(2));
         }
       });
     }
   }, []);
 
-  // Si on clique sur la politique, on affiche le composant
-  if (showPrivacy) {
-    return <PrivacyPolicy onBack={() => setShowPrivacy(false)} />;
-  }
-
   return (
-    <div className="min-h-screen bg-[#121212] text-white p-4 pb-24 overflow-y-auto">
-      {/* Header Interne */}
-      <div className="mb-8 border-b border-gray-800 pb-4 mt-12">
-        <h2 className="text-2xl font-black text-[#FF6600] uppercase tracking-tighter">Paramètres</h2>
-        <p className="text-xs text-gray-500">Configuration du système Locate Home</p>
+    <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto">
+      
+      {/* EN-TÊTE AVEC BOUTON RETOUR */}
+      <div className="flex items-center justify-between mb-[4vh]">
+        <div>
+          <h1 className="text-[clamp(1.5rem,6vw,2.5rem)] font-black text-[#FF6600] uppercase tracking-wide font-['Rebel']">
+            Paramètres
+          </h1>
+          <p className="text-[clamp(0.8rem,3vw,1rem)] text-gray-400">
+            Configuration du système Locate Home
+          </p>
+        </div>
+        
+        {/* BOUTON RETOUR 3D (Thumb Zone) */}
+        <button 
+          onClick={onBack}
+          className="w-[clamp(40px,10vw,60px)] h-[clamp(40px,10vw,60px)] bg-[#1A1A1A] rounded-xl flex items-center justify-center border border-[#333] shadow-[0_4px_0_#000] active:shadow-[0_0px_0_#000] active:translate-y-[4px] transition-all"
+        >
+          <img src="/icons/icon-return.png" alt="Retour" className="w-1/2 h-1/2 object-contain" />
+        </button>
       </div>
 
-      {/* --- PRÉFÉRENCES INTERNATIONALES (M2) --- */}
-      <div className="mb-8 space-y-4">
-        <h3 className="text-sm font-bold text-white/70 uppercase tracking-widest border-l-2 border-[#FF6600] pl-2">
-          Internationalisation
-        </h3>
-        <div className="bg-[#1E1E1E] border border-white/10 p-4 rounded-lg flex flex-col gap-4 shadow-lg">
+      <div className="w-full h-[1px] bg-[#333] mb-[4vh]"></div>
+
+      {/* SECTION : INTERNATIONALISATION */}
+      <div className="mb-[5vh]">
+        <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
+          <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
+          INTERNATIONALISATION
+        </h2>
+
+        <div className="bg-[#1A1A1A] rounded-2xl p-[2vh_4vw] border border-[#222]">
           
-          {/* Langue */}
-          <div className="flex justify-between items-center">
-            <div className="pr-4">
-              <span className="font-bold text-white text-sm uppercase tracking-wide">Langue Interface</span>
-              <p className="text-[10px] text-white/50 uppercase tracking-widest mt-1">Français ou Anglais</p>
+          {/* Ligne : Langue */}
+          <div className="flex justify-between items-center mb-[2vh] pb-[2vh] border-b border-[#333]">
+            <div>
+              <div className="font-bold text-[clamp(0.9rem,3.5vw,1.1rem)]">LANGUE INTERFACE</div>
+              <div className="text-[clamp(0.7rem,2.5vw,0.8rem)] text-gray-500 uppercase">Français ou Anglais</div>
             </div>
-            <div className="flex bg-[#121212] rounded-lg p-1 border border-white/5 shrink-0">
-              <button
+            <div className="flex bg-[#0A0A0A] rounded-lg p-[4px]">
+              <button 
                 onClick={() => updateSettings({ language: 'FR' })}
-                className={`px-3 py-1.5 rounded text-xs font-black transition-all ${settings.language === 'FR' ? 'bg-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'text-gray-500'}`}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.language === 'FR' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500'}`}
               >
                 FR
               </button>
-              <button
+              <button 
                 onClick={() => updateSettings({ language: 'UK' })}
-                className={`px-3 py-1.5 rounded text-xs font-black transition-all ${settings.language === 'UK' ? 'bg-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'text-gray-500'}`}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.language === 'UK' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500'}`}
               >
                 UK
               </button>
             </div>
           </div>
 
-          {/* Unités de mesure */}
-          <div className="flex justify-between items-center pt-4 border-t border-white/5">
-            <div className="pr-4">
-              <span className="font-bold text-white text-sm uppercase tracking-wide">Système de Mesure</span>
-              <p className="text-[10px] text-white/50 uppercase tracking-widest mt-1">Métrique (cm) / Impérial (inch)</p>
+          {/* Ligne : Système de mesure */}
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="font-bold text-[clamp(0.9rem,3.5vw,1.1rem)]">SYSTÈME DE MESURE</div>
+              <div className="text-[clamp(0.7rem,2.5vw,0.8rem)] text-gray-500 uppercase">Métrique (cm) / Impérial (inch)</div>
             </div>
-            <div className="flex bg-[#121212] rounded-lg p-1 border border-white/5 shrink-0">
-              <button
+            <div className="flex bg-[#0A0A0A] rounded-lg p-[4px]">
+              <button 
                 onClick={() => updateSettings({ unitSystem: 'METRIC' })}
-                className={`px-3 py-1.5 rounded text-xs font-black transition-all ${settings.unitSystem === 'METRIC' ? 'bg-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'text-gray-500'}`}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.unitSystem === 'METRIC' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500'}`}
               >
                 MM
               </button>
-              <button
+              <button 
                 onClick={() => updateSettings({ unitSystem: 'IMPERIAL' })}
-                className={`px-3 py-1.5 rounded text-xs font-black transition-all ${settings.unitSystem === 'IMPERIAL' ? 'bg-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'text-gray-500'}`}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.unitSystem === 'IMPERIAL' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500'}`}
               >
                 INCH
               </button>
             </div>
           </div>
+
         </div>
       </div>
 
-      {/* --- ZONE PRIVACY BY DESIGN --- */}
-      <div className="mb-8 space-y-4">
-        <h3 className="text-sm font-bold text-white/70 uppercase tracking-widest border-l-2 border-[#FF6600] pl-2">
-          Sécurité & Données
-        </h3>
+      {/* SECTION : SÉCURITÉ & DONNÉES */}
+      <div>
+        <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
+          <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
+          SÉCURITÉ & DONNÉES
+        </h2>
 
-        {/* Badge Zéro Serveur */}
-        <div className="bg-[#1A2E1A] border border-[#2EA043] rounded-lg p-4 flex flex-col gap-2 shadow-[0_0_15px_rgba(46,160,67,0.1)]">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#2EA043] animate-pulse"></div>
-            <span className="text-[#2EA043] font-black uppercase tracking-widest text-xs">Architecture Zéro-Serveur</span>
+        <div className="bg-[#121812] rounded-2xl p-[3vh_4vw] border border-[#2EA043]">
+          <div className="flex items-center text-[#2EA043] font-black tracking-wide text-[clamp(0.8rem,3vw,1rem)] mb-[1.5vh]">
+            <span className="w-[8px] h-[8px] rounded-full bg-[#2EA043] mr-[2vw] animate-pulse"></span>
+            ARCHITECTURE ZÉRO-SERVEUR
           </div>
-          <p className="text-white/80 text-sm leading-snug">
+          <p className="text-gray-300 text-[clamp(0.8rem,3.5vw,1rem)] mb-[3vh] leading-relaxed">
             Vos données sont stockées <strong className="text-white">exclusivement et localement</strong> sur cet appareil.
           </p>
-          <div className="mt-2 bg-[#121212] rounded p-2 border border-[#2EA043]/30 inline-block self-start">
-            <span className="text-xs text-white/60 uppercase tracking-widest">Volume occupé : </span>
-            <span className="text-xs font-bold text-[#2EA043]">{storageSize}</span>
+          
+          <div className="bg-[#0A0A0A] inline-block px-[4vw] py-[1.5vh] rounded-lg border border-[#222]">
+            <span className="text-gray-400 text-[clamp(0.7rem,3vw,0.9rem)] tracking-wider">VOLUME OCCUPÉ : </span>
+            <span className="text-[#2EA043] font-bold text-[clamp(0.8rem,3vw,1rem)]">{storageUsed} Mo</span>
           </div>
         </div>
-
-        {/* Bouton CGU / Privacy */}
-        <button
-          onClick={() => setShowPrivacy(true)}
-          className="w-full bg-[#1E1E1E] border border-white/10 hover:border-[#FF6600]/50 p-4 rounded-lg flex justify-between items-center transition-colors active:scale-95"
-        >
-          <div className="flex flex-col text-left">
-            <span className="font-bold text-white text-sm uppercase tracking-wide">Politique de Confidentialité</span>
-            <span className="text-xs text-white/50 mt-1">CGU, CGV & Gestion des données</span>
-          </div>
-          <span className="text-[#FF6600] font-bold"> → </span>
-        </button>
       </div>
 
-      {/* --- DEV DEBUG ZONE --- */}
-      <div className="mt-12 p-4 border border-dashed border-gray-700 rounded-xl bg-gray-900/50">
-        <h3 className="text-xs font-mono text-gray-500 mb-4 uppercase tracking-widest">
-          Dev Debug Zone (Simulation Tiers)
-        </h3>
-
-        <div className="grid grid-cols-3 gap-2">
-          {(Object.keys(TIERS_CONFIG) as UserTier[]).map((tier) => (
-            <button
-              key={tier}
-              onClick={() => setTier(tier)}
-              className={`
-                px-3 py-2 text-xs font-bold rounded border transition-colors
-                ${currentTier === tier
-                  ? 'bg-[#FF6600] border-[#FF6600] text-white shadow-[0_0_10px_rgba(255,102,0,0.5)]'
-                  : 'bg-transparent border-gray-700 text-gray-500 hover:border-gray-500'}
-              `}
-            >
-              {tier}
-            </button>
-          ))}
-        </div>
-        <p className="text-[10px] text-gray-600 mt-2 text-center italic">
-          Cette zone simule votre abonnement pour tester l'interface.
-        </p>
-      </div>
     </div>
   );
-}
+};

@@ -11,7 +11,7 @@ import Dashboard from './modules/home/views/Dashboard';
 import Library from './modules/home/components/Library';
 import { Scanner } from './core/camera/Scanner';
 import Search from './modules/home/components/Search';
-import SettingsPage from './modules/home/views/SettingsPage';
+import { SettingsPage } from './modules/home/views/SettingsPage';
 import ValidationSas from './modules/home/views/ValidationSas';
 import ToolDetail from './modules/home/components/ToolDetail'; // NOUVEAU : Import de la vue détail
 import type { AIScanResult } from './modules/home/views/ValidationSas';
@@ -151,12 +151,9 @@ const App = () => {
         )}
 
         {view === 'settings' && (
-          <div className="absolute inset-0 z-50 bg-[#121212]">
-            <button onClick={() => setView('home')} className="absolute top-6 left-6 z-50 text-[#FF6600] border border-[#FF6600] bg-[#1E1E1E] px-4 py-2 rounded-md text-xs font-black uppercase tracking-widest active:scale-95">
-              ← Retour
-            </button>
-            <SettingsPage />
-          </div>
+  <div className="flex-1 overflow-hidden relative">
+    <SettingsPage onBack={() => setView('home')} />
+  </div>
         )}
       </div>
     </main>

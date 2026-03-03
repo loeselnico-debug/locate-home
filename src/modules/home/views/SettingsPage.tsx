@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAppSettings } from '../../../core/storage/useAppSettings';
 import { useUserTier } from '../../../core/security/useUserTier';
 import { TIERS_CONFIG, type UserTier } from '../../../core/security/tiers';
+import { useTranslation } from '../../../core/i18n/useTranslation';
 import PrivacyPolicy from './PrivacyPolicy';
 
-// Correction TS : On s'assure que le composant accepte bien onBack si appelé ainsi
 interface SettingsPageProps {
   onBack?: () => void; 
 }
@@ -12,8 +12,8 @@ interface SettingsPageProps {
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
   // --- ÉTATS ET HOOKS ---
   const { settings, updateSettings } = useAppSettings();
-  // Correction des hooks selon useUserTier.ts (currentTier au lieu de tier)
   const { currentTier, setTier } = useUserTier();
+  const { t, lang } = useTranslation(); // Injection de notre traducteur
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [storageUsed, setStorageUsed] = useState<string>("0.00");
 
@@ -28,12 +28,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
     }
   }, []);
 
-  // --- RENDU CONDITIONNEL (Politique de Confidentialité) ---
   if (showPrivacy) {
     return <PrivacyPolicy onBack={() => setShowPrivacy(false)} />;
   }
 
-  // --- RENDU PRINCIPAL ---
   return (
     <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto pb-[15vh]">
       
@@ -41,10 +39,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
       <div className="flex items-center justify-between mb-[4vh] mt-[4vh]">
         <div>
           <h1 className="text-[clamp(1.5rem,6vw,2.5rem)] font-black text-[#FF6600] uppercase tracking-wide font-['Rebel']">
-            Paramètres
+            {t('settings_title')}
           </h1>
           <p className="text-[clamp(0.8rem,3vw,1rem)] text-gray-400">
-            Configuration du système Locate Home
+            {t('settings_subtitle')}
           </p>
         </div>
         
@@ -60,54 +58,33 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
 
       <div className="w-full h-[1px] bg-[#333] mb-[4vh]"></div>
 
-      {/* SECTION 1 : INTERNATIONALISATION */}
+      {/* SECTION 1 : INTERNATIONALISATION (Action Combinée) */}
       <div className="mb-[5vh]">
         <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
           <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
-          INTERNATIONALISATION
+          {t('intl_title')}
         </h2>
 
         <div className="bg-[#1A1A1A] rounded-2xl p-[2vh_4vw] border border-[#222]">
-          {/* Langue : Réel switch FR / UK */}
-          <div className="flex justify-between items-center mb-[2vh] pb-[2vh] border-b border-[#333]">
-            <div className="flex-1 pr-[2vw]">
-              <div className="font-bold text-[clamp(0.9rem,3.5vw,1.1rem)]">LANGUE INTERFACE</div>
-              <div className="text-[clamp(0.7rem,2.5vw,0.8rem)] text-gray-500 uppercase">Français ou Anglais</div>
-            </div>
-            <div className="flex bg-[#0A0A0A] rounded-lg p-[4px] gap-[1vw] shrink-0">
-              <button 
-                onClick={() => updateSettings({ language: 'FR' })}
-                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.language === 'FR' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                FR
-              </button>
-              <button 
-                onClick={() => updateSettings({ language: 'UK' })}
-                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.language === 'UK' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                UK
-              </button>
-            </div>
-          </div>
-
-          {/* Système de mesure : Réel switch CM / INCH */}
           <div className="flex justify-between items-center">
             <div className="flex-1 pr-[2vw]">
-              <div className="font-bold text-[clamp(0.9rem,3.5vw,1.1rem)]">SYSTÈME DE MESURE</div>
-              <div className="text-[clamp(0.7rem,2.5vw,0.8rem)] text-gray-500 uppercase">Métrique (cm) / Impérial (inch)</div>
+              <div className="font-bold text-[clamp(0.9rem,3.5vw,1.1rem)]">{t('intl_lang')}</div>
+              <div className="text-[clamp(0.7rem,2.5vw,0.8rem)] text-gray-500 uppercase">{t('intl_lang_desc')}</div>
             </div>
             <div className="flex bg-[#0A0A0A] rounded-lg p-[4px] gap-[1vw] shrink-0">
               <button 
-                onClick={() => updateSettings({ unitSystem: 'METRIC' })}
-                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.unitSystem === 'METRIC' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
+                // L'ACTION MAGIQUE EST ICI : On met à jour la langue ET l'unité en même temps
+                onClick={() => updateSettings({ language: 'FR', unitSystem: 'METRIC' })}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${lang === 'FR' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
-                CM
+                FR (CM)
               </button>
               <button 
-                onClick={() => updateSettings({ unitSystem: 'IMPERIAL' })}
-                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.unitSystem === 'IMPERIAL' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
+                // L'ACTION MAGIQUE EST ICI : On met à jour la langue ET l'unité en même temps
+                onClick={() => updateSettings({ language: 'UK', unitSystem: 'IMPERIAL' })}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${lang === 'UK' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
-                INCH
+                UK (IN)
               </button>
             </div>
           </div>
@@ -118,12 +95,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
       <div className="mb-[5vh]">
         <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
           <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
-          OFFRE & ABONNEMENT
+          {t('tier_title')}
         </h2>
         <div className="bg-[#1A1A1A] rounded-2xl p-[2vh_4vw] border border-[#222]">
           <div className="flex items-center justify-between mb-[2vh]">
             <p className="text-[clamp(0.75rem,2.8vw,0.9rem)] text-gray-400">
-              Accès Dev / Sélection du Tier
+              {t('tier_desc')}
             </p>
             <span className="text-[clamp(0.6rem,2vw,0.8rem)] bg-[#333] text-white px-[2vw] py-[0.5vh] rounded-full uppercase tracking-wider">
               Admin Mode
@@ -131,14 +108,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
           </div>
           
           <div className="flex bg-[#0A0A0A] rounded-lg p-[4px] justify-between">
-            {/* Correction TS : Cast explicite pour UserTier[] */}
-            {(Object.keys(TIERS_CONFIG) as UserTier[]).map((t) => (
+            {(Object.keys(TIERS_CONFIG) as UserTier[]).map((tier) => (
               <button
-                key={t}
-                onClick={() => setTier(t)}
-                className={`flex-1 mx-[1vw] py-[1.5vh] rounded-md font-black text-[clamp(0.7rem,2.5vw,0.9rem)] transition-all ${currentTier === t ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
+                key={tier}
+                onClick={() => setTier(tier)}
+                className={`flex-1 mx-[1vw] py-[1.5vh] rounded-md font-black text-[clamp(0.7rem,2.5vw,0.9rem)] transition-all ${currentTier === tier ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
-                {t}
+                {tier}
               </button>
             ))}
           </div>
@@ -149,20 +125,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
       <div className="mb-[5vh]">
         <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
           <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
-          SÉCURITÉ & DONNÉES
+          {t('sec_title')}
         </h2>
 
         <div className="bg-[#121812] rounded-2xl p-[3vh_4vw] border border-[#2EA043]">
           <div className="flex items-center text-[#2EA043] font-black tracking-wide text-[clamp(0.8rem,3vw,1rem)] mb-[1.5vh]">
             <span className="w-[8px] h-[8px] rounded-full bg-[#2EA043] mr-[2vw] animate-pulse"></span>
-            ARCHITECTURE ZÉRO-SERVEUR
+            {t('sec_zero')}
           </div>
           <p className="text-gray-300 text-[clamp(0.8rem,3.5vw,1rem)] mb-[3vh] leading-relaxed">
-            Vos données sont stockées <strong className="text-white">exclusivement et localement</strong> sur cet appareil.
+            {t('sec_desc_1')} <strong className="text-white">{t('sec_desc_2')}</strong> {t('sec_desc_3')}
           </p>
           
           <div className="bg-[#0A0A0A] inline-block px-[4vw] py-[1.5vh] rounded-lg border border-[#222]">
-            <span className="text-gray-400 text-[clamp(0.7rem,3vw,0.9rem)] tracking-wider">VOLUME OCCUPÉ : </span>
+            <span className="text-gray-400 text-[clamp(0.7rem,3vw,0.9rem)] tracking-wider">{t('sec_vol')}</span>
             <span className="text-[#2EA043] font-bold text-[clamp(0.8rem,3vw,1rem)]">{storageUsed} Mo</span>
           </div>
         </div>
@@ -178,7 +154,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             className="mt-[0.5vh] shrink-0 w-[clamp(20px,5vw,24px)] h-[clamp(20px,5vw,24px)] accent-[#FF6600] cursor-pointer"
           />
           <div className="text-[clamp(0.8rem,3vw,1rem)] text-gray-400 leading-snug">
-            J'accepte les <button onClick={() => setShowPrivacy(true)} className="text-[#FF6600] underline decoration-[#FF6600] underline-offset-2 hover:text-white transition-colors text-left">Conditions Générales (CGU/CGV) et la Politique de confidentialité</button>.
+            {t('legal_agree')} <button onClick={() => setShowPrivacy(true)} className="text-[#FF6600] underline decoration-[#FF6600] underline-offset-2 hover:text-white transition-colors text-left">{t('legal_link')}</button>.
           </div>
         </div>
       </div>

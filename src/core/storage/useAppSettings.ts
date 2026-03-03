@@ -8,11 +8,13 @@ const SETTINGS_KEY = 'locate_app_settings';
 export interface AppSettings {
   language: Language;
   unitSystem: UnitSystem;
+  acceptedTerms?: boolean; // NOUVEAU : Sauvegarde de l'accord CGU/CGV
 }
 
 const defaultSettings: AppSettings = {
   language: 'FR',
   unitSystem: 'METRIC',
+  acceptedTerms: false,
 };
 
 export const useAppSettings = () => {

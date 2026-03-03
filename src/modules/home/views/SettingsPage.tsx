@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSettings } from '../../../core/storage/useAppSettings';
+import { useUserTier } from '../../../core/security/useUserTier';
+import { TIERS_CONFIG, type UserTier } from '../../../core/security/tiers';
+import PrivacyPolicy from './PrivacyPolicy';
 
+// Correction TS : On s'assure que le composant accepte bien onBack si appelé ainsi
 interface SettingsPageProps {
-  onBack: () => void;
+  onBack?: () => void; 
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
-  // Récupération globale via la structure exacte de ton store
+  // --- ÉTATS ET HOOKS ---
   const { settings, updateSettings } = useAppSettings();
+  // Correction des hooks selon useUserTier.ts (currentTier au lieu de tier)
+  const { currentTier, setTier } = useUserTier();
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [storageUsed, setStorageUsed] = useState<string>("0.00");
 
-  // Calcul du stockage local Zéro-Serveur
+  // --- CALCUL DU STOCKAGE LOCAL ---
   useEffect(() => {
     if (navigator.storage && navigator.storage.estimate) {
       navigator.storage.estimate().then(({ usage }) => {
@@ -21,11 +28,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
     }
   }, []);
 
+  // --- RENDU CONDITIONNEL (Politique de Confidentialité) ---
+  if (showPrivacy) {
+    return <PrivacyPolicy onBack={() => setShowPrivacy(false)} />;
+  }
+
+  // --- RENDU PRINCIPAL ---
   return (
-    <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto">
+    <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto pb-[15vh]">
       
-      {/* EN-TÊTE AVEC BOUTON RETOUR */}
-      <div className="flex items-center justify-between mb-[4vh]">
+      {/* EN-TÊTE AVEC BOUTON RETOUR 3D */}
+      <div className="flex items-center justify-between mb-[4vh] mt-[4vh]">
         <div>
           <h1 className="text-[clamp(1.5rem,6vw,2.5rem)] font-black text-[#FF6600] uppercase tracking-wide font-['Rebel']">
             Paramètres
@@ -35,18 +48,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
           </p>
         </div>
         
-        {/* BOUTON RETOUR 3D (Thumb Zone) */}
-        <button 
-          onClick={onBack}
-          className="w-[clamp(40px,10vw,60px)] h-[clamp(40px,10vw,60px)] bg-[#1A1A1A] rounded-xl flex items-center justify-center border border-[#333] shadow-[0_4px_0_#000] active:shadow-[0_0px_0_#000] active:translate-y-[4px] transition-all"
-        >
-          <img src="/icons/icon-return.png" alt="Retour" className="w-1/2 h-1/2 object-contain" />
-        </button>
+        {onBack && (
+          <button 
+            onClick={onBack}
+            className="w-[clamp(40px,10vw,60px)] h-[clamp(40px,10vw,60px)] bg-[#1A1A1A] rounded-xl flex items-center justify-center border border-[#333] shadow-[0_4px_0_#000] active:shadow-[0_0px_0_#000] active:translate-y-[4px] transition-all shrink-0"
+          >
+            <img src="/icon-return.png" alt="Retour" className="w-[50%] h-[50%] object-contain" />
+          </button>
+        )}
       </div>
 
       <div className="w-full h-[1px] bg-[#333] mb-[4vh]"></div>
 
-      {/* SECTION : INTERNATIONALISATION */}
+      {/* SECTION 1 : INTERNATIONALISATION */}
       <div className="mb-[5vh]">
         <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
           <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
@@ -54,56 +68,85 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </h2>
 
         <div className="bg-[#1A1A1A] rounded-2xl p-[2vh_4vw] border border-[#222]">
-          
-          {/* Ligne : Langue */}
+          {/* Langue : Réel switch FR / UK */}
           <div className="flex justify-between items-center mb-[2vh] pb-[2vh] border-b border-[#333]">
-            <div>
+            <div className="flex-1 pr-[2vw]">
               <div className="font-bold text-[clamp(0.9rem,3.5vw,1.1rem)]">LANGUE INTERFACE</div>
               <div className="text-[clamp(0.7rem,2.5vw,0.8rem)] text-gray-500 uppercase">Français ou Anglais</div>
             </div>
-            <div className="flex bg-[#0A0A0A] rounded-lg p-[4px]">
+            <div className="flex bg-[#0A0A0A] rounded-lg p-[4px] gap-[1vw] shrink-0">
               <button 
                 onClick={() => updateSettings({ language: 'FR' })}
-                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.language === 'FR' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500'}`}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.language === 'FR' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
                 FR
               </button>
               <button 
                 onClick={() => updateSettings({ language: 'UK' })}
-                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.language === 'UK' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500'}`}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.language === 'UK' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
                 UK
               </button>
             </div>
           </div>
 
-          {/* Ligne : Système de mesure */}
+          {/* Système de mesure : Réel switch CM / INCH */}
           <div className="flex justify-between items-center">
-            <div>
+            <div className="flex-1 pr-[2vw]">
               <div className="font-bold text-[clamp(0.9rem,3.5vw,1.1rem)]">SYSTÈME DE MESURE</div>
               <div className="text-[clamp(0.7rem,2.5vw,0.8rem)] text-gray-500 uppercase">Métrique (cm) / Impérial (inch)</div>
             </div>
-            <div className="flex bg-[#0A0A0A] rounded-lg p-[4px]">
+            <div className="flex bg-[#0A0A0A] rounded-lg p-[4px] gap-[1vw] shrink-0">
               <button 
                 onClick={() => updateSettings({ unitSystem: 'METRIC' })}
-                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.unitSystem === 'METRIC' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500'}`}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.unitSystem === 'METRIC' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
-                MM
+                CM
               </button>
               <button 
                 onClick={() => updateSettings({ unitSystem: 'IMPERIAL' })}
-                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.unitSystem === 'IMPERIAL' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500'}`}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${settings.unitSystem === 'IMPERIAL' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
                 INCH
               </button>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* SECTION : SÉCURITÉ & DONNÉES */}
-      <div>
+      {/* SECTION 2 : ACCÈS TOTAL & ABONNEMENTS */}
+      <div className="mb-[5vh]">
+        <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
+          <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
+          OFFRE & ABONNEMENT
+        </h2>
+        <div className="bg-[#1A1A1A] rounded-2xl p-[2vh_4vw] border border-[#222]">
+          <div className="flex items-center justify-between mb-[2vh]">
+            <p className="text-[clamp(0.75rem,2.8vw,0.9rem)] text-gray-400">
+              Accès Dev / Sélection du Tier
+            </p>
+            <span className="text-[clamp(0.6rem,2vw,0.8rem)] bg-[#333] text-white px-[2vw] py-[0.5vh] rounded-full uppercase tracking-wider">
+              Admin Mode
+            </span>
+          </div>
+          
+          <div className="flex bg-[#0A0A0A] rounded-lg p-[4px] justify-between">
+            {/* Correction TS : Cast explicite pour UserTier[] */}
+            {(Object.keys(TIERS_CONFIG) as UserTier[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTier(t)}
+                className={`flex-1 mx-[1vw] py-[1.5vh] rounded-md font-black text-[clamp(0.7rem,2.5vw,0.9rem)] transition-all ${currentTier === t ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 3 : SÉCURITÉ & DONNÉES */}
+      <div className="mb-[5vh]">
         <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
           <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
           SÉCURITÉ & DONNÉES
@@ -125,6 +168,23 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </div>
       </div>
 
+      {/* SECTION 4 : LÉGAL (CGU / CGV / Confidentialité) */}
+      <div className="mt-auto">
+        <div className="flex items-start gap-[3vw] bg-[#1A1A1A] p-[2vh_4vw] rounded-xl border border-[#333]">
+          <input
+            type="checkbox"
+            checked={settings.acceptedTerms || false}
+            onChange={(e) => updateSettings({ acceptedTerms: e.target.checked })}
+            className="mt-[0.5vh] shrink-0 w-[clamp(20px,5vw,24px)] h-[clamp(20px,5vw,24px)] accent-[#FF6600] cursor-pointer"
+          />
+          <div className="text-[clamp(0.8rem,3vw,1rem)] text-gray-400 leading-snug">
+            J'accepte les <button onClick={() => setShowPrivacy(true)} className="text-[#FF6600] underline decoration-[#FF6600] underline-offset-2 hover:text-white transition-colors text-left">Conditions Générales (CGU/CGV) et la Politique de confidentialité</button>.
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 };
+
+export default SettingsPage;

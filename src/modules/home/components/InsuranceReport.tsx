@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import type { InventoryItem } from '../../../types'; // Correction TS1484
+import type { InventoryItem } from '../../../types';
 
 const styles = StyleSheet.create({
   page: { padding: 30, fontFamily: 'Helvetica', backgroundColor: '#FFFFFF' },
@@ -21,9 +21,10 @@ const styles = StyleSheet.create({
   footer: { position: 'absolute', bottom: 30, left: 30, right: 30, textAlign: 'center', fontSize: 8, color: '#9CA3AF', borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 10 },
 });
 
+// NOUVEAU : Ajout de la propriété optionnelle "company"
 interface InsuranceReportProps {
   items: InventoryItem[];
-  userInfo: { name: string; address: string };
+  userInfo: { name: string; company?: string; address: string }; 
 }
 
 export const InsuranceReport: React.FC<InsuranceReportProps> = ({ items, userInfo }) => {
@@ -55,7 +56,10 @@ export const InsuranceReport: React.FC<InsuranceReportProps> = ({ items, userInf
 
         <View style={styles.summaryBox}>
           <Text style={styles.summaryTitle}>Synthèse du Parc Outillage</Text>
-          <Text style={styles.summaryText}>Titulaire : {userInfo.name}</Text>
+          {/* NOUVEAU : Affichage dynamique de l'entreprise si elle est renseignée */}
+          <Text style={styles.summaryText}>
+            Titulaire : {userInfo.name} {userInfo.company ? `(${userInfo.company})` : ''}
+          </Text>
           <Text style={styles.summaryText}>Lieu de stockage principal : {userInfo.address}</Text>
           <Text style={styles.summaryText}>Nombre total d'articles : {items.length}</Text>
           <Text style={{ ...styles.summaryText, fontWeight: 'bold', marginTop: 5 }}>
@@ -75,7 +79,6 @@ export const InsuranceReport: React.FC<InsuranceReportProps> = ({ items, userInf
               </View>
               {locItems.map((item, idx) => (
                 <View style={styles.tableRow} key={idx}>
-                  {/* Correction TS2339 : item.toolName utilisé ici */}
                   <View style={styles.tableCol}><Text style={styles.tableCell}>{item.toolName || 'Outil non nommé'}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>{item.serialNumber || 'N/A'}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>{item.condition || 'Usagé'}</Text></View>
@@ -87,7 +90,9 @@ export const InsuranceReport: React.FC<InsuranceReportProps> = ({ items, userInf
         ))}
 
         <Text style={styles.footer} fixed>
-          Ce rapport a été généré localement via l'application LOCATE HOME. Les données sont certifiées conformes par l'utilisateur au moment de la validation manuelle dans le système (Sas Zéro-Trust). Locate Systems ne saurait être tenu responsable de l'exactitude des informations saisies.
+          Ce rapport a été généré localement via l'application LOCATE HOME.
+          Les données sont certifiées conformes par l'utilisateur au moment de la validation manuelle dans le système (Sas Zéro-Trust).
+          Locate Systems ne saurait être tenu responsable de l'exactitude des informations saisies.
         </Text>
       </Page>
     </Document>

@@ -5,10 +5,9 @@ import type { InventoryItem } from '../../../types';
 
 interface PdfExportButtonProps {
   inventory: InventoryItem[];
-  userInfo: { name: string; address: string };
+  userInfo: { name: string; company?: string; address: string };
 }
 
-// Ce composant contient la logique lourde et sera chargé en différé (Lazy Load)
 const PdfExportButton: React.FC<PdfExportButtonProps> = ({ inventory, userInfo }) => {
   return (
     <PDFDownloadLink
@@ -17,10 +16,10 @@ const PdfExportButton: React.FC<PdfExportButtonProps> = ({ inventory, userInfo }
       className="w-14 h-14 active:scale-90 transition-transform block"
     >
       {({ loading }) => (
-        <img 
-          src="/icon-assurance.png" 
-          alt="Assurance" 
-          className={`w-full h-full object-contain drop-shadow-lg ${loading ? 'opacity-50 animate-pulse' : ''}`} 
+        <img
+          src="/icon-assurance.png"
+          alt="Assurance"
+          className={`w-full h-full object-contain drop-shadow-lg ${loading ? 'opacity-50 animate-pulse' : ''}`}
         />
       )}
     </PDFDownloadLink>

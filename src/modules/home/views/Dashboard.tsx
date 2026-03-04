@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
-import { useUserTier } from '../../../core/security/useUserTier'; 
+import { useUserTier } from '../../../core/security/useUserTier';
+import { useAppSettings } from '../../../core/storage/useAppSettings'; // INJECTION DU CERVEAU
 import type { InventoryItem } from '../../../types';
 
 // Import différé (Lazy Loading) pour éviter le crash au Runtime
@@ -14,7 +15,7 @@ export const CATEGORIES = [
   { id: 'peinture', label: 'Peinture et Finition' },
   { id: 'mesure', label: 'Mesure et Traçage' },
   { id: 'jardin', label: 'Jardin et Extérieur' },
-  { id: 'epi', label: 'Équipements De Protection' }, 
+  { id: 'epi', label: 'Équipements De Protection' },
 ];
 
 interface DashboardProps {
@@ -22,45 +23,50 @@ interface DashboardProps {
   onStartScan: () => void;
   onDelete: (id: string) => void;
   onSelectCategory: (categoryId: string) => void;
-  onBack?: () => void; 
+  onBack?: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBack, onDelete }) => {
   const { currentTier } = useUserTier();
+  const { settings } = useAppSettings(); // CONNEXION AU PROFIL
   const canExportPdf = currentTier === 'PREMIUM' || currentTier === 'PRO';
 
-  const dummyUserInfo = { 
-    name: 'Utilisateur Premium', 
-    address: 'Atelier Principal / Fourgon' 
+  // Extraction dynamique des vraies données
+  const profile = settings.userProfile;
+  const realUserInfo = {
+    name: profile?.fullName || 'Utilisateur Non Identifié',
+    company: profile?.company || '',
+    address: profile?.address || 'Adresse Non Renseignée'
   };
-  
+
   const handleReturn = () => {
     if (onBack) onBack();
-    else window.history.back(); 
+    else window.history.back();
   };
 
   return (
     <div className="flex flex-col h-full bg-transparent">
-      
+
       {/* EN-TÊTE PREMIUM 3D */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
-        
+
         {/* Actions Gauche : Assurance uniquement */}
         <div className="flex gap-4">
           {canExportPdf ? (
             <Suspense fallback={<div className="w-14 h-14 opacity-50 animate-pulse bg-gray-300 rounded-full" />}>
-              <PdfExportButton inventory={inventory} userInfo={dummyUserInfo} />
+              {/* INJECTION DES VRAIES DONNÉES ICI */}
+              <PdfExportButton inventory={inventory} userInfo={realUserInfo} />
             </Suspense>
           ) : (
-            <button 
+            <button
               onClick={() => alert("L'export PDF Assurance est réservé aux comptes PREMIUM et PRO.")}
               className="w-14 h-14 active:scale-90 transition-transform opacity-50 cursor-not-allowed"
               title="Passer Premium pour exporter"
             >
-              <img 
-                src="/icon-assurance.png" 
-                alt="Assurance (Verrouillé)" 
-                className="w-full h-full object-contain drop-shadow-lg grayscale" 
+              <img
+                src="/icon-assurance.png"
+                alt="Assurance (Verrouillé)"
+                className="w-full h-full object-contain drop-shadow-lg grayscale"
               />
             </button>
           )}
@@ -77,9 +83,9 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
         <div className="flex flex-col gap-4">
           {CATEGORIES.map((cat, index) => {
             const number = String(index + 1).padStart(2, '0') + '.';
-            
+
             // Comptage Blindé (Gère la casse et les espaces)
-            const itemCount = inventory.filter(item => 
+            const itemCount = inventory.filter(item =>
               item.category?.trim().toLowerCase() === cat.id.toLowerCase() ||
               item.category?.trim().toLowerCase() === cat.label.toLowerCase()
             ).length;
@@ -90,7 +96,7 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
                 onClick={() => onSelectCategory(cat.id)}
                 className="w-full bg-[#D3D3D3] rounded-xl flex items-center justify-between p-3 shadow-[0_5px_15px_rgba(0,0,0,0.4)] active:scale-[0.98] transition-all border border-gray-300"
               >
-                
+
                 <div className="flex items-center gap-4">
                   <span className="text-[#FF6600] font-black italic text-2xl tracking-widest [-webkit-text-stroke:1.5px_#121212] drop-shadow-[2px_2px_0_rgba(0,0,0,0.8)]">
                     {number}
@@ -106,9 +112,9 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
                   </div>
                 </div>
 
-                <img 
-                  src={`/${cat.id}.png`} 
-                  alt={cat.label} 
+                <img
+                  src={`/${cat.id}.png`}
+                  alt={cat.label}
                   className="w-14 h-14 object-contain drop-shadow-xl shrink-0"
                 />
               </button>

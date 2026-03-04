@@ -1,5 +1,5 @@
 /**
- * PHOENIX-EYE - Module de Sécurité Industrielle
+ * LOCATE SAFETY - Module de Sécurité Industrielle
  * Rôle : Détection des défauts de gainage et conformité VAT
  */
 

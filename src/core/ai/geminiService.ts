@@ -36,9 +36,9 @@ export const geminiService = {
   analyzeVideoBurst: async (base64Images: string[], userLocation: string = "Atelier"): Promise<any[]> => {
     if (!apiKey) return [];
     try {
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash", 
-        generationConfig: { responseMimeType: "application/json" } 
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
       });
 
       const categoriesContext = CATEGORIES.map(cat => `- ID: "${cat.id}" | Label: ${cat.label}`).join('\n');
@@ -62,9 +62,9 @@ export const geminiService = {
   analyzeVideo: async (videoBase64: string, userLocation: string = "Atelier"): Promise<any[]> => {
     if (!apiKey) return [];
     try {
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash", 
-        generationConfig: { responseMimeType: "application/json" } 
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
       });
 
       const categoriesContext = CATEGORIES.map(cat => `- ID: "${cat.id}" | Label: ${cat.label}`).join('\n');

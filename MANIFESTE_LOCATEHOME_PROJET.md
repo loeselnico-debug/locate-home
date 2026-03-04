@@ -90,7 +90,7 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 
 **A. Stratégie des Noms de Domaine (12 Domaines Sécurisés)**
 Le verrouillage des domaines est effectif pour protéger la propriété intellectuelle et anticiper les lancements jusqu'en 2030 :
-* Locate Systems (Critique - Identité Holding) : locatesystems.com / locatesystems.fr
+* Locate Systems (Identité Holding) : locatesystems.com / locatesystems.fr
 * Locate Home: locatehome.com / locatehome.fr
 * Locate Kitchen: locatekitchen.com / locatekitchen.fr
 * Locate Care: locatecare.com / locatecare.fr
@@ -130,12 +130,45 @@ Le verrouillage des domaines est effectif pour protéger la propriété intellec
 
 ---
 
-## 🟡 CHANTIERS PRIORITAIRES (À RÉALISER)
+## ROADMAP V4 - OPTIMISATION UX/UI MOBILE (Tests Galaxy A14)
 
-* **Module Assurance :** Génération et export PDF des rapports d'assurance certifiés depuis le module HOME (réservé Premium/Pro).
-* **Révision Sécurité :** Restructuration approfondie du système `src/core/security/tiers.ts` et `src/core/security/useUserTier.ts`.
-* **Intégration B2B :** Câblage final de l'API de paiement (Revolut) sur les boutons de commande de la `StoreModal`.
+### 1. OBSERVATIONS GÉNÉRALES & DESIGN SYSTEM
+- [ ] Homogénéiser les polices d'écriture (tailles et positions pour les titres/sous-titres, hors Logo).
+- [ ] Standardiser la position de tous les boutons "Return/Retour".
+- [ ] Le Sas de validation est en attente de visuel (à traiter ultérieurement).
 
+### 2. LOGO & IDENTITÉ
+- [ ] Augmenter la taille de la mention "By Systems" de +10% à +15% par rapport au Logo principal.
+
+### 3. NAVIGATION (HUB & HOMEMENU)
+- [ ] **HUB :** Corriger le léger scroll vertical (l'écran doit idéalement tenir sur 100vh).
+- [ ] **HUB :** Intégrer et valider la cohérence des nouvelles icônes redessinées.
+- [ ] **HUB :** Vérifier l'accès fluide aux 4 autres modules.
+- [ ] **HOMEMENU :** Ajouter un badge "néon" avec la promesse CGU/CGV.
+
+### 4. MODULE PARAMÈTRES
+- [ ] Réduire l'en-tête (head) de -30% pour gagner de l'espace.
+- [ ] Créer une cohérence d'identité visuelle pour l'inscription tiers et l'offre tiers.
+- [ ] Ajouter un bouton de contact ciblant : contact@locate-systems.com.
+- [ ] Intégrer le switch de langue "FR / EN" (Restreint à la page paramètres, exclus des autres vues).
+
+### 5. MODULE RANGER (Inventaire)
+- [ ] Revoir la taille des sous-rubriques de l'inventaire pour afficher le nom complet de l'outil.
+- [ ] Revoir la taille et les informations des fiches outils (noms actuellement tronqués, pertinence des infos affichées).
+- [ ] Refondre le design du bouton "Éditer" pour supprimer le scroll inutile en mode édition.
+
+### 6. MODULE SCANNER
+- [ ] **Gestion des accès (Tiers) :** Limiter "Fourgon" et "Atelier" pour les offres FREE ; réserver "Chantier" et "Prêt" aux offres PREMIUM/PRO.
+- [ ] **Ergonomie Mobile :** Remonter les boutons Import, Photo et Vidéo (actuellement collés à la barre de navigation du téléphone).
+- [ ] **Interface :** Reprendre la pertinence des informations affichées sous ces boutons.
+- [ ] **Fonctionnalité :** Inclure un compteur de temps (0 à 10s) pour la capture vidéo.
+- [ ] **Moteur IA :** Migrer le endpoint Gemini de la version 2.0 (out) vers la version 2.5 Flash.
+
+### 7. MODULE RETROUVER (Recherche)
+- [ ] Supprimer la bannière "Vocal Pro".
+- [ ] Supprimer l'affichage en liste des fiches outils par défaut (pour éviter un scroll infini).
+- [ ] Réorganiser l'interface : placer la barre de recherche textuelle au centre (étudier un affichage sur 2 lignes si nécessaire).
+- [ ] Placer un "Gros bouton micro" hyper accessible (sous le pouce) pour lancer l'action vocale.
 ---
 
 ## 📜 RÈGLES DE SESSION (POUR L'IA)

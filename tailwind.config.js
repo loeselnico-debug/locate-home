@@ -13,8 +13,8 @@ export default {
           light: '#1E1E1E',   // Pour les "cartes" posées dessus
           border: '#333333',  // Pour les bordures effet métal
         },
-        phoenix: {
-          orange: '#FF6600', // TON orange de référence
+        locate: {
+          orange: '#FF6600', // TON orange de référence LOCATE HOME
           glow: 'rgba(255, 102, 0, 0.3)', // Pour les effets de lumière
         }
       },

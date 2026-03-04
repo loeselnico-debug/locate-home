@@ -10,14 +10,12 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
-  // --- ÉTATS ET HOOKS ---
   const { settings, updateSettings } = useAppSettings();
   const { currentTier, setTier } = useUserTier();
-  const { t, lang } = useTranslation(); // Injection de notre traducteur
+  const { t, lang } = useTranslation();
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [storageUsed, setStorageUsed] = useState<string>("0.00");
 
-  // --- CALCUL DU STOCKAGE LOCAL ---
   useEffect(() => {
     if (navigator.storage && navigator.storage.estimate) {
       navigator.storage.estimate().then(({ usage }) => {
@@ -31,6 +29,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
   if (showPrivacy) {
     return <PrivacyPolicy onBack={() => setShowPrivacy(false)} />;
   }
+
+  // Sécurisation de l'objet profil au cas où il serait vide lors du premier chargement
+  const profile = settings.userProfile || { fullName: '', company: '', address: '' };
+
+  const handleProfileChange = (field: keyof typeof profile, value: string) => {
+    updateSettings({ 
+      userProfile: { ...profile, [field]: value } 
+    });
+  };
 
   return (
     <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto pb-[15vh]">
@@ -58,7 +65,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
 
       <div className="w-full h-[1px] bg-[#333] mb-[4vh]"></div>
 
-      {/* SECTION 1 : INTERNATIONALISATION (Action Combinée) */}
+      {/* SECTION 1 : INTERNATIONALISATION */}
       <div className="mb-[5vh]">
         <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
           <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
@@ -73,20 +80,70 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             </div>
             <div className="flex bg-[#0A0A0A] rounded-lg p-[4px] gap-[1vw] shrink-0">
               <button 
-                // L'ACTION MAGIQUE EST ICI : On met à jour la langue ET l'unité en même temps
                 onClick={() => updateSettings({ language: 'FR', unitSystem: 'METRIC' })}
                 className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${lang === 'FR' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
                 FR (CM)
               </button>
               <button 
-                // L'ACTION MAGIQUE EST ICI : On met à jour la langue ET l'unité en même temps
                 onClick={() => updateSettings({ language: 'UK', unitSystem: 'IMPERIAL' })}
                 className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${lang === 'UK' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
                 UK (IN)
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 1.5 (NOUVEAU) : IDENTITÉ ASSURANCE */}
+      <div className="mb-[5vh]">
+        <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
+          <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
+          {t('profile_title')}
+        </h2>
+
+        <div className="bg-[#1A1A1A] rounded-2xl p-[3vh_4vw] border border-[#222] space-y-[2vh]">
+          {/* Champ Nom */}
+          <div>
+            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.9rem)] font-bold mb-[1vh] uppercase tracking-wider">
+              {t('profile_fullname')}
+            </label>
+            <input 
+              type="text" 
+              value={profile.fullName}
+              onChange={(e) => handleProfileChange('fullName', e.target.value)}
+              placeholder="Ex: Nicolas Loesel"
+              className="w-full bg-[#0A0A0A] border border-[#333] rounded-lg text-white p-[1.5vh_3vw] text-[clamp(0.8rem,3vw,1rem)] focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-all placeholder:text-gray-600"
+            />
+          </div>
+
+          {/* Champ Entreprise */}
+          <div>
+            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.9rem)] font-bold mb-[1vh] uppercase tracking-wider">
+              {t('profile_company')}
+            </label>
+            <input 
+              type="text" 
+              value={profile.company}
+              onChange={(e) => handleProfileChange('company', e.target.value)}
+              placeholder="Ex: Locate Systems EI"
+              className="w-full bg-[#0A0A0A] border border-[#333] rounded-lg text-white p-[1.5vh_3vw] text-[clamp(0.8rem,3vw,1rem)] focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-all placeholder:text-gray-600"
+            />
+          </div>
+
+          {/* Champ Adresse */}
+          <div>
+            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.9rem)] font-bold mb-[1vh] uppercase tracking-wider">
+              {t('profile_address')}
+            </label>
+            <input 
+              type="text" 
+              value={profile.address}
+              onChange={(e) => handleProfileChange('address', e.target.value)}
+              placeholder="Ex: 209 rue Jacques Brel, 30730 FONS"
+              className="w-full bg-[#0A0A0A] border border-[#333] rounded-lg text-white p-[1.5vh_3vw] text-[clamp(0.8rem,3vw,1rem)] focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-all placeholder:text-gray-600"
+            />
           </div>
         </div>
       </div>

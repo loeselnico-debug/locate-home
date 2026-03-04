@@ -1,6 +1,5 @@
 import { useAppSettings } from '../storage/useAppSettings';
 
-// Notre dictionnaire local (Zéro-Serveur)
 const dictionary = {
   FR: {
     settings_title: "Paramètres",
@@ -18,6 +17,11 @@ const dictionary = {
     sec_vol: "VOLUME OCCUPÉ : ",
     legal_agree: "J'accepte les ",
     legal_link: "Conditions Générales (CGU/CGV) et la Politique de confidentialité",
+    // NOUVEAU : Textes du profil Assurance
+    profile_title: "IDENTITÉ & ENTREPRISE (MODULE ASSURANCE)",
+    profile_fullname: "Nom Prénom / Responsable",
+    profile_company: "Nom de l'entreprise (Optionnel)",
+    profile_address: "Adresse complète",
   },
   UK: {
     settings_title: "Settings",
@@ -35,15 +39,18 @@ const dictionary = {
     sec_vol: "USED STORAGE : ",
     legal_agree: "I accept the ",
     legal_link: "Terms of Service (TOS) and Privacy Policy",
+    // NOUVEAU : Textes du profil Assurance
+    profile_title: "IDENTITY & COMPANY (INSURANCE MODULE)",
+    profile_fullname: "Full Name / Manager",
+    profile_company: "Company Name (Optional)",
+    profile_address: "Full Address",
   }
 };
 
 export const useTranslation = () => {
   const { settings } = useAppSettings();
-  // On récupère la langue actuelle, par défaut FR
   const lang = settings.language || 'FR';
   
-  // Fonction qui va chercher le bon mot dans le dictionnaire
   const t = (key: keyof typeof dictionary['FR']) => {
     return dictionary[lang][key] || key;
   };

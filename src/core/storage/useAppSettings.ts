@@ -1,21 +1,30 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react'; // CORRECTION TS STRICTE : Import de type isolé
+import type { ReactNode } from 'react';
 
 export type Language = 'FR' | 'UK';
 export type UnitSystem = 'METRIC' | 'IMPERIAL';
 
 const SETTINGS_KEY = 'locate_app_settings';
 
+// NOUVEAU : On définit la structure de l'identité pour le PDF
+export interface UserProfile {
+  fullName: string;
+  company: string;
+  address: string;
+}
+
 export interface AppSettings {
   language: Language;
   unitSystem: UnitSystem;
   acceptedTerms?: boolean;
+  userProfile?: UserProfile; // NOUVEAU : Intégration au cerveau
 }
 
 const defaultSettings: AppSettings = {
   language: 'FR',
   unitSystem: 'METRIC',
   acceptedTerms: false,
+  userProfile: { fullName: '', company: '', address: '' }
 };
 
 interface AppSettingsContextType {
@@ -23,10 +32,8 @@ interface AppSettingsContextType {
   updateSettings: (newSettings: Partial<AppSettings>) => void;
 }
 
-// 1. Création du Cerveau (Context)
 const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
 
-// 2. Le Composant qui va envelopper l'application (C'est bien lui le Provider !)
 export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -58,7 +65,6 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
   );
 };
 
-// 3. Le Hook pour que les pages puissent lire le cerveau
 export const useAppSettings = () => {
   const context = useContext(AppSettingsContext);
   if (!context) {

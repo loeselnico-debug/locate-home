@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useUserTier } from '../../../core/security/useUserTier';
 import { useAppSettings } from '../../../core/storage/useAppSettings'; 
 import type { InventoryItem } from '../../../types';
-import PdfExportButton from '../components/PdfExportButton';
+
+// Le Fusible : On charge le bouton PDF de manière isolée
+const PdfExportButton = lazy(() => import('../components/PdfExportButton'));
 
 export const CATEGORIES = [
   { id: 'electro', label: 'Outillage Électroportatif' },
@@ -25,7 +27,6 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBack, onDelete }) => {
-  // CORRECTION : On utilise la "tierConfig" pour lire la règle stricte du niveau d'abonnement
   const { tierConfig } = useUserTier();
   const { settings } = useAppSettings(); 
 
@@ -46,9 +47,11 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
 
         <div className="flex gap-4">
-          {/* Lecture directe de l'autorisation d'export */}
           {tierConfig.canExportPdf ? (
-            <PdfExportButton inventory={inventory} userInfo={realUserInfo} />
+            // Protection Suspense activée
+            <Suspense fallback={<div className="w-14 h-14 rounded-xl border border-[#FF6600]/30 animate-pulse bg-black/50"></div>}>
+              <PdfExportButton inventory={inventory} userInfo={realUserInfo} />
+            </Suspense>
           ) : (
             <button
               onClick={() => alert("L'export PDF Assurance est réservé aux comptes PREMIUM et PRO.")}

@@ -21,19 +21,28 @@ const styles = StyleSheet.create({
   footer: { position: 'absolute', bottom: 30, left: 30, right: 30, textAlign: 'center', fontSize: 8, color: '#9CA3AF', borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 10 },
 });
 
-// NOUVEAU : Ajout de la propriété optionnelle "company"
 interface InsuranceReportProps {
   items: InventoryItem[];
-  userInfo: { name: string; company?: string; address: string }; 
+  userInfo: { name: string; company?: string; address: string };
 }
 
+// LE FILTRE ANTI-CRASH (Enlève les émojis)
+const safeText = (text: any) => {
+  if (!text) return '';
+  return String(text).replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+};
+
 export const InsuranceReport: React.FC<InsuranceReportProps> = ({ items, userInfo }) => {
-  const totalValue = items.reduce((sum, item) => sum + (item.price || 0), 0);
+  const totalValue = items.reduce((sum, item) => {
+    const val = Number(item.price);
+    return sum + (isNaN(val) ? 0 : val);
+  }, 0);
+
   const reportId = `REP-${Date.now().toString().slice(-6)}`;
   const date = new Date().toLocaleString('fr-FR');
 
   const groupedItems = items.reduce((acc, item) => {
-    const loc = item.location || 'Non assigné';
+    const loc = safeText(item.location) || 'Non assigné';
     if (!acc[loc]) acc[loc] = [];
     acc[loc].push(item);
     return acc;
@@ -56,11 +65,10 @@ export const InsuranceReport: React.FC<InsuranceReportProps> = ({ items, userInf
 
         <View style={styles.summaryBox}>
           <Text style={styles.summaryTitle}>Synthèse du Parc Outillage</Text>
-          {/* NOUVEAU : Affichage dynamique de l'entreprise si elle est renseignée */}
           <Text style={styles.summaryText}>
-            Titulaire : {userInfo.name} {userInfo.company ? `(${userInfo.company})` : ''}
+            Titulaire : {safeText(userInfo.name)} {userInfo.company ? `(${safeText(userInfo.company)})` : ''}
           </Text>
-          <Text style={styles.summaryText}>Lieu de stockage principal : {userInfo.address}</Text>
+          <Text style={styles.summaryText}>Lieu de stockage principal : {safeText(userInfo.address)}</Text>
           <Text style={styles.summaryText}>Nombre total d'articles : {items.length}</Text>
           <Text style={{ ...styles.summaryText, fontWeight: 'bold', marginTop: 5 }}>
             Valeur Totale Estimée : {totalValue.toLocaleString('fr-FR')} €
@@ -79,9 +87,9 @@ export const InsuranceReport: React.FC<InsuranceReportProps> = ({ items, userInf
               </View>
               {locItems.map((item, idx) => (
                 <View style={styles.tableRow} key={idx}>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>{item.toolName || 'Outil non nommé'}</Text></View>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>{item.serialNumber || 'N/A'}</Text></View>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>{item.condition || 'Usagé'}</Text></View>
+                  <View style={styles.tableCol}><Text style={styles.tableCell}>{safeText(item.toolName) || 'Outil non nommé'}</Text></View>
+                  <View style={styles.tableCol}><Text style={styles.tableCell}>{safeText(item.serialNumber) || 'N/A'}</Text></View>
+                  <View style={styles.tableCol}><Text style={styles.tableCell}>{safeText(item.condition) || 'Usagé'}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>{item.price ? `${item.price} €` : 'N/A'}</Text></View>
                 </View>
               ))}

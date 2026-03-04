@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { pdf } from '@react-pdf/renderer';
+import React, { useState, useEffect } from 'react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { InsuranceReport } from './InsuranceReport';
 import type { InventoryItem } from '../../../types';
 
@@ -9,50 +9,46 @@ interface PdfExportButtonProps {
 }
 
 const PdfExportButton: React.FC<PdfExportButtonProps> = ({ inventory, userInfo }) => {
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
-  const handleDownload = async () => {
-    // Sécurité : empêche de cliquer 10 fois d'affilée
-    if (isGenerating) return; 
-    
-    setIsGenerating(true);
-    
-    try {
-      // 1. On crée le document PDF à la volée (Zéro-Serveur)
-      const blob = await pdf(<InsuranceReport items={inventory} userInfo={userInfo} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      
-      // 2. On simule un clic pour forcer le téléchargement sur le navigateur/téléphone
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `LocateHome_Assurance_${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // 3. On nettoie la mémoire
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Erreur de génération PDF :", error);
-      alert("Erreur lors de la création du document. Réessayez.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  // Sécurité : On attend que la page soit bien chargée avant d'allumer le moteur PDF
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
+
+  if (!isReady) return (
+    <div className="w-14 h-14 bg-[#1E1E1E] rounded-xl flex items-center justify-center opacity-50">
+      <span className="text-[8px] font-black text-white">INIT...</span>
+    </div>
+  );
 
   return (
-    <button 
-      onClick={handleDownload}
-      disabled={isGenerating}
-      className={`w-14 h-14 active:scale-90 transition-transform flex items-center justify-center ${isGenerating ? 'opacity-50 animate-pulse' : ''}`}
-      title="Télécharger le rapport certifié"
+    <PDFDownloadLink
+      document={<InsuranceReport items={inventory} userInfo={userInfo} />}
+      fileName={`LocateHome_Assurance_${new Date().toISOString().split('T')[0]}.pdf`}
+      className="w-14 h-14 active:scale-90 transition-transform block relative"
     >
-      <img
-        src="/icon-assurance.png"
-        alt="Assurance"
-        className="w-full h-full object-contain drop-shadow-lg"
-      />
-    </button>
+      {({ loading, error }) => {
+        if (error) console.error("Erreur moteur PDF :", error);
+
+        return (
+          <>
+            <img
+              src="/icon-assurance.png"
+              alt="Assurance"
+              className={`w-full h-full object-contain drop-shadow-lg transition-all ${loading ? 'opacity-30 blur-[1px]' : 'opacity-100'}`}
+            />
+            {/* VOYANT DE CHARGEMENT CLAIR */}
+            {loading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-xl shadow-inner">
+                <div className="w-4 h-4 border-2 border-[#FF6600] border-t-transparent rounded-full animate-spin mb-1"></div>
+                <span className="text-[#FF6600] text-[7px] font-black tracking-widest uppercase">Calcul</span>
+              </div>
+            )}
+          </>
+        );
+      }}
+    </PDFDownloadLink>
   );
 };
 

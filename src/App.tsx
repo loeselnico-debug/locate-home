@@ -62,10 +62,11 @@ const App = () => {
     setView('validation');
   };
 
-  const handleValidatePending = (validatedItems: AIScanResult[]) => {
+ const handleValidatePending = (validatedItems: AIScanResult[]) => {
     const itemsToAdd: InventoryItem[] = validatedItems.map(item => ({
       id: crypto.randomUUID(),
       date: new Date().toLocaleString(),
+      // On utilise uniquement le nouveau vocabulaire strict (typography, brandColor)
       toolName: item.label || item.typography || 'Outil Inconnu',
       brand: item.brandColor || 'Marque N/A',
       category: item.categorie_id || 'main',
@@ -74,7 +75,8 @@ const App = () => {
       notes: item.description || '',
       isConsumable: item.isConsumable,
       consumableLevel: item.consumableLevel,
-      confidence: item.score_confiance
+      confidence: item.score_confiance ? item.score_confiance / 100 : undefined,
+      imageUrl: item.imageUrl // L'image est sauvegardée ici
     }));
 
     setInventory(prev => [...itemsToAdd, ...prev]);

@@ -68,5 +68,13 @@ export const INDUSTRIAL_RULES = {
     contenants: "Scellé rompu / rabats entrouverts = 'Présence à confirmer physiquement'.",
     // VERROUILLAGE INFORMATIQUE STRICT :
     format_obligatoire: "Si l'objet analysé est un consommable, tu DOIS évaluer le volume restant selon les strates et l'air. Tu retourneras UNIQUEMENT un nombre entier compris entre 0 et 100 pour définir le niveau. Interdiction stricte d'utiliser le symbole '%' ou du texte."
+  },
+
+  // 8. CLAUSES PUNITIVES ET ANTI-HALLUCINATION (STRICT)
+  anti_hallucination: {
+    regle_1_contenants: "INTERDICTION STRICTE de deviner le contenu d'une mallette, d'un carton fermé ou d'un bac opaque. Si le contenant est fermé, décris le contenant et plafonne la certitude à 50%.",
+    regle_2_certitude_ocr: "Si aucune typographie (Étape 4) n'est lisible clairement sur l'image, la valeur 'confidence' NE DOIT JAMAIS dépasser 0.65.",
+    regle_3_doute_et_couleur: "La couleur seule (Étape 1) ne suffit pas. Une machine bleue n'est pas forcément Bosch. Sans confirmation de l'Étape 2 ou 3, plafonne la certitude à 0.40.",
+    regle_4_franchise: "Si tu ne reconnais pas l'outil, n'invente rien. Retourne des valeurs génériques et une 'confidence' de 0.10."
   }
 };

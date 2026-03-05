@@ -170,10 +170,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             ...item,
             _validationStatus: validation.status,
             _validationMessage: validation.message,
-            label: validation.status === "CERTIFIED" ? validation.label : item.label
+            label: validation.status === "CERTIFIED" ? validation.label : item.label,
+            // C'est ICI qu'on sauve l'image en Base64 pour l'inventaire !
+            imageUrl: isImage ? data : undefined 
           };
         }).filter((item: any) => item._validationStatus === "CERTIFIED");
-
+        
         if (certifiedItems.length > 0) {
           setPendingItems(certifiedItems);
         } else {

@@ -11,6 +11,7 @@ export interface AIScanResult {
   label?: string;
   isConsumable?: boolean;
   consumableLevel?: number;
+  imageUrl?: string;
 }
 
 interface ValidationSasProps {

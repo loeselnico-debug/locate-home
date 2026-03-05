@@ -144,7 +144,7 @@ Le verrouillage des domaines est effectif pour protéger la propriété intellec
 - [X] **HUB :** Corriger le léger scroll vertical (l'écran doit idéalement tenir sur 100vh).
 - [X] **HUB :** Intégrer et valider la cohérence des nouvelles icônes redessinées.
 - [ ] **HUB :** Vérifier l'accès fluide aux 4 autres modules.
-- [ ] **HOMEMENU :** Ajouter un badge "néon" en lien avec la promesse CGU/CGV.
+- [X] **HOMEMENU :** Ajouter un badge "néon" en lien avec la promesse CGU/CGV.
 
 ### 4. MODULE PARAMÈTRES
 - [ ] Réduire l'en-tête (head) de -30% pour gagner de l'espace.

@@ -242,7 +242,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       </div>
 
       {/* CONSOLE DE COMMANDE INFERIEURE */}
-      <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-[10vh] pb-[env(safe-area-inset-bottom,4vh)] px-[4vw] z-20 flex flex-col gap-[3vh]">
+        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-[10vh] pb-[max(8vh,env(safe-area-inset-bottom))] px-[4vw] z-20 flex flex-col gap-[3vh]">
         <div className="flex gap-[2vw] overflow-x-auto no-scrollbar w-full px-[2vw]">
           {getCustomLocations().map(loc => (
             <button 

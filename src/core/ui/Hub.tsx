@@ -20,8 +20,7 @@ export default function Hub({ onSelectModule }: HubProps) {
   const activeColor = modules.find(m => m.id === hoveredModule)?.color || '#FF6600';
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#050505] flex flex-col items-center justify-between py-[5vh] px-[2vw] font-sans overflow-hidden">
-      
+<div className="relative h-[100dvh] bg-[#050505] flex flex-col items-center justify-between py-[3vh] px-[2vw] font-sans overflow-hidden">      
       {/* INJECTION CSS : Animation du flux d'énergie liquide (remontant) */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes dashFlow {
@@ -102,7 +101,7 @@ export default function Hub({ onSelectModule }: HubProps) {
       </div>
 
       {/* 1/3 BAS : LES 5 MODULES (Thumb Zone, gabarits augmentés, icônes à 95%) */}
-      <div className="flex justify-between items-end w-full max-w-[95%] z-10 mb-[4vh] px-[2vw]">
+      <div className="flex justify-between items-end w-full max-w-[95%] z-10 mb-[2vh] px-[2vw]">
         {modules.map((mod) => {
           const isHovered = mod.id === hoveredModule;
           return (

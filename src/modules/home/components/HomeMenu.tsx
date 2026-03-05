@@ -7,8 +7,8 @@ interface HomeMenuProps {
 
 const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
   return (
-    // NOUVEAU : Hauteur absolue sécurisée pour éviter tout scroll sur Galaxy A14
-    <div className="h-[calc(100dvh-12.5vh)] w-full flex flex-col px-[5vw] py-[2vh] overflow-hidden">
+    // NOUVEAU : Hauteur fluide et flexibilité interne pour bloquer tout scroll
+    <div className="h-full w-full flex flex-col justify-between px-[5vw] pt-[1vh] pb-[3vh] overflow-hidden">
       
       {/* ========================================== */}
       {/* STRATE HAUTE (Contrôles du Module)         */}

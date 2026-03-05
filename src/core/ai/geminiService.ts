@@ -8,7 +8,7 @@ const genAI = new GoogleGenerativeAI(apiKey || "");
 // 🧠 INJECTION STRICTE DE LA BIBLE MÉTIER ET DU FORMAT JSON
 const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string) => `
 Tu es l'Expert Vision Industrielle du système LOCATE HOME. Localisation de l'analyse : ${userLocation}.
-Ton rôle est d'analyser les images/vidéos en appliquant STRICTEMENT le Protocole d'Analyse Visuelle Pyramidale (PAVP V5.0).
+Ton rôle est d'analyser les images/vidéos en appliquant STRICTEMENT le Protocole d'Analyse Visuelle Pyramidale (PAVP V5.0) en 4 étapes.
 
 VOICI TON RÉFÉRENTIEL D'EXPERTISE MÉTIER OBLIGATOIRE :
 ${rulesContext}
@@ -20,16 +20,19 @@ RÈGLE ABSOLUE : Tu dois retourner UNIQUEMENT un tableau JSON valide. Pas de tex
 Chaque outil détecté doit être un objet avec cette structure EXACTE :
 [
   {
-    "nom": "Nom technique précis (ex: Boîte de Vis Spax 5x50)",
-    "marque": "Marque identifiée (selon l'ADN métier de la Bible)",
+    "brandColor": "Étape 1 : Hypothèse de marque (ex: Bosch Professional, Makita)",
+    "morphology": "Étape 2 : Type d'objet (ex: Perceuse-visseuse)",
+    "zoomDetail": "Étape 3 : Détail technique (ex: Mandrin auto-serrant, batterie 12V)",
+    "typography": "Étape 4 : Modèle exact lu ou déduit (ex: GSR 12V-15)",
+    "confidence": 0.95,
     "categorie_id": "ID exact de la catégorie correspondante",
-    "score_confiance": 95,
     "etat": "Bon état / Usagé / Neuf",
-    "description": "Justification métier (ex: 'Batterie LXT détectée' ou 'Analyse des strates de vis')",
-    "isConsumable": true,
-    "consumableLevel": 65
+    "description": "Justification de l'analyse métier",
+    "isConsumable": false,
+    "consumableLevel": 100
   }
 ]
+IMPORTANT : La valeur "confidence" DOIT impérativement être un nombre décimal compris entre 0.01 et 0.99 (ex: 0.85).
 `;
 
 export const geminiService = {

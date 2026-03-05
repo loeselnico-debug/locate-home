@@ -75,7 +75,7 @@ const App = () => {
       notes: item.description || '',
       isConsumable: item.isConsumable,
       consumableLevel: item.consumableLevel,
-      confidence: item.score_confiance ? item.score_confiance / 100 : undefined,
+      confidence: item.confidence ? item.confidence : undefined,
       imageUrl: item.imageUrl // L'image est sauvegardée ici
     }));
 

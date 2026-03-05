@@ -5,7 +5,7 @@ export interface AIScanResult {
   typography?: string;
   brandColor?: string;
   categorie_id?: string;
-  score_confiance?: number;
+  confidence?: number; // <-- C'est LE mot que Gemini utilise
   etat?: string;
   description?: string;
   label?: string;
@@ -55,9 +55,8 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
       {/* LISTE DES OUTILS DÉTECTÉS */}
       <div className="flex-1 overflow-y-auto space-y-[2vh] pr-[1vw]">
         {itemsToValidate.map((item, index) => {
-          // On convertit le score décimal (0.85) en pourcentage entier (85) pour les tests
-          const score = item.score_confiance ? Math.round(item.score_confiance * 100) : 0;
-          // Maintenant on peut tester sur 90 et 70
+         // On utilise 'confidence' (ex: 0.95) qu'on multiplie par 100
+          const score = item.confidence ? Math.round(item.confidence * 100) : 0;
           const scoreColor = score >= 90 ? 'text-green-500' : score >= 70 ? 'text-[#FF6600]' : 'text-red-500';
 
           return (
@@ -79,10 +78,10 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                 </div>
                 <div className="flex flex-col items-end">
                   <span className={`font-black text-[clamp(1.2rem,5vw,1.8rem)] ${scoreColor}`}>
-                    {item.score_confiance ? Math.round(item.score_confiance * 100) : 0}%
-                  </span>
-                  <span className={`font-black text-[clamp(1.2rem,5vw,1.8rem)] ${scoreColor}`}>
                     {score}%
+                  </span>
+                  <span className="text-white/40 text-[clamp(0.5rem,1.5vw,0.6rem)] uppercase tracking-widest">
+                    Confiance
                   </span>
                 </div>
               </div>

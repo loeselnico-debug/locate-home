@@ -24,15 +24,7 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
 
   const category = CATEGORIES.find(c => c.id === tool.category);
   const categoryIcon = category ? `/${category.id}.png` : '/icon-photo.png';
-  const level = tool.consumableLevel ?? 0;
-  const isLow = level <= 20;
-
-  const getLevelColor = () => {
-    if (level <= 20) return 'bg-red-500 shadow-[0_0_10px_#ef4444]';
-    if (level <= 50) return 'bg-orange-500 shadow-[0_0_10px_#f97316]';
-    return 'bg-green-500 shadow-[0_0_10px_#22c55e]';
-  };
-
+  
   const handleSave = () => {
     if (onUpdate) {
       onUpdate(editedTool);
@@ -100,78 +92,69 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
             )}
           </div>
         ) : (
-          /* SI MODE LECTURE NORMAL */
-          <>
-            <div className="w-full bg-[#0a0a0a] rounded-2xl border-2 border-[#1E1E1E] overflow-hidden relative shadow-[0_10px_20px_rgba(0,0,0,0.6)] mb-6 group">
-              <div className="h-56 w-full flex items-center justify-center">
-                {tool.imageUrl ? (
-                  <img src={tool.imageUrl} className="w-full h-full object-cover" alt={tool.toolName} />
-                ) : (
-                  <div className="flex flex-col items-center opacity-30">
-                    <span className="text-5xl mb-2 drop-shadow-lg">📷</span>
-                    <span className="text-white text-[10px] font-black tracking-widest uppercase">Photo requise</span>
-                  </div>
-                )}
-              </div>
+          /* SI MODE LECTURE NORMAL (BLOC D DU SCHÉMA) */
+        <>
+          {/* PHOTO AJUSTÉE & BADGE OPÉRATIONNEL */}
+          <div className="w-full bg-[#0a0a0a] rounded-2xl border border-white/10 overflow-hidden relative shadow-[0_10px_20px_rgba(0,0,0,0.6)] mb-5 group">
+            {/* Le badge statut collé en haut à gauche comme sur le croquis */}
+            <div className={`absolute top-3 left-3 px-3 py-1.5 rounded-lg shadow-lg backdrop-blur-md border z-10 ${tool.safetyStatus ? 'bg-red-500/90 border-red-300 text-white' : 'bg-green-500/90 border-green-300 text-white'}`}>
+              <span className="font-black text-[9px] uppercase tracking-widest drop-shadow-md">
+                {tool.safetyStatus ? '⚠️ ALERTE' :  '✓ OPÉRATIONNEL' }
+              </span>
+            </div>
 
-              {tool.isConsumable && (
-                <div className="absolute bottom-0 left-0 w-full h-2 bg-black/40 backdrop-blur-sm">
-                  <div className={`h-full transition-all duration-1000 ease-out ${getLevelColor()}`} style={{ width: `${level}%` }} />
-                  <div className="absolute -top-6 right-3 bg-black/60 px-2 py-0.5 rounded text-[9px] font-black text-white uppercase tracking-tighter">
-                    Stock: {level}%
-                  </div>
+            {/* Zone image (object-contain pour ne pas couper l'outil) */}
+            <div className="h-[25vh] w-full flex items-center justify-center p-4">
+              {tool.imageUrl ? (
+                <img src={tool.imageUrl} className="w-full h-full object-contain drop-shadow-2xl" alt={tool.toolName} />
+              ) : (
+                <div className="flex flex-col items-center opacity-30">
+                  <span className="text-5xl mb-2 drop-shadow-lg">📷</span>
+                  <span className="text-white text-[10px] font-black tracking-widest uppercase">Photo requise</span>
                 </div>
               )}
+            </div>
+          </div>
 
-              <div className={`absolute top-4 right-4 px-4 py-1.5 rounded shadow-2xl backdrop-blur-md border ${tool.safetyStatus ? 'bg-red-500/90 border-red-300 text-white' : 'bg-green-500/90 border-green-300 text-white'}`}>
-                <span className="font-black text-[10px] uppercase tracking-widest drop-shadow-md">
-                  {tool.safetyStatus ? '⚠️ ALERTE SÉCURITÉ' : '✓ OPÉRATIONNEL'}
-                </span>
-              </div>
+          {/* TITRE (ICON, MARQUE, ENERGIE, LIEUX) */}
+          <div className="flex items-center gap-4 mb-6 px-1">
+            <div className="w-14 h-14 bg-[#D3D3D3] rounded-xl flex items-center justify-center border border-gray-300 shadow-inner shrink-0">
+              <img src={categoryIcon} className="w-10 h-10 object-contain drop-shadow-md" alt="Catégorie" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-white font-black text-[clamp(1.1rem,4.5vw,1.4rem)] uppercase leading-tight">
+                {tool.toolName}
+              </h1>
+              <p className="text-[#FF6600] text-[11px] font-black mt-1 tracking-widest uppercase">
+                📍 {tool.location || 'ZONE NON DÉFINIE'}
+              </p>
+            </div>
+          </div>
+
+          {/* ENCART SPE. TECH. */}
+          <div className="bg-[#1E1E1E] rounded-xl border-l-4 border-[#FF6600] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex flex-col gap-3">
+            <h3 className="text-white/40 text-[10px] font-black tracking-[0.2em] uppercase border-b border-white/10 pb-2 mb-1">
+              SPE. TECH.
+            </h3>
+
+            <div className="flex justify-between items-center bg-[#121212] rounded-lg p-3 border border-white/5">
+              <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">S/N (Numéro de série)</span>
+              <span className="text-[#FF6600] font-mono font-black text-xs tracking-widest">
+                {tool.serialNumber || '---'}
+              </span>
             </div>
 
-            <div className="w-full bg-[#D3D3D3] rounded-xl flex items-center gap-4 p-4 shadow-[0_5px_15px_rgba(0,0,0,0.4)] border border-gray-300 mb-6">
-              <img src={categoryIcon} className="w-16 h-16 object-contain drop-shadow-xl shrink-0" alt="Catégorie" />
-              <div className="flex-1 min-w-0">
-                <h1 className="text-[#121212] font-black text-lg uppercase leading-tight truncate">
-                  {tool.toolName}
-                </h1>
-                <p className="text-[#FF6600] text-[11px] font-black mt-1.5 tracking-widest uppercase truncate drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
-                  📍 {tool.location || 'ZONE NON DÉFINIE'}
-                </p>
-              </div>
+            <div className="flex justify-between items-center bg-[#121212] rounded-lg p-3 border border-white/5">
+              <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Valeur</span>
+              <span className="text-white font-bold text-sm tracking-wider">{tool.price ? `${tool.price} €` : '---'}</span>
             </div>
 
-            {tool.isConsumable && isLow && (
-              <button onClick={() => setIsStoreOpen(true)} className="w-full bg-[#FF6600] py-4 rounded-xl mb-6 flex items-center justify-center gap-3 shadow-[0_10px_20px_rgba(255,102,0,0.2)] active:scale-95 transition-all animate-pulse">
-                <span className="text-white font-black uppercase text-xs tracking-[0.2em]">Réapprovisionner Stock</span>
-                <span className="bg-white/20 px-2 py-0.5 rounded text-white text-[10px] font-bold">PRO</span>
-              </button>
-            )}
-
-            <div className="bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-5 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex flex-col gap-4">
-              <h3 className="text-white/40 text-[10px] font-black tracking-[0.2em] uppercase border-b border-white/10 pb-2">
-                Spécifications Techniques
-              </h3>
-
-              <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col gap-2 relative overflow-hidden">
-                <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">Numéro de Série / S-N</span>
-                <span className="text-[#FF6600] font-mono font-black text-sm tracking-[0.15em] bg-black/50 px-3 py-1.5 rounded shadow-inner inline-block w-max">
-                  {tool.serialNumber || 'S/N MANQUANT'}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center bg-[#121212] rounded-lg p-3 border border-white/5 mt-1">
-                <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">Valeur Estimée</span>
-                <span className="text-white font-bold text-sm tracking-wider">{tool.price ? `${tool.price} €` : 'NON DÉFINIE'}</span>
-              </div>
-
-              <div className="flex justify-between items-center bg-[#121212] rounded-lg p-3 border border-white/5 mt-1">
-                <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">Enregistré le</span>
-                <span className="text-white font-bold text-xs tracking-wider">{tool.date}</span>
-              </div>
+            <div className="flex justify-between items-center bg-[#121212] rounded-lg p-3 border border-white/5">
+              <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Enregistré le</span>
+              <span className="text-white/70 font-bold text-[10px] tracking-wider">{tool.date}</span>
             </div>
-          </>
+          </div>
+        </>
         )}
       </div>
 

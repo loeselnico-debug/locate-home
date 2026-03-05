@@ -7,15 +7,17 @@ interface HomeMenuProps {
 
 const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
   return (
-    // NOUVEAU : Hauteur absolue calculée (Écran total - Header) et padding bas réduit
-    <div className="h-[calc(100dvh-12.5vh)] w-full flex flex-col px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))]">
+    // NOUVEAU : Hauteur absolue sécurisée pour éviter tout scroll sur Galaxy A14
+    <div className="h-[calc(100dvh-12.5vh)] w-full flex flex-col px-[5vw] py-[2vh] overflow-hidden">
       
       {/* ========================================== */}
       {/* STRATE HAUTE (Contrôles du Module)         */}
       {/* ========================================== */}
       <div className="w-full flex justify-between items-center shrink-0">
-        <div className="bg-[#1E1E1E] px-[3vw] sm:px-4 py-[0.5vh] rounded-xl border border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] flex items-center justify-center">
-          <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#858489,#e7e4ef,#858489,#b9b9b9,#858489)] bg-clip-text text-transparent">
+        
+        {/* NOUVEAU : Badge Néon Orange avec Texte Argent pour les Offres */}
+        <div className="bg-[#121212] px-[4vw] sm:px-5 py-[0.8vh] rounded-full border border-[#FF6600]/50 shadow-[0_0_15px_rgba(255,102,0,0.4),inset_0_0_10px_rgba(255,102,0,0.2)] flex items-center justify-center">
+          <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#ffffff,#c0c0c0,#8a8a8a,#ffffff)] bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
             {tier}
           </span>
         </div>

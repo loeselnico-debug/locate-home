@@ -159,16 +159,16 @@ Le verrouillage des domaines est effectif pour protéger la propriété intellec
 
 ### 6. MODULE SCANNER
 - [ ] **Gestion des accès (Tiers) :** Limiter "Fourgon" et "Atelier" pour les offres FREE ; réserver "Chantier" et "Prêt" aux offres PREMIUM/PRO.
-- [ ] **Ergonomie Mobile :** Remonter les boutons Import, Photo et Vidéo (actuellement collés à la barre de navigation du téléphone).
-- [ ] **Interface :** Reprendre la pertinence des informations affichées sous ces boutons.
-- [ ] **Fonctionnalité :** Inclure un compteur de temps (0 à 10s) pour la capture vidéo.
+- [X] **Ergonomie Mobile :** Remonter les boutons Import, Photo et Vidéo (actuellement collés à la barre de navigation du téléphone).
+- [X] **Interface :** Reprendre la pertinence des informations affichées sous ces boutons.
+- [X] **Fonctionnalité :** Inclure un compteur de temps (0 à 10s) pour la capture vidéo.
 - [X] **Moteur IA :** Migrer le endpoint Gemini de la version 2.0 (out) vers la version 2.5 Flash.
 
 ### 7. MODULE RETROUVER (Recherche)
-- [ ] Supprimer la bannière "Vocal Pro".
-- [ ] Supprimer l'affichage en liste des fiches outils par défaut (pour éviter un scroll infini).
-- [ ] Réorganiser l'interface : placer la barre de recherche textuelle au centre (étudier un affichage sur 2 lignes si nécessaire).
-- [ ] Placer un "Gros bouton micro" hyper accessible (sous le pouce) pour lancer l'action vocale.
+- [X] Supprimer la bannière "Vocal Pro".
+- [X] Supprimer l'affichage en liste des fiches outils par défaut (pour éviter un scroll infini).
+- [X] Réorganiser l'interface : placer la barre de recherche textuelle au centre (étudier un affichage sur 2 lignes si nécessaire).
+- [X] Placer un "Gros bouton micro" hyper accessible (sous le pouce) pour lancer l'action vocale.
 ---
 
 ## 📜 RÈGLES DE SESSION (POUR L'IA)

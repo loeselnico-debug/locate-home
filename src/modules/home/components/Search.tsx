@@ -92,7 +92,7 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
     <div className="min-h-screen bg-[#121212] text-white p-[4vh] font-sans pb-[15vh]">
       
       {/* HEADER & RETOUR */}
-      <div className="flex justify-between items-center mb-[4vh]">
+      <div className="flex justify-between items-center mb-[6vh]">
         <button onClick={onBack} className="flex items-center gap-[2vw] active:scale-90 transition-transform">
           <img src="/icon-return.png" alt="Retour" className="w-[2.5rem] h-[2.5rem] object-contain" />
           <span className="text-[#FF6600] font-black uppercase text-[0.7rem] tracking-widest mt-1">Menu</span>
@@ -100,32 +100,34 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
         
         <div className="flex flex-col items-end text-right">
           <h2 className="text-[1.5rem] font-black italic uppercase tracking-tighter leading-none">Retrouver</h2>
-          <div className="bg-[#FF6600] px-[1rem] py-[0.1rem] -rotate-2 mt-[0.5rem] shadow-[2px_2px_0px_rgba(0,0,0,0.5)]">
-            <span className="text-[0.5rem] font-black text-white italic uppercase tracking-[0.2em]">Vocal Pro</span>
-          </div>
         </div>
       </div>
 
-      {/* INPUT DE RECHERCHE HDR */}
+      {/* ZONE DE RECHERCHE TEXTUELLE (Centrée) */}
       <div className="relative mb-[4vh]">
         <div className="absolute inset-y-0 left-[4vw] flex items-center pointer-events-none">
-          <SearchIcon size={20} className="text-gray-500" />
+          <SearchIcon size={20} className="text-[#FF6600]/50" />
         </div>
         <input 
           type="text" 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Rechercher un outil..."
-          className="w-full bg-[#1E1E1E] border border-white/10 rounded-[1.5rem] py-[2vh] pl-[12vw] pr-[15vw] text-[1rem] focus:border-[#FF6600] transition-all outline-none shadow-inner text-white"
+          className="w-full bg-[#1E1E1E] border border-white/10 rounded-2xl py-[2.5vh] pl-[12vw] pr-[4vw] text-[1rem] font-bold tracking-wide focus:border-[#FF6600] transition-all outline-none shadow-inner text-white placeholder-white/30 text-center"
         />
-        
+      </div>
+
+      {/* BOUTON MICRO GÉANT (Sous le pouce) */}
+      <div className="flex justify-center mb-[5vh]">
         <button 
           onClick={startListening}
-          className={`absolute right-[1.5vw] top-1/2 -translate-y-1/2 p-[1.5vh] rounded-[1rem] transition-all ${
-            isListening ? 'bg-red-600 animate-pulse shadow-[0_0_20px_rgba(220,53,69,0.5)]' : 'bg-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.3)]'
+          className={`w-[20vw] h-[20vw] max-w-[80px] max-h-[80px] rounded-full flex items-center justify-center transition-all duration-300 ${
+            isListening 
+              ? 'bg-red-600 scale-110 shadow-[0_0_30px_rgba(220,53,69,0.6)] animate-pulse' 
+              : 'bg-[#FF6600] shadow-[0_0_20px_rgba(255,102,0,0.4)] hover:scale-105 active:scale-95'
           }`}
         >
-          {isListening ? <MicOff size={22} color="white" /> : <Mic size={22} color="black" />}
+          {isListening ? <MicOff size={32} color="white" /> : <Mic size={32} color="white" />}
         </button>
       </div>
 
@@ -155,7 +157,7 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
 
       {/* LISTE DES RÉSULTATS */}
       <div className="grid gap-[2vh]">
-        {results.length > 0 ? (
+        {(query.trim() !== '' || selectedLocation !== 'ALL') && results.length > 0 ? (
           results.map(tool => (
             <div key={tool.id} className="relative bg-[#1E1E1E] border border-white/5 rounded-[1.5rem] p-[1rem] flex items-center gap-[4vw] overflow-hidden group active:scale-[0.98] transition-transform">
               

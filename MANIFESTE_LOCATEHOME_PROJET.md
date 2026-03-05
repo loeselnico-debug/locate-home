@@ -162,7 +162,7 @@ Le verrouillage des domaines est effectif pour protéger la propriété intellec
 - [ ] **Ergonomie Mobile :** Remonter les boutons Import, Photo et Vidéo (actuellement collés à la barre de navigation du téléphone).
 - [ ] **Interface :** Reprendre la pertinence des informations affichées sous ces boutons.
 - [ ] **Fonctionnalité :** Inclure un compteur de temps (0 à 10s) pour la capture vidéo.
-- [ ] **Moteur IA :** Migrer le endpoint Gemini de la version 2.0 (out) vers la version 2.5 Flash.
+- [X] **Moteur IA :** Migrer le endpoint Gemini de la version 2.0 (out) vers la version 2.5 Flash.
 
 ### 7. MODULE RETROUVER (Recherche)
 - [ ] Supprimer la bannière "Vocal Pro".

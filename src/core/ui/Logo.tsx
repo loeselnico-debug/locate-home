@@ -49,11 +49,10 @@ const Logo: React.FC<LogoProps> = ({ activeModule = 'HOME' }) => {
         className="self-end mb-[2.5vh] flex flex-col items-end" // Alignement au 1/3 bas
         style={{ fontFamily: "'Rebel', cursive, sans-serif" }} // Appel de ta police Canva
       >
-        <span className="text-[#a6a6a6] text-[clamp(0.7rem,3.5vw,1.2rem)] leading-none drop-shadow-[0_2px_5px_rgba(0,0,0,0.8)]">
+        <span className="text-[#a6a6a6] text-[clamp(0.8rem,4vw,1.4rem)] leading-none drop-shadow-[0_2px_5px_rgba(0,0,0,0.8)]">
           By Systems
         </span>
       </div>
-
     </div>
   );
 };

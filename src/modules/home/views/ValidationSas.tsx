@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 
 // 1. Définition stricte du format renvoyé par l'IA Gemini
 export interface AIScanResult {
-  nom: string;
-  marque: string;
-  categorie_id: string;
-  etat: string;
-  description: string;
-  score_confiance: number;
+  typography?: string;
+  brandColor?: string;
+  categorie_id?: string;
+  score_confiance?: number;
+  etat?: string;
+  description?: string;
+  label?: string;
   isConsumable?: boolean;
   consumableLevel?: number;
 }
@@ -53,7 +54,9 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
       {/* LISTE DES OUTILS DÉTECTÉS */}
       <div className="flex-1 overflow-y-auto space-y-[2vh] pr-[1vw]">
         {itemsToValidate.map((item, index) => {
-          const score = item.score_confiance || 0;
+          // On convertit le score décimal (0.85) en pourcentage entier (85) pour les tests
+          const score = item.score_confiance ? Math.round(item.score_confiance * 100) : 0;
+          // Maintenant on peut tester sur 90 et 70
           const scoreColor = score >= 90 ? 'text-green-500' : score >= 70 ? 'text-[#FF6600]' : 'text-red-500';
 
           return (
@@ -68,17 +71,17 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
 
               <div className="flex justify-between items-start pr-[6vw]">
                 <div>
-                  <h3 className="text-white font-bold text-[clamp(0.9rem,3.5vw,1.2rem)]">{item.nom || 'Outil Inconnu'}</h3>
+                  <h3 className="text-white font-bold text-[clamp(0.9rem,3.5vw,1.2rem)]">{item.label || item.typography || 'Outil Inconnu'}</h3>
                   <p className="text-white/60 uppercase tracking-widest text-[clamp(0.6rem,2vw,0.8rem)] mt-[0.5vh]">
-                    {item.marque || 'Marque N/A'}
+                    {item.brandColor || 'Marque N/A'}
                   </p>
                 </div>
                 <div className="flex flex-col items-end">
                   <span className={`font-black text-[clamp(1.2rem,5vw,1.8rem)] ${scoreColor}`}>
-                    {score}%
+                    {item.score_confiance ? Math.round(item.score_confiance * 100) : 0}%
                   </span>
-                  <span className="text-white/40 text-[clamp(0.5rem,1.5vw,0.6rem)] uppercase tracking-widest">
-                    Confiance
+                  <span className={`font-black text-[clamp(1.2rem,5vw,1.8rem)] ${scoreColor}`}>
+                    {score}%
                   </span>
                 </div>
               </div>

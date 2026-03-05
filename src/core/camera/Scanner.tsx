@@ -289,14 +289,14 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           </div>
           <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3">
             {pendingItems.map((item, idx) => (
-              <div key={idx} className="bg-[#1E1E1E] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-white font-bold text-lg leading-tight">{item.toolName}</span>
-                  <span className="text-white/40 text-[9px] uppercase tracking-widest">{item.category}</span>
+                <div key={idx} className="bg-[#1E1E1E] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-lg leading-tight">{item.label || item.typography || "Outil identifié"}</span>
+                    <span className="text-white/40 text-[9px] uppercase tracking-widest">{item.categorie_id}</span>
+                  </div>
+                  <div className="text-[#FF6600] font-black text-xs">{item.confidence ? Math.round(item.confidence * 100) : 0}%</div>
                 </div>
-                <div className="text-[#FF6600] font-black text-xs">{item.score_confiance}%</div>
-              </div>
-            ))}
+              ))}
           </div>
           <div className="flex gap-4 mt-auto pt-6 pb-[env(safe-area-inset-bottom,4vh)]">
             <button onClick={() => {setPendingItems(null);}} className="flex-1 py-4 rounded-2xl bg-[#1E1E1E] text-white font-black uppercase tracking-widest active:scale-95 border border-white/10">Rejeter</button>

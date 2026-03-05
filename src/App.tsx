@@ -66,15 +66,15 @@ const App = () => {
     const itemsToAdd: InventoryItem[] = validatedItems.map(item => ({
       id: crypto.randomUUID(),
       date: new Date().toLocaleString(),
-      toolName: item.nom || 'Outil Inconnu',
-      brand: item.marque || 'Marque N/A',
+      toolName: item.label || item.typography || 'Outil Inconnu',
+      brand: item.brandColor || 'Marque N/A',
       category: item.categorie_id || 'main',
-      location: 'Atelier', 
+      location: 'Atelier',
       condition: item.etat || 'Bon état',
       notes: item.description || '',
       isConsumable: item.isConsumable,
       consumableLevel: item.consumableLevel,
-      score_confiance: item.score_confiance
+      confidence: item.score_confiance
     }));
 
     setInventory(prev => [...itemsToAdd, ...prev]);

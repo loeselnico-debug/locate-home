@@ -138,13 +138,13 @@ Le verrouillage des domaines est effectif pour protéger la propriété intellec
 - [ ] Le Sas de validation est en attente de visuel (à traiter ultérieurement).
 
 ### 2. LOGO & IDENTITÉ
-- [ ] Augmenter la taille de la mention "By Systems" de +10% à +15% par rapport au Logo principal.
+- [X] Augmenter la taille de la mention "By Systems" à +15% par rapport au Logo principal.
 
 ### 3. NAVIGATION (HUB & HOMEMENU)
-- [ ] **HUB :** Corriger le léger scroll vertical (l'écran doit idéalement tenir sur 100vh).
-- [ ] **HUB :** Intégrer et valider la cohérence des nouvelles icônes redessinées.
+- [X] **HUB :** Corriger le léger scroll vertical (l'écran doit idéalement tenir sur 100vh).
+- [X] **HUB :** Intégrer et valider la cohérence des nouvelles icônes redessinées.
 - [ ] **HUB :** Vérifier l'accès fluide aux 4 autres modules.
-- [ ] **HOMEMENU :** Ajouter un badge "néon" avec la promesse CGU/CGV.
+- [ ] **HOMEMENU :** Ajouter un badge "néon" en lien avec la promesse CGU/CGV.
 
 ### 4. MODULE PARAMÈTRES
 - [ ] Réduire l'en-tête (head) de -30% pour gagner de l'espace.

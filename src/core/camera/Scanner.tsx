@@ -16,6 +16,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [pendingItems, setPendingItems] = useState<any[] | null>(null);
+  const [recordingTime, setRecordingTime] = useState<number>(0);
   
   // NOUVEAU : État du consentement légal
   const [hasConsented, setHasConsented] = useState<boolean | null>(null);
@@ -87,10 +88,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     if (!videoRef.current?.srcObject) return;
     
     const stream = videoRef.current.srcObject as MediaStream;
-    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+    // On force un bitrate bas pour garantir un fichier léger
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 1000000 });
     const chunks: Blob[] = [];
 
     setIsScanning(true);
+    setRecordingTime(0);
     if (!flashOn) await toggleTorch();
 
     mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
@@ -104,20 +107,52 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       reader.readAsDataURL(blob);
       if (flashOn) await toggleTorch();
       setIsScanning(false);
+      setRecordingTime(0);
     };
 
     mediaRecorder.start();
-    setTimeout(() => {
-      if (mediaRecorder.state === "recording") mediaRecorder.stop();
-    }, 10000);
+
+    // Coupe-circuit strict et chronomètre visuel
+    let timeElapsed = 0;
+    const timerInterval = setInterval(() => {
+      timeElapsed++;
+      setRecordingTime(timeElapsed);
+      if (timeElapsed >= 10) {
+        clearInterval(timerInterval);
+        if (mediaRecorder.state === "recording") mediaRecorder.stop();
+      }
+    }, 1000);
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    // 1. Videur : Cas d'une image
+    if (file.type.startsWith('image/')) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("ERREUR ZÉRO-TRUST : L'image dépasse la limite stricte de 5 Mo.");
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => runAnalysis(reader.result as string, true);
       reader.readAsDataURL(file);
+    } 
+    // 2. Videur : Cas d'une vidéo
+    else if (file.type.startsWith('video/')) {
+      const videoElement = document.createElement('video');
+      videoElement.preload = 'metadata';
+      videoElement.onloadedmetadata = () => {
+        URL.revokeObjectURL(videoElement.src);
+        if (videoElement.duration > 11) { // 1s de tolérance technique
+          alert("ERREUR ZÉRO-TRUST : La vidéo dépasse la limite stricte de 10 secondes.");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => runAnalysis(reader.result as string, false);
+        reader.readAsDataURL(file);
+      };
+      videoElement.src = URL.createObjectURL(file);
     }
   };
 
@@ -260,22 +295,25 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             <button onClick={() => fileInputRef.current?.click()} className="w-[14vw] h-[14vw] max-w-[60px] max-h-[60px] bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-90 backdrop-blur">
               <img src="/icon-import.png" className="w-[60%] h-[60%] object-contain" alt="Import" />
             </button>
-            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 5MO</span>
-            <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*" />
+            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 5MO<br/>/ 10S</span>
+            {/* Ajout du support vidéo dans l'input */}
+            <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*,video/*" />
           </div>
 
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-[18vw] h-[18vw] max-w-[80px] max-h-[80px] bg-black/60 border border-white/10 rounded-3xl flex items-center justify-center active:scale-95 backdrop-blur shadow-[0_5px_20px_rgba(0,0,0,0.5)]">
               <img src="/icon-photo.png" className="w-[70%] h-[70%] object-contain" alt="Photo" />
             </button>
-            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">PHOTO HD</span>
+            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 5MO</span>
           </div>
 
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={handleVideoRecord} disabled={isScanning || isAnalyzing} className={`w-[18vw] h-[18vw] max-w-[80px] max-h-[80px] bg-black/60 border rounded-3xl flex items-center justify-center backdrop-blur active:scale-95 transition-all ${isScanning ? 'border-[#FF6600] shadow-[0_0_20px_rgba(255,102,0,0.5)] animate-pulse' : 'border-white/10 shadow-[0_5px_20px_rgba(0,0,0,0.5)]'}`}>
               <img src="/icon-video.png" className="w-[70%] h-[70%] object-contain" alt="Vidéo" />
             </button>
-            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">{isScanning ? 'SCAN...' : 'DIRECT 10S'}</span>
+            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">
+              {isScanning ? `SCAN... ${recordingTime}S` : 'MAX 10S'}
+            </span>
           </div>
         </div>
       </div>

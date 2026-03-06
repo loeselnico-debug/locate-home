@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
-import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CheckSquare, LogOut } from 'lucide-react';
+import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CheckSquare, LogOut, Lock, Clock } from 'lucide-react';
 import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
 import { reportService } from '../services/reportService';
+import { useUserTier } from '../../../core/security/useUserTier';
 
-// IMPORT DIFFÉRÉ DU BOUTON PDF (LAZY LOADING)
 const GaragePdfButton = lazy(() => import('./GaragePdfButton'));
 
 interface LiveAssistantProps {
@@ -12,6 +12,8 @@ interface LiveAssistantProps {
 }
 
 const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
+  const { currentTier } = useUserTier(); // <-- RÉCUPÉRATION DU TIER
+
   const [isLive, setIsLive] = useState(false);
   const [showSafety, setShowSafety] = useState(true);
   const [sessionClosed, setSessionClosed] = useState(false);
@@ -24,12 +26,15 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     nextStep: "-"
   });
   
+  // ÉTATS POUR LE COUPE-CIRCUIT FREE
+  const [freeTimeLeft, setFreeTimeLeft] = useState<number | null>(null);
+  const [cooldownMsg, setCooldownMsg] = useState<string | null>(null);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
-  // Aiguillage dynamique des Safety Gates selon le métier (Bible M5)
   const [checks, setChecks] = useState(
     mode === 'maintenance'
       ? [
@@ -47,10 +52,50 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
   const allValidated = checks.every(c => c.validated);
 
+  // LOGIQUE DE BRIDAGE PROGRESSIF (FREE TIER)
+  const getCooldownStatus = () => {
+    const stored = localStorage.getItem('m5_free_usage');
+    if (!stored) return { allowed: true, count: 0, waitMin: 0 };
+    
+    const { count, lastUsed } = JSON.parse(stored);
+    const elapsedMin = (Date.now() - lastUsed) / 60000;
+
+    if (elapsedMin > 24 * 60) return { allowed: true, count: 0, waitMin: 0 }; // Reset 24h
+
+    let requiredWait = 0;
+    if (count === 1) requiredWait = 5;
+    else if (count === 2) requiredWait = 20;
+    else if (count === 3) requiredWait = 60;
+    else if (count >= 4) requiredWait = 24 * 60;
+
+    if (elapsedMin < requiredWait) {
+      return { allowed: false, count, waitMin: Math.ceil(requiredWait - elapsedMin) };
+    }
+    return { allowed: true, count };
+  };
+
+  const registerFreeUsage = () => {
+    const stored = localStorage.getItem('m5_free_usage');
+    const count = stored ? JSON.parse(stored).count : 0;
+    localStorage.setItem('m5_free_usage', JSON.stringify({ count: count + 1, lastUsed: Date.now() }));
+  };
+
+  // CHRONOMÈTRE DE 120s POUR LE MODE FREE
   useEffect(() => {
-    return () => {
-      if (isLive) forceTerminate();
-    };
+    let timer: number;
+    if (isLive && currentTier === 'FREE' && freeTimeLeft !== null) {
+      if (freeTimeLeft <= 0) {
+        registerFreeUsage();
+        closeAndGenerateReport("Temps gratuit écoulé. Mode Premium requis pour des sessions longues.");
+      } else {
+        timer = window.setInterval(() => setFreeTimeLeft(prev => (prev !== null ? prev - 1 : 0)), 1000);
+      }
+    }
+    return () => clearInterval(timer);
+  }, [isLive, freeTimeLeft, currentTier]);
+
+  useEffect(() => {
+    return () => { if (isLive) forceTerminate(); };
   }, [isLive]);
 
   const captureAndSendFrame = () => {
@@ -84,6 +129,16 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
   const startLiveSession = async () => {
     if (allValidated) {
+      // VÉRIFICATION DU COUPE-CIRCUIT AVANT LE LANCEMENT
+      if (currentTier === 'FREE') {
+        const status = getCooldownStatus();
+        if (!status.allowed) {
+          setCooldownMsg(`Tunnel IA en refroidissement. Veuillez patienter ${status.waitMin} min ou passez Premium.`);
+          return;
+        }
+        setFreeTimeLeft(120); // 120 Secondes Max
+      }
+
       setShowSafety(false);
       const cameraStarted = await startCamera();
       
@@ -119,9 +174,13 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     setIsLive(false);
   };
 
-  const closeAndGenerateReport = async () => {
+  const closeAndGenerateReport = async (forcedReason?: string) => {
     forceTerminate();
     
+    if (forcedReason) {
+      setCurrentDiagnostic(prev => ({ ...prev, hypothesis: forcedReason }));
+    }
+
     const endTime = new Date();
     const reportData = {
       mode: mode,
@@ -171,26 +230,25 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
             <div className="bg-black border border-white/10 rounded-xl p-5">
               <h3 className="text-[#DC2626] font-bold text-xs uppercase tracking-widest mb-3">Synthèse Diag. IA</h3>
-              <p className="text-gray-300 text-sm italic border-l-2 border-[#DC2626] pl-3">
+              <p className={`text-sm italic border-l-2 pl-3 ${currentTier === 'FREE' && freeTimeLeft === 0 ? 'text-[#FF6600] border-[#FF6600]' : 'text-gray-300 border-[#DC2626]'}`}>
                 "{finalReport.diagnostic.hypothesis}"
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               
-              {/* INTÉGRATION DU BOUTON EN LAZY LOADING */}
-              <Suspense fallback={
-                <div className="flex-1 bg-[#DC2626]/50 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 animate-pulse">
-                  Chargement Moteur PDF...
-                </div>
-              }>
-                <GaragePdfButton reportData={finalReport} />
-              </Suspense>
+              {/* BOUTON PDF CONDITIONNEL */}
+              {currentTier === 'FREE' ? (
+                <button disabled className="flex-1 bg-gray-900 border border-gray-700 text-gray-500 py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 cursor-not-allowed">
+                  <Lock size={18} /> Export PDF Réservé Premium
+                </button>
+              ) : (
+                <Suspense fallback={<div className="flex-1 bg-[#DC2626]/50 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 animate-pulse">Chargement...</div>}>
+                  <GaragePdfButton reportData={finalReport} />
+                </Suspense>
+              )}
               
-              <button
-                onClick={onExit}
-                className="flex-1 bg-[#121212] border border-white/10 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-colors hover:bg-[#1a1a1a] active:scale-95"
-              >
+              <button onClick={onExit} className="flex-1 bg-[#121212] border border-white/10 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-colors hover:bg-[#1a1a1a] active:scale-95">
                 <LogOut size={18} /> Quitter le terminal
               </button>
             </div>
@@ -215,9 +273,17 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         </div>
 
         <div className="absolute top-6 left-6 right-6 flex justify-between items-start pointer-events-none z-10">
-          <div className="bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl">
+          <div className="bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl flex flex-col gap-1">
             <h1 className="text-white font-black text-[10px] uppercase tracking-[0.2em]">Locate Garage</h1>
-            <p className="text-[9px] font-bold uppercase mt-1 italic text-[#DC2626]">M5 - Live {mode}</p>
+            <p className="text-[9px] font-bold uppercase italic text-[#DC2626]">M5 - Live {mode}</p>
+            
+            {/* AFFICHAGE DU CHRONO FREE */}
+            {currentTier === 'FREE' && freeTimeLeft !== null && (
+              <div className="flex items-center gap-1 mt-1 text-[#FF6600]">
+                <Clock size={10} />
+                <span className="font-mono text-[9px] font-bold">{Math.floor(freeTimeLeft / 60)}:{(freeTimeLeft % 60).toString().padStart(2, '0')}</span>
+              </div>
+            )}
           </div>
           {isLive && (
             <div className="bg-red-600/90 px-3 py-1 rounded-full animate-pulse border border-red-400">
@@ -236,6 +302,12 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
                   Check-list obligatoire ({mode === 'maintenance' ? 'AFNOR Niveau 2/3' : 'Atelier'})
                 </p>
               </div>
+
+              {cooldownMsg && (
+                <div className="bg-[#FF6600]/20 border border-[#FF6600] text-[#FF6600] p-4 rounded-xl text-xs font-bold text-center animate-pulse">
+                  {cooldownMsg}
+                </div>
+              )}
 
               <div className="space-y-2">
                 {checks.map(check => (
@@ -260,10 +332,10 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
               </button>
 
               <button
-                disabled={!allValidated}
+                disabled={!allValidated || cooldownMsg !== null}
                 onClick={startLiveSession}
                 className={`w-full py-5 rounded-2xl mt-2 font-black text-[10px] uppercase tracking-[0.3em] transition-all ${
-                  allValidated ? 'bg-white text-black active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-gray-900 text-gray-700'
+                  allValidated && !cooldownMsg ? 'bg-white text-black active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-gray-900 text-gray-700'
                 }`}
               >
                 Ouvrir Tunnel Expertise
@@ -293,7 +365,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
           </button>
 
           <button
-            onClick={closeAndGenerateReport}
+            onClick={() => closeAndGenerateReport()}
             className="flex-1 bg-[#121212] py-4 rounded-xl flex flex-col items-center gap-1 border border-white/5 active:scale-95"
           >
             <X size={18} className="text-red-500" />

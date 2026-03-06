@@ -5,7 +5,8 @@ const path = require('path');
 const srcDir = path.join(__dirname, 'src');
 const outputFile = path.join(__dirname, 'LOCATE_CONTEXT_IA.md');
 
-let outputText = '# 🧠 CONTEXTE CODE SOURCE LOCATE\n\n';
+const dateExport = new Date().toLocaleString('fr-FR');
+let outputText = `# 🧠 CONTEXTE CODE SOURCE LOCATE\n> 📅 Archive générée le : ${dateExport}\n\n`;
 
 function readFiles(dir) {
   // Sécurité : si le dossier src n'existe pas, on arrête

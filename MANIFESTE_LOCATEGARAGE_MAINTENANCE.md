@@ -1,27 +1,60 @@
 # 🔧 🏭 LOCATE GARAGE | RÉFÉRENTIEL MAINTENANCE 5.0 (M5)
-**Date :** 28 Février 2026
+
+**Date mise à jours :** *06 Mars 2026*
 **Statut :** BIBLE MÉTIER - ARCHITECTURE "LIVE ASSISTANT" 🟢
 **Vision :** *"L'IA ne remplace pas le technicien, elle est son exosquelette cognitif."*
 
----
+--------------------------------------------------------------------------------------------------------
 
-## 📂 0. ORGANIGRAMME TECHNIQUE (ARCHITECTURE M5)
-```text
-LOCATE-SYSTEMS/
-└── src/
-    ├── core/                       # M1 : TRONC COMMUN (Le Socle)
-    │   └── ai/
-    │       └── liveService.ts      # Système Nerveux (WebSocket Gemini Multimodal)
-    └── modules/
-        └── garage/                 # M5 : LOCATE GARAGE (L'Application Indépendante)
-            ├── components/         # Interfaces utilisateur
-            │   └── LiveAssistant.tsx   # Le Cockpit Tactique (Safety Gate, Caméra, AR)
-            ├── services/           # Logique métier et données
-            │   └── reportService.ts    # Générateur de Rapports (Norme AFNOR, KPI, MTTR)
-            └── views/              # Écrans principaux
-                └── GarageDashboard.tsx # L'Aiguilleur "1-clic" (Split-Screen, Thème Rouge)
+## 📂 0. ORGANIGRAMME TECHNIQUE (ARCHITECTURE M5 - MAINTENANCE)
+📦 LOCATE-SYSTEMS
+└── 📂 src/                            # MOTEUR DE L'APPLICATION
+    ├── 📂 core/ai/                    # SYSTÈME NERVEUX & INTELLIGENCE
+    │   ├── 📁 expertisemetier/        # Référentiels d'expertise locaux
+    │   │   └── 📄 maintenance.ts      # BIBLE : Règles MAINTENANCE_M5_RULES (AFNOR, OSA/CBM, LOTO)
+    │   └── 📄 liveService.ts          # Système Nerveux (WebSocket Gemini Multimodal Partitionné)
+    └── 📂 modules/garage/             # 🔧 M5 : LA MAINTENANCE (Industry)
+        ├── 📁 components/             # Interface utilisateur tactique (HUD)
+        │   ├── 📄 LiveAssistant.tsx   # Cockpit Tactique "Industry" (Cyan) avec PTT & Chrono 120s
+        │   └── 📄 GaragePdfButton.tsx # Export PDF (Verrouillé en Tier FREE)
+        ├── 📁 services/               # Logique métier spécifique
+        │   └── 📄 reportService.ts    # Générateur de Rapports (Norme AFNOR, White Label)
+        └── 📁 views/                  # Écrans principaux du module
+            └── 📄 GarageDashboard.tsx # Aiguilleur Métier (Routeur déverrouillé)
 
----
+---------------------------------------------------------------------------------------------------------
+
+
+✅ 1. ACQUIS TECHNIQUES - SESSION V20
+L'architecture a été consolidée pour permettre une exploitation commerciale immédiate :
+
+Cerveau IA Partitionné : Le liveService.ts charge désormais dynamiquement les règles MAINTENANCE_M5_RULES, garantissant zéro cross-contamination avec le mode mécanique.
+
+Design Cockpit "Rugged" : Interface optimisée pour tablettes durcies avec accents Cyan (#00E5FF) et Ambre (#FFB300) pour la sécurité.
+
+Safety Gates Industrielles : Validation obligatoire par l'IA des étapes de LOTO (Consignation), VAT (Absence de tension) et détection H2S avant d'ouvrir le tunnel d'expertise.
+
+Modèle Économique "Golden Time" :
+
+Tier FREE : Session limitée à 120 secondes avec système de refroidissement (Cooldown) progressif (5m, 20m, 60m, 24h).
+
+Export PDF : Bouton d'export certifié réservé aux comptes PREMIUM/PRO.
+
+⚙️ 2. MOTEUR DE RÈGLES & SÉCURITÉ (MAINTENANCE)
+Logique de Diagnostic : Application stricte des méthodes AMDEC et Ishikawa pour isoler la cause racine.
+
+Niveaux AFNOR : Classification automatique des rapports du Niveau 1 (réglage) au Niveau 5 (rénovation).
+
+Analyse Multimodale : Détection acoustique des fuites d'air, analyse vibratoire des pompes et colorimétrie thermique des aciers détrempés.
+
+🔒 3. PIPELINE DE DONNÉES & CO-BRANDING
+Architecture "Zéro-Trace" : Le buffer vidéo est intégralement détruit à la fermeture du WebSocket.
+
+Rapport "Generic Pro" : Moteur PDF prêt pour le co-branding (ex: Veolia), mais configuré par défaut en mode neutre pour les démos commerciales (DÉPARTEMENT MAINTENANCE INDUSTRIELLE).
+
+Fin de la mise à jour V20 - Ce document est la nouvelle source de vérité pour le développement M5.
+
+-------------------------------------------------------------------------------------------------------------------
 
 🎯 1. VISION ET BUSINESS MODEL (GO-TO-MARKET)
 Stratégie de Déploiement : L'Option A (Le Pragmatisme Terrain)

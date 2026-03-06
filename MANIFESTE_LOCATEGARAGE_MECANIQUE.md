@@ -1,25 +1,60 @@
-🔧 🚛 LOCATE GARAGE | RÉFÉRENTIEL MÉTIER (M5)
-Statut : ARCHITECTURE "LIVE DIAGNOSTIC" 🟢
-Vision : "L'IA est le Chef d'Atelier embarqué : l'œil qui sécurise, l'oreille qui écoute, le cerveau qui décale la panne."
+# 🔧 🚛 LOCATE GARAGE | RÉFÉRENTIEL MÉCANIQUE VL / PL (M5)
 
-📂 ORGANIGRAMME TECHNIQUE RÉEL (MODULE GARAGE & CORE M5)
+**Date mise à jours :** *06 Mars 2026*
+**Statut :** BIBLE MÉTIER - ARCHITECTURE "LIVE DIAGNOSTIC" 🟢
+**Vision :** *"L'IA est le Chef d'Atelier embarqué : l'œil qui sécurise, l'oreille qui écoute, le cerveau qui décale la panne."*
 
-src/modules/garage/
-├── components/
-│   ├── GaragePdfButton.tsx  # Bouton d'export PDF isolé (Lazy Loading pour perfs)
-│   ├── GarageReport.tsx     # Template du rapport d'intervention (GMAO & Ordre de Réparation)
-│   └── LiveAssistant.tsx    # Cockpit Live IA (Flux Caméra, Safety Gates, Terminal Diagnostic)
-├── services/
-│   └── reportService.ts     # Formatage des données de clôture (MTTR, AFNOR / Mécanique)
-└── views/
-    └── GarageDashboard.tsx  # Menu d'aiguillage (Maintenance Industrielle vs Mécanique)
+-------------------------------------------------------------------------------------------------------------------
 
-src/core/ai/
-├── expertisemetier/
-│   └── mecanique.ts         # BIBLE MÉTIER : Règles GARAGE_M5_RULES (Sécurité, Couples, Thermique, J1939)
-├── liveService.ts           # Tunnel WebSocket sécurisé (Gemini Bidi Bêta)
-└── vehicleLiveDiag.ts       # Moteur de Sécurité Live M5 (Validation visuelle EPI/Levage)
+## 📂 0. ORGANIGRAMME TECHNIQUE RÉEL (MODULE GARAGE & CORE M5)
+📦 LOCATE-SYSTEMS
+└── 📂 src/                            # MOTEUR DE L'APPLICATION
+    ├── 📂 core/ai/                    # SYSTÈME NERVEUX & INTELLIGENCE
+    │   ├── 📁 expertisemetier/        # Référentiels d'expertise locaux
+    │   │   └── 📄 mecanique.ts        # BIBLE : Règles GARAGE_M5_RULES (J1939, UTAC, Couples)
+    │   └── 📄 liveService.ts          # Système Nerveux (WebSocket Gemini Bidi Partitionné)
+    └── 📂 modules/garage/             # 🔧 M5 : LA MAINTENANCE (Garage)
+        ├── 📁 components/             # Interface utilisateur tactique (HUD)
+        │   ├── 📄 LiveAssistant.tsx   # Cockpit Tactique "Garage" (Rouge) avec PTT & Chrono 120s
+        │   └── 📄 GaragePdfButton.tsx # Export PDF (Verrouillé en Tier FREE)
+        ├── 📁 services/               # Logique métier spécifique
+        │   └── 📄 reportService.ts    # Générateur d'Ordres de Réparation (White Label)
+        └── 📁 views/                  # Écrans principaux du module
+            └── 📄 GarageDashboard.tsx # Aiguilleur "1-clic" (Routeur déverrouillé)
 
+----------------------------------------------------------------------------------------------------------------
+
+✅ 1. ACQUIS TECHNIQUES - SESSION V20
+Le module mécanique est désormais prêt pour des démonstrations constructeurs (Mercedes, Volvo, etc.) :
+
+Cerveau IA Partitionné : Le liveService.ts injecte strictement les données GARAGE_M5_RULES. L'IA ne mélange plus les protocoles industriels avec les protocoles camions.
+
+Design Cockpit "Rugged" : Interface haut contraste avec accents Rouge (#DC2626) et Orange (#FF6600). Affichage des jauges de pression de freinage et télémétrie J1939 en overlay.
+
+Safety Gates Mécaniques : Veto de l'IA si elle ne détecte pas visuellement les Chandelles/Béquilles ou si la consignation PTO n'est pas validée avant intervention sur l'hydraulique.
+
+Modèle Économique "Golden Time" :
+
+Tier FREE : Session Live limitée à 120 secondes (frustration positive) avec refroidissement (Cooldown) progressif.
+
+Export PDF : Ordre de réparation certifié bloqué en mode gratuit pour forcer l'abonnement pro.
+
+⚙️ 2. EXPERTISE MÉTIER & PROTOCOLES (BIBLE)
+Multiplexage J1939 : Analyse automatique des codes SPN/FMI (Court-circuit au +, masse, circuit ouvert).
+
+Standards UTAC : Surveillance des pressions de régulation du freinage pneumatique (7.2 à 8.1 bars).
+
+Expertise Métallurgique : Détection visuelle du bleuissement des disques de frein via analyse HDR (Alerte si > 290°C / Acier détrempé).
+
+🔒 3. PIPELINE DE DONNÉES & CO-BRANDING
+
+RGPD Zéro-Trace : Aucune image du châssis ou des organes mécaniques n'est stockée sur le cloud après analyse.
+
+Rapport "Generic Pro" : Ordre de réparation neutre ("DÉPARTEMENT MÉCANIQUE P.L."), prêt à accueillir les logos constructeurs pour les clients grands comptes.
+
+Fin de la mise à jour V20 - Document verrouillé comme source de vérité mécanique.
+
+---------------------------------------------------------------------------------------------------------------------
 
 🎯 1. VISION ET BUSINESS MODEL (GO-TO-MARKET)
 

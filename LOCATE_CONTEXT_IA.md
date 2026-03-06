@@ -1,4 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
+> 📅 Archive générée le : 06/03/2026 11:02:41
 
 
 // ==========================================
@@ -13,17 +14,20 @@ import { useUserTier } from './core/security/useUserTier';
 
 import Hub from './core/ui/Hub';
 import Logo from './core/ui/Logo';
+import { Scanner } from './core/camera/Scanner';
+
 import HomeMenu from './modules/home/components/HomeMenu';
 import Dashboard from './modules/home/views/Dashboard';
 import Library from './modules/home/components/Library';
-import { Scanner } from './core/camera/Scanner';
 import Search from './modules/home/components/Search';
 import { SettingsPage } from './modules/home/views/SettingsPage';
 import ValidationSas from './modules/home/views/ValidationSas';
 import ToolDetail from './modules/home/components/ToolDetail';
 import type { AIScanResult } from './modules/home/views/ValidationSas';
 
-type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
+import GarageDashboard from './modules/garage/views/GarageDashboard';
+
+type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail' | 'garage';
 
 const App = () => {
   const [view, setView] = useState<ViewState>('hub');
@@ -113,9 +117,9 @@ const App = () => {
       )}
 
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
-        {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
+        {view === 'hub' && <Hub onSelectModule={(m: string) => { if (m === 'home' || m === 'garage') setView(m as ViewState); }} />}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
-
+        {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}
         {view === 'inventory' && (
           <Dashboard
             inventory={inventory}
@@ -299,7 +303,60 @@ export const INDUSTRIAL_RULES = {
 // ==========================================
 
 ```tsx
+/**
+ * LOCATE GARAGE - RÉFÉRENTIEL MAINTENANCE INDUSTRIELLE (M5)
+ * Source : "Bible Maintenance 5.0"
+ * Normes : OSA/CBM, AFNOR, LOTO, GD&T
+ */
 
+export const MAINTENANCE_M5_RULES = {
+  // 1. SAFETY GATES (VETO IA - PRIORITÉ ABSOLUE)
+  safety_veto: {
+    loto: "Consignation (Lockout-Tagout) : Validation visuelle ou vocale de la coupure des énergies obligatoire avant action.",
+    vat: "Vérification d'Absence de Tension (VAT) exigée avant lecture de schémas de puissance ou ouverture d'armoire.",
+    espaces_confines: "Risque Gaz (H2S) : Exiger le port du détecteur 4 gaz et des EPI respiratoires."
+  },
+
+  // 2. MÉTHODOLOGIE DE DIAGNOSTIC (ENTONNOIR)
+  diagnostic_logic: {
+    approche: "AMDEC, QQOQCCP, Ishikawa. Toujours isoler le composant racine en allant du test le plus simple/visuel au plus intrusif/complexe. Interdiction de deviner.",
+    afnor_levels: {
+      1: "Réglages simples, vérifications visuelles.",
+      2: "Dépannages par échange standard (Technicien habilité).",
+      3: "Identification origines de pannes complexes, échanges de composants.",
+      4: "Travaux importants, révisions complètes en atelier.",
+      5: "Rénovation, reconstruction."
+    }
+  },
+
+  // 3. ANALYSE SENSORIELLE MULTIMODALE (OSA/CBM)
+  multimodal_analysis: {
+    acoustic: "Détection de fuites (air, eau, gaz) et usure de roulements (ultrasons).",
+    vibration: "Défauts d'alignement, balourd sur machines tournantes.",
+    vision_hdr: "Corrosion, fuites externes, détection de corps étrangers, état de surface.",
+    thermography: "Points chauds électriques, mauvais raccordements, frottements anormaux."
+  },
+
+  // 4. LECTURE TECHNIQUE ET PLANS
+  technical_reading: {
+    electrical: "Analyse unifilaire, multifilaire, cartes automates (API). Identifier la nomenclature, les références croisées et les borniers.",
+    mechanical: "Tolérancement géométrique (GD&T - ISO 1101). Le 3D est insuffisant : exiger le 2D pour la rugosité (ex: Ra 3.2) et les tolérances."
+  },
+
+  // 5. EXPERTISE MÉTALLURGIQUE (COLORIMÉTRIE THERMIQUE)
+  metallurgy_thermal: {
+    zone_1: { color: "Jaune Paille", temp: "220°C", instruction: "Dureté max, attention au glaçage (plateau presseur)." },
+    zone_4: { color: "Bleu", temp: "295°C", instruction: "DANGER : Acier détrempé. Surchauffe extrême. Remplacement obligatoire." },
+    zone_5: { color: "Gris", temp: ">350°C", instruction: "DESTRUCTION : Structure compromise. Remplacement immédiat." }
+  },
+
+  // 6. PIPELINE GMAO & INDICATEURS (KPI)
+  gmao_kpi: {
+    mtbf: "Mean Time Between Failures (Fiabilité).",
+    mttr: "Mean Time To Repair (Maintenabilité).",
+    trs: "Taux de Rendement Synthétique (Disponibilité x Performance x Qualité)."
+  }
+};
 ```
 
 // ==========================================
@@ -468,12 +525,14 @@ export const geminiService = {
 
 ```tsx
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.1)
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.2 - Architecture Cloisonnée)
  * Architecture : WebSocket Multimodal (Gemini 2.0 Flash)
- * Standard : OSA/CBM & RGPD Zéro-Trace
+ * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
-import { INDUSTRIAL_RULES } from './expertisemetier/home';
+// IMPORT STRICTEMENT SÉPARÉ DES BIBLES MÉTIERS
+import { GARAGE_M5_RULES } from './expertisemetier/mecanique';
+import { MAINTENANCE_M5_RULES } from './expertisemetier/maintenance';
 
 export interface LiveDiagnostic {
   hypothesis: string;
@@ -495,22 +554,42 @@ class LiveService {
       throw new Error("Impossible d'établir le tunnel sécurisé.");
     }
 
+    // 2. AIGUILLAGE DU CERVEAU (ZÉRO CROSS-CONTAMINATION)
+    let role = "";
+    let rulesContext = "";
+
+    if (mode === 'mecanique') {
+      role = "Expert Mécanique Auto & Poids Lourds (OBD2, J1939, UTAC, Thermique)";
+      rulesContext = JSON.stringify(GARAGE_M5_RULES, null, 2);
+    } else if (mode === 'maintenance') {
+      role = "Expert Maintenance Industrielle (AFNOR, OSA/CBM, LOTO)";
+      rulesContext = JSON.stringify(MAINTENANCE_M5_RULES, null, 2);
+    }
+
+    // Injection de la directive militaire "Zéro-Fioriture"
     const systemInstruction = `
-      Tu es l'Expert de Maintenance Industrielle LOCATE. 
-      Mode actuel : ${mode.toUpperCase()}.
-      Protocole de sécurité strict : ${INDUSTRIAL_RULES.security.epi_alert}
-      Utilise la méthode AMDEC pour le diagnostic.
+      Tu es l'${role} du système LOCATE. 
+      Mode actif : ${mode.toUpperCase()}.
+      
+      VOICI TA BIBLE MÉTIER STRICTE À APPLIQUER ABSOLUMENT :
+      ${rulesContext}
+
+      PROTOCOLE DE COMMUNICATION OBLIGATOIRE :
+      - Zéro phrase de courtoisie. Va à l'essentiel.
+      - Format exigé : "Étape [X] : [Action]. Dis 'Fait' quand c'est terminé."
+      - Isolement du doute : Aucune extrapolation. Si la vidéo est floue, dis : "Visuel non conforme. Nettoie la lentille."
+      - Droit de veto absolu : Si une condition de sécurité manque (levage sans chandelle, tension haute sans EPI), bloque le diagnostic immédiatement.
     `;
 
     try {
-      // 2. Injection de la clé directement dans l'URL (Requis par Gemini WebSocket)
+      // 3. Établissement du tunnel WebSocket
       const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BiDiGenerateContent?key=${apiKey}`;
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
-        console.log("🔗 Tunnel Live LOCATE établi.");
+        console.log(`🔗 Tunnel Live LOCATE établi en mode : ${mode.toUpperCase()}`);
         
-        // 3. Envoi du Setup Message avec le Manifeste Métier
+        // 4. Envoi du Setup Message avec le Manifeste Métier spécifique au mode
         const setupMessage = {
           setup: {
             model: "models/gemini-2.0-flash",
@@ -526,14 +605,15 @@ class LiveService {
         try {
           const response = JSON.parse(event.data);
           
-          // Log brut pour surveiller les retours complexes de l'API Bidi
+          // Log brut pour surveiller les retours de l'API Bidi
           console.log("Trame IA reçue :", response);
 
-          // Remplacement du hardcoding par un retour générique en attendant le parsing complet des 'serverContent'
+          // En attendant le vrai parsing complexe des 'serverContent' de Gemini Bidi, 
+          // on garde ce stub fonctionnel pour que l'UI ne crashe pas.
           onMessage({
-            hypothesis: "Analyse du flux visuel en cours...",
+            hypothesis: `Analyse du flux visuel ${mode.toUpperCase()} en cours...`,
             confidence: 0.90,
-            nextStep: "Attente de votre directive vocale ou visuelle."
+            nextStep: "Attente de données capteurs ou visuelles."
           });
         } catch (error) {
           console.error("Erreur de lecture de la trame IA :", error);
@@ -548,7 +628,6 @@ class LiveService {
 
   sendVideoFrame(canvas: HTMLCanvasElement) {
     if (this.socket?.readyState === WebSocket.OPEN) {
-      // 4. Nettoyage du signal : Gemini refuse l'en-tête "data:image/jpeg;base64,"
       const base64Data = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
       
       const message = {
@@ -2038,11 +2117,11 @@ export const GarageReport: React.FC<GarageReportProps> = ({ reportData }) => {
 
 ```tsx
 import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
-import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CheckSquare, LogOut } from 'lucide-react';
+import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CheckSquare, LogOut, Lock, Clock } from 'lucide-react';
 import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
 import { reportService } from '../services/reportService';
+import { useUserTier } from '../../../core/security/useUserTier';
 
-// IMPORT DIFFÉRÉ DU BOUTON PDF (LAZY LOADING)
 const GaragePdfButton = lazy(() => import('./GaragePdfButton'));
 
 interface LiveAssistantProps {
@@ -2051,6 +2130,8 @@ interface LiveAssistantProps {
 }
 
 const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
+  const { currentTier } = useUserTier();
+
   const [isLive, setIsLive] = useState(false);
   const [showSafety, setShowSafety] = useState(true);
   const [sessionClosed, setSessionClosed] = useState(false);
@@ -2063,239 +2144,199 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     nextStep: "-"
   });
   
+  const [freeTimeLeft, setFreeTimeLeft] = useState<number | null>(null);
+  const [cooldownMsg, setCooldownMsg] = useState<string | null>(null);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
-  const [checks, setChecks] = useState([
-    { id: 'loto', label: 'Consignation LOTO effectuée', icon: <Power size={18} />, validated: false },
-    { id: 'vat', label: 'VAT (Absence Tension)', icon: <Zap size={18} />, validated: false },
-    { id: 'h2s', label: 'Détecteur H2S & Gaz actif', icon: <Wind size={18} />, validated: false },
-    { id: 'epi', label: 'EPI adéquats portés', icon: <Shield size={18} />, validated: false },
-  ]);
+  const [checks, setChecks] = useState(
+    mode === 'maintenance'
+      ? [
+          { id: 'loto', label: 'Consignation LOTO effectuée', icon: <Power size={18} />, validated: false },
+          { id: 'vat', label: 'VAT (Absence Tension)', icon: <Zap size={18} />, validated: false },
+          { id: 'h2s', label: 'Détecteur H2S & Gaz actif', icon: <Wind size={18} />, validated: false },
+          { id: 'epi', label: 'EPI adéquats portés', icon: <Shield size={18} />, validated: false },
+        ]
+      : [
+          { id: 'levage', label: 'Chandelles / Béquilles en place', icon: <Shield size={18} />, validated: false },
+          { id: 'pto', label: 'Consignation PTO (Prise de mouvement)', icon: <Power size={18} />, validated: false },
+          { id: 've', label: 'EPI VE (Gants Classe 0 si > 60V)', icon: <Zap size={18} />, validated: false },
+        ]
+  );
 
   const allValidated = checks.every(c => c.validated);
 
+  const getCooldownStatus = () => {
+    const stored = localStorage.getItem('m5_free_usage');
+    if (!stored) return { allowed: true, count: 0, waitMin: 0 };
+    const { count, lastUsed } = JSON.parse(stored);
+    const elapsedMin = (Date.now() - lastUsed) / 60000;
+    if (elapsedMin > 24 * 60) return { allowed: true, count: 0, waitMin: 0 };
+    let requiredWait = 0;
+    if (count === 1) requiredWait = 5;
+    else if (count === 2) requiredWait = 20;
+    else if (count === 3) requiredWait = 60;
+    else if (count >= 4) requiredWait = 24 * 60;
+    if (elapsedMin < requiredWait) return { allowed: false, count, waitMin: Math.ceil(requiredWait - elapsedMin) };
+    return { allowed: true, count };
+  };
+
+  const registerFreeUsage = () => {
+    const stored = localStorage.getItem('m5_free_usage');
+    const count = stored ? JSON.parse(stored).count : 0;
+    localStorage.setItem('m5_free_usage', JSON.stringify({ count: count + 1, lastUsed: Date.now() }));
+  };
+
   useEffect(() => {
-    return () => {
-      if (isLive) forceTerminate();
-    };
-  }, [isLive]);
+    let timer: number;
+    if (isLive && currentTier === 'FREE' && freeTimeLeft !== null) {
+      if (freeTimeLeft <= 0) {
+        registerFreeUsage();
+        closeAndGenerateReport("Temps gratuit écoulé. Mode Premium requis.");
+      } else {
+        timer = window.setInterval(() => setFreeTimeLeft(prev => (prev !== null ? prev - 1 : 0)), 1000);
+      }
+    }
+    return () => clearInterval(timer);
+  }, [isLive, freeTimeLeft, currentTier]);
 
   const captureAndSendFrame = () => {
     if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-
-      if (context && video.videoWidth > 0) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      if (context && videoRef.current.videoWidth > 0) {
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
         liveService.sendVideoFrame(canvas);
       }
     }
   };
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
-        audio: false
-      });
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      return true;
-    } catch (err) {
-      setDiagnosticText("Erreur Flux Vidéo : Vérifiez les permissions.");
-      return false;
-    }
-  };
-
   const startLiveSession = async () => {
     if (allValidated) {
+      if (currentTier === 'FREE') {
+        const status = getCooldownStatus();
+        if (!status.allowed) {
+          setCooldownMsg(`Tunnel IA en refroidissement. Attendez ${status.waitMin} min.`);
+          return;
+        }
+        setFreeTimeLeft(120);
+      }
       setShowSafety(false);
-      const cameraStarted = await startCamera();
-      
-      if (cameraStarted) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        if (videoRef.current) videoRef.current.srcObject = stream;
         setIsLive(true);
         startTimeRef.current = new Date();
-        setDiagnosticText("Initialisation du tunnel sécurisé...");
-
-        try {
-          await liveService.connect(mode, (data) => {
-            setDiagnosticText(data.hypothesis);
-            setCurrentDiagnostic(data);
-          });
-
-          frameIntervalRef.current = window.setInterval(() => {
-            captureAndSendFrame();
-          }, 1600);
-        } catch (error) {
-          setDiagnosticText("Échec réseau. Mode Edge asynchrone activé.");
-        }
-      }
+        await liveService.connect(mode, (data) => {
+          setDiagnosticText(data.hypothesis);
+          setCurrentDiagnostic(data);
+        });
+        frameIntervalRef.current = window.setInterval(captureAndSendFrame, 1600);
+      } catch (err) { setDiagnosticText("Erreur Caméra."); }
     }
   };
 
-  const forceTerminate = () => {
-    if (frameIntervalRef.current) {
-      window.clearInterval(frameIntervalRef.current);
-      frameIntervalRef.current = null;
-    }
+  const closeAndGenerateReport = async (forcedReason?: string) => {
+    if (frameIntervalRef.current) window.clearInterval(frameIntervalRef.current);
     liveService.terminate();
     const stream = videoRef.current?.srcObject as MediaStream;
-    stream?.getTracks().forEach(track => track.stop());
+    stream?.getTracks().forEach(t => t.stop());
     setIsLive(false);
-  };
-
-  const closeAndGenerateReport = async () => {
-    forceTerminate();
     
-    const endTime = new Date();
     const reportData = {
-      mode: mode,
-      technicianId: "TECH-M5-001",
-      location: "Zone d'Intervention",
-      equipmentId: "EQ-INCONNU",
-      safetyChecks: checks,
-      diagnostic: currentDiagnostic,
-      startTime: startTimeRef.current || endTime,
-      endTime: endTime
+      mode, technicianId: "TECH-M5-001", location: "Atelier", equipmentId: "EQ-INCONNU",
+      safetyChecks: checks, diagnostic: forcedReason ? { ...currentDiagnostic, hypothesis: forcedReason } : currentDiagnostic,
+      startTime: startTimeRef.current || new Date(), endTime: new Date()
     };
-
-    const generatedReport = await reportService.generateMaintenanceReport(reportData);
-    setFinalReport(generatedReport);
+    const report = await reportService.generateMaintenanceReport(reportData);
+    setFinalReport(report);
     setSessionClosed(true);
   };
 
-  // ==========================================
-  // ÉCRAN DE CLÔTURE (GMAO & PDF)
-  // ==========================================
   if (sessionClosed && finalReport) {
     return (
-      <div className="fixed inset-0 bg-[#050505] z-50 flex flex-col p-6 overflow-y-auto font-sans">
+      <div className="fixed inset-0 bg-[#050505] z-50 flex flex-col p-6 overflow-y-auto">
         <div className="max-w-2xl mx-auto w-full mt-8">
           <div className="flex items-center gap-4 mb-8 border-b border-[#DC2626]/30 pb-4">
             <CheckSquare className="text-[#DC2626] w-10 h-10" />
-            <div>
-              <h1 className="text-white font-black text-2xl uppercase tracking-widest">Intervention Clôturée</h1>
-              <p className="text-gray-400 text-xs font-mono mt-1">ID: {finalReport.metadata.reportId}</p>
-            </div>
+            <h1 className="text-white font-black text-2xl uppercase tracking-widest">Intervention Clôturée</h1>
           </div>
-
-          <div className="space-y-6">
-            <div className="bg-black border border-white/10 rounded-xl p-5 shadow-[0_0_15px_rgba(220,38,38,0.1)]">
-              <h3 className="text-[#DC2626] font-bold text-xs uppercase tracking-widest mb-4">Indicateurs de Performance (KPI)</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#121212] p-4 rounded-lg border border-white/5">
-                  <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider block mb-1">MTTR (Temps de réparation)</span>
-                  <span className="text-white font-mono text-lg">{finalReport.metadata.duration}</span>
-                </div>
-                <div className="bg-[#121212] p-4 rounded-lg border border-white/5">
-                  <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider block mb-1">{finalReport.context.classificationLabel}</span>
-                  <span className="text-white font-mono text-xs leading-tight block">{finalReport.context.classificationValue}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-black border border-white/10 rounded-xl p-5">
-              <h3 className="text-[#DC2626] font-bold text-xs uppercase tracking-widest mb-3">Synthèse Diag. IA</h3>
-              <p className="text-gray-300 text-sm italic border-l-2 border-[#DC2626] pl-3">
-                "{finalReport.diagnostic.hypothesis}"
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              
-              {/* INTÉGRATION DU BOUTON EN LAZY LOADING */}
-              <Suspense fallback={
-                <div className="flex-1 bg-[#DC2626]/50 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 animate-pulse">
-                  Chargement Moteur PDF...
-                </div>
-              }>
-                <GaragePdfButton reportData={finalReport} />
-              </Suspense>
-              
-              <button
-                onClick={onExit}
-                className="flex-1 bg-[#121212] border border-white/10 text-white py-4 px-6 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-colors hover:bg-[#1a1a1a] active:scale-95"
-              >
-                <LogOut size={18} /> Quitter le terminal
-              </button>
-            </div>
+          <div className="bg-black border border-white/10 rounded-xl p-5 mb-6">
+            <h3 className="text-[#DC2626] font-bold text-xs uppercase mb-3">Synthèse Diag. IA</h3>
+            <p className="text-gray-300 text-sm italic">"{finalReport.diagnostic.hypothesis}"</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {currentTier === 'FREE' ? (
+              <button disabled className="flex-1 bg-gray-900 text-gray-500 py-4 rounded-xl font-black uppercase text-xs flex items-center justify-center gap-3"><Lock size={18}/> PDF Verrouillé</button>
+            ) : (
+              <Suspense fallback={<div className="animate-pulse">Chargement...</div>}><GaragePdfButton reportData={finalReport} /></Suspense>
+            )}
+            <button onClick={onExit} className="flex-1 bg-[#121212] text-white py-4 rounded-xl font-black uppercase text-xs flex items-center justify-center gap-3"><LogOut size={18}/> Quitter</button>
           </div>
         </div>
       </div>
     );
   }
 
-  // ==========================================
-  // COCKPIT IA (Caméra)
-  // ==========================================
   return (
-    <div className="fixed inset-0 bg-black flex flex-col font-sans overflow-hidden">
-      <div className="relative flex-1 bg-[#0a0a0a] overflow-hidden">
-        <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-60" />
-        <canvas ref={canvasRef} className="hidden" />
-        <div className="absolute inset-0 border-[1px] border-white/5 pointer-events-none grid grid-cols-3 grid-rows-3" />
+    <div className="fixed inset-0 bg-black flex flex-col overflow-hidden select-none">
+      <div className="relative flex-1 bg-[#050505] overflow-hidden">
+        <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-70" />
         
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border border-[#DC2626]/20 rounded-full flex items-center justify-center">
-            <div className="w-1 h-1 bg-[#DC2626] rounded-full shadow-[0_0_10px_#DC2626]" />
-        </div>
-
-        <div className="absolute top-6 left-6 right-6 flex justify-between items-start pointer-events-none z-10">
-          <div className="bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl">
-            <h1 className="text-white font-black text-[10px] uppercase tracking-[0.2em]">Locate Garage</h1>
-            <p className="text-[9px] font-bold uppercase mt-1 italic text-[#DC2626]">M5 - Live {mode}</p>
+        {/* HUD SUPÉRIEUR */}
+        <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-30">
+          <div className="bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/10">
+            <h1 className="text-white font-black text-[12px] uppercase tracking-[0.3em]">LOCATE {mode.toUpperCase()}</h1>
+            {currentTier === 'FREE' && freeTimeLeft !== null && (
+              <div className="flex items-center gap-1 mt-1 text-[#FF6600]">
+                <Clock size={10} /><span className="font-mono text-[10px] font-black">{Math.floor(freeTimeLeft / 60)}:{(freeTimeLeft % 60).toString().padStart(2, '0')}</span>
+              </div>
+            )}
           </div>
-          {isLive && (
-            <div className="bg-red-600/90 px-3 py-1 rounded-full animate-pulse border border-red-400">
-              <span className="text-white font-black text-[10px] uppercase tracking-widest">Vision Live active</span>
-            </div>
-          )}
         </div>
 
+        {/* HUD LATÉRAL DYNAMIQUE */}
+        {isLive && (
+          <div className="absolute left-6 top-[20vh] z-30 flex flex-col gap-3">
+            {mode === 'mecanique' ? (
+              <div className="bg-black/60 backdrop-blur-md border-l-4 border-[#DC2626] p-3 rounded-r-xl">
+                <p className="text-[8px] font-black text-[#DC2626] uppercase">Brake Pressure</p>
+                <p className="text-xl text-white font-mono font-black">7.5 BAR</p>
+              </div>
+            ) : (
+              <div className="bg-black/60 backdrop-blur-md border-l-4 border-[#00E5FF] p-3 rounded-r-xl">
+                <p className="text-[8px] font-black text-[#00E5FF] uppercase">Pump Vib.</p>
+                <p className="text-xl text-white font-mono font-black">4.2 mm/s</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MODALE SAFETY GATES (C'est ICI que tes variables sont lues !) */}
         {showSafety && (
-          <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl p-8 flex flex-col justify-center">
+          <div className="absolute inset-0 z-50 bg-[#050505]/95 backdrop-blur-2xl p-8 flex flex-col justify-center">
             <div className="max-w-md mx-auto w-full space-y-6">
               <div className="text-center">
                 <AlertTriangle className="mx-auto mb-4 text-[#DC2626]" size={40} />
-                <h2 className="text-white font-black text-lg uppercase tracking-tight italic">Validation des Risques</h2>
-                <p className="text-gray-500 text-[10px] uppercase tracking-widest mt-2">
-                  Check-list obligatoire ({mode === 'maintenance' ? 'AFNOR Niveau 2/3' : 'Atelier'})
-                </p>
+                <h2 className="text-white font-black text-lg uppercase">Validation Sécurité</h2>
+                {cooldownMsg && <p className="text-[#FF6600] text-xs font-bold mt-2 animate-pulse">{cooldownMsg}</p>}
               </div>
-
               <div className="space-y-2">
                 {checks.map(check => (
-                  <button
-                    key={check.id}
-                    onClick={() => setChecks(prev => prev.map(c => c.id === check.id ? {...c, validated: !c.validated} : c))}
-                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${
-                      check.validated ? 'bg-[#DC2626]/10 border-[#DC2626] text-white' : 'bg-white/5 border-white/5 text-gray-500'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      {check.icon}
-                      <span className="text-[10px] font-black uppercase tracking-widest">{check.label}</span>
-                    </div>
+                  <button key={check.id} onClick={() => setChecks(prev => prev.map(c => c.id === check.id ? {...c, validated: !c.validated} : c))}
+                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${check.validated ? 'bg-[#DC2626]/10 border-[#DC2626] text-white' : 'bg-white/5 border-white/5 text-gray-500'}`}>
+                    <div className="flex items-center gap-4">{check.icon}<span className="text-[10px] font-black uppercase">{check.label}</span></div>
                     {check.validated && <CheckCircle2 size={18} className="text-[#DC2626]" />}
                   </button>
                 ))}
               </div>
-
-              <button onClick={onExit} className="w-full py-3 mt-4 text-gray-500 text-xs uppercase font-bold tracking-widest underline decoration-gray-700 underline-offset-4 active:text-white">
-                Retour à l'aiguillage
-              </button>
-
-              <button
-                disabled={!allValidated}
-                onClick={startLiveSession}
-                className={`w-full py-5 rounded-2xl mt-2 font-black text-[10px] uppercase tracking-[0.3em] transition-all ${
-                  allValidated ? 'bg-white text-black active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-gray-900 text-gray-700'
-                }`}
-              >
+              <button disabled={!allValidated || cooldownMsg !== null} onClick={startLiveSession}
+                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] ${allValidated && !cooldownMsg ? 'bg-white text-black' : 'bg-gray-900 text-gray-700'}`}>
                 Ouvrir Tunnel Expertise
               </button>
             </div>
@@ -2303,32 +2344,54 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         )}
       </div>
 
-      <div className="h-[28vh] bg-[#050505] border-t border-white/5 p-6 flex flex-col gap-4 z-20">
-        <div className="flex-1 bg-black rounded-lg border border-white/5 p-4 relative">
-          <p className="text-[#DC2626] font-mono text-[9px] leading-relaxed uppercase tracking-widest">
-            {diagnosticText}
+      {/* CONSOLE IA INFÉRIEURE : COMMANDES DE TERRAIN */}
+      <div className="h-[28vh] bg-[#050505] border-t border-white/5 p-6 flex flex-col items-center justify-between z-40 relative">
+        
+        {/* TERMINAL DE TEXTE IA */}
+        <div className="w-full bg-black/40 rounded-xl border border-white/5 p-4 min-h-[80px]">
+          <p className="text-[#FF6600] font-mono text-[10px] uppercase tracking-wider">
+            {">"} {diagnosticText}
           </p>
         </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <button className="flex-1 bg-[#121212] py-4 rounded-xl flex flex-col items-center gap-1 border border-white/5 active:scale-95">
-            <Camera size={18} className="text-white" />
-            <span className="text-[8px] text-white font-black uppercase">Scan {mode === 'maintenance' ? 'Folio' : 'Pièce'}</span>
-          </button>
-          
-          <button className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all ${
-            isLive ? 'bg-[#DC2626] animate-pulse scale-110' : 'bg-gray-900'
-          }`}>
-            <Mic size={32} className="text-white" />
-          </button>
+        {/* BARRE D'ACTIONS TACTIQUES */}
+        <div className="flex items-center justify-around w-full mt-4">
+           
+           {/* BOUTON CAMERA : SCAN MANUEL OCR / PIÈCE */}
+           <button 
+             onClick={() => setDiagnosticText("Capture manuelle pour analyse OCR...")}
+             className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
+           >
+              <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-[#FF6600]/50 transition-colors">
+                <Camera size={20} className="text-white group-hover:text-[#FF6600]" />
+              </div>
+              <span className="text-[8px] font-black uppercase text-white/60 tracking-tighter">
+                Scan {mode === 'maintenance' ? 'Folio' : 'Pièce'}
+              </span>
+           </button>
 
-          <button
-            onClick={closeAndGenerateReport}
-            className="flex-1 bg-[#121212] py-4 rounded-xl flex flex-col items-center gap-1 border border-white/5 active:scale-95"
-          >
-            <X size={18} className="text-red-500" />
-            <span className="text-[8px] text-red-500 font-black uppercase">Clôture</span>
-          </button>
+           {/* BOUTON CENTRAL : PTT (PUSH TO TALK) */}
+           <div className="relative">
+              <button 
+                className={`w-24 h-24 rounded-full flex flex-col items-center justify-center border-b-4 transition-all active:scale-95 shadow-2xl ${
+                  isLive ? 'bg-[#FF6600] border-orange-800' : 'bg-gray-900 border-black'
+                }`}
+              >
+                <Mic size={32} className="text-white" />
+                <span className="text-[8px] font-black text-white uppercase mt-1">PTT</span>
+              </button>
+           </div>
+
+           {/* BOUTON CLÔTURE */}
+           <button 
+             onClick={() => closeAndGenerateReport()} 
+             className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
+           >
+              <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
+                <X size={20} className="text-[#DC2626]" />
+              </div>
+              <span className="text-[8px] font-black uppercase text-[#DC2626] tracking-tighter">Fin Diag.</span>
+           </button>
         </div>
       </div>
     </div>
@@ -2425,7 +2488,12 @@ import React, { useState } from 'react';
 import { Factory, Wrench, ChevronRight } from 'lucide-react';
 import LiveAssistant from '../components/LiveAssistant';
 
-const GarageDashboard: React.FC = () => {
+
+interface GarageDashboardProps {
+  onBack?: () => void;
+}
+
+const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<'menu' | 'maintenance' | 'mecanique'>('menu');
 
   if (activeMode !== 'menu') {
@@ -2435,10 +2503,17 @@ const GarageDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col md:flex-row overflow-hidden font-sans">
       
-      {/* Header HUD */}
-      <div className="absolute top-6 left-6 z-10 pointer-events-none">
-        <h1 className="text-white font-black text-xl tracking-widest uppercase">Locate Garage</h1>
-        <p className="text-red-600 text-[10px] font-bold uppercase tracking-widest mt-1">Terminal de Diagnostic IA</p>
+      {/* Header HUD & Retour */}
+      <div className="absolute top-6 left-6 z-10 pointer-events-auto flex items-start gap-4">
+        {onBack && (
+          <button onClick={onBack} className="w-12 h-12 bg-black/50 backdrop-blur border border-white/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+            <img src="/icon-return.png" alt="Retour" className="w-[60%] h-[60%] object-contain opacity-80" />
+          </button>
+        )}
+        <div className="pointer-events-none">
+          <h1 className="text-white font-black text-xl tracking-widest uppercase">Locate Garage</h1>
+          <p className="text-red-600 text-[10px] font-bold uppercase tracking-widest mt-1">Terminal de Diagnostic IA</p>
+        </div>
       </div>
 
       {/* 🏭 BOUTON 1 : MAINTENANCE INDUSTRIELLE */}

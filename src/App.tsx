@@ -3,24 +3,29 @@ import { get, set } from 'idb-keyval';
 import type { InventoryItem } from './types';
 import { useUserTier } from './core/security/useUserTier';
 
+// NOUVEAUX IMPORTS SUPABASE & AUTH
+import AuthShield from './core/ui/AuthShield';
+import { supabase } from './core/security/supabaseClient';
+
 import Hub from './core/ui/Hub';
 import Logo from './core/ui/Logo';
-import { Scanner } from './core/camera/Scanner';
-
 import HomeMenu from './modules/home/components/HomeMenu';
 import Dashboard from './modules/home/views/Dashboard';
 import Library from './modules/home/components/Library';
+import { Scanner } from './core/camera/Scanner';
 import Search from './modules/home/components/Search';
 import { SettingsPage } from './modules/home/views/SettingsPage';
 import ValidationSas from './modules/home/views/ValidationSas';
 import ToolDetail from './modules/home/components/ToolDetail';
 import type { AIScanResult } from './modules/home/views/ValidationSas';
 
-import GarageDashboard from './modules/garage/views/GarageDashboard';
-
-type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail' | 'garage';
+type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
 
 const App = () => {
+  // ÉTATS D'AUTHENTIFICATION (NOUVEAU)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
   const [view, setView] = useState<ViewState>('hub');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
@@ -29,6 +34,21 @@ const App = () => {
   const [pendingItems, setPendingItems] = useState<AIScanResult[]>([]);
   const { currentTier } = useUserTier();
 
+  // VERIFICATION DE LA SESSION SUPABASE (NOUVEAU)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      setIsAuthChecking(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // CHARGEMENT DE LA BASE DE DONNEES LOCALE
   useEffect(() => {
     get('locate_systems_db').then((savedItems: InventoryItem[] | undefined) => {
       if (savedItems) setInventory(savedItems);
@@ -54,7 +74,6 @@ const App = () => {
     }
   };
 
-  // LA FONCTION MANQUANTE EST ICI :
   const handleUpdateTool = (updatedTool: InventoryItem) => {
     setInventory(prev => prev.map(item => item.id === updatedTool.id ? updatedTool : item));
     setSelectedTool(updatedTool);
@@ -65,11 +84,10 @@ const App = () => {
     setView('validation');
   };
 
- const handleValidatePending = (validatedItems: AIScanResult[]) => {
+  const handleValidatePending = (validatedItems: AIScanResult[]) => {
     const itemsToAdd: InventoryItem[] = validatedItems.map(item => ({
       id: crypto.randomUUID(),
       date: new Date().toLocaleString(),
-      // On utilise uniquement le nouveau vocabulaire strict (typography, brandColor)
       toolName: item.label || item.typography || 'Outil Inconnu',
       brand: item.brandColor || 'Marque N/A',
       category: item.categorie_id || 'main',
@@ -79,7 +97,7 @@ const App = () => {
       isConsumable: item.isConsumable,
       consumableLevel: item.consumableLevel,
       confidence: item.confidence ? item.confidence : undefined,
-      imageUrl: item.imageUrl // L'image est sauvegardée ici
+      imageUrl: item.imageUrl
     }));
 
     setInventory(prev => [...itemsToAdd, ...prev]);
@@ -98,6 +116,26 @@ const App = () => {
   };
   const currentModule = getActiveModule();
 
+  // ==========================================
+  // 🛡️ BOUCLIERS D'AUTHENTIFICATION
+  // La logique est bien placée AVANT le rendu HTML
+  // ==========================================
+  
+  if (isAuthChecking) {
+    return (
+      <div className="w-screen h-[100dvh] bg-[#050505] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-black border-t-[#FF6600] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthShield onSuccess={() => setIsAuthenticated(true)} />;
+  }
+
+  // ==========================================
+  // 🖥️ AFFICHAGE NORMAL DE L'APP
+  // ==========================================
   return (
     <main className="w-screen min-h-[100dvh] bg-[#121212] text-white font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
 
@@ -108,9 +146,9 @@ const App = () => {
       )}
 
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
-        {view === 'hub' && <Hub onSelectModule={(m: string) => { if (m === 'home' || m === 'garage') setView(m as ViewState); }} />}
+        {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
-        {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}
+
         {view === 'inventory' && (
           <Dashboard
             inventory={inventory}
@@ -138,8 +176,8 @@ const App = () => {
           <ToolDetail 
             tool={selectedTool} 
             onBack={() => setView('category_detail')} 
-            onUpdate={handleUpdateTool} // BRANCHEMENT SAUVEGARDE
-            onDelete={() => deleteTool(selectedTool.id)} // BRANCHEMENT SUPPRESSION
+            onUpdate={handleUpdateTool}
+            onDelete={() => deleteTool(selectedTool.id)}
           />
         )}
 

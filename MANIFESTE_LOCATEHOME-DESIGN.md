@@ -68,3 +68,20 @@ Pour garantir un affichage parfait sur tous les terminaux de terrain :
 2. **Dashboard Catégories (01A) :** Barres `#D3D3D3` avec numérotation `#FF6600` et fort contour noir (`-webkit-text-stroke: 1.5px #121212`).
 3. **Liste Outils (01A1) - "Accent Industriel" :** Cartes à fond `#1E1E1E` dotées d'une bordure latérale gauche épaisse orange (`border-l-4 border-[#FF6600]`). Pastilles de statuts dynamiques (Vert/Rouge).
 4. **Fiche Outil (01A-Detail) :** Plaque d'identité `#D3D3D3` couplée à un bloc de Spécifications Techniques `#1E1E1E` (intégrant le Numéro de Série) pour l'audit et l'assurance.
+
+🚀 MODULE M5 - COCKPIT TACTIQUE (V20)
+Identité Visuelle : "Rugged Industrial Interface"
+
+1. CODES COULEURS MÉTIERS
+   - MÉCANIQUE (Garage) : Accent #DC2626 (Rouge Alerte) | Énergie #FF6600
+   - MAINTENANCE (Industry) : Accent #00E5FF (Cyan) | Sécurité #FFB300 (Ambre)
+
+2. COMPOSANTS HUD (Overlays)
+   - Glassmorphism : Black 80% / Blur 12px / Border 1px white 10%
+   - Typographie : Monospace (JetBrains Mono / Roboto Mono) pour la data
+   - Bouton Maître : PTT (Push-To-Talk) Circulaire, Large (Thumb-Zone)
+
+3. LOGIQUE FREEMIUM (Bridage M5)
+   - Session Live : 120s max (Tier FREE)
+   - Cooldown : Progressif (5min > 20min > 60min > 24h)
+   - Verrouillage : PDF Export (Locked)

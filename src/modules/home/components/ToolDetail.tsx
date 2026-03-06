@@ -16,7 +16,7 @@ interface ToolDetailProps {
 const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelete }) => {
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTool, setEditedTool] = useState<any>(tool); // 'any' temporaire pour accepter les nouveaux champs (moteur, energie...)
+  const [editedTool, setEditedTool] = useState<any>(tool); 
 
   useEffect(() => {
     setEditedTool(tool);
@@ -36,6 +36,15 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
     setEditedTool((prev: any) => ({ ...prev, [field]: value }));
   };
 
+  // ==========================================
+  // LOGIQUE ANTI-REDONDANCE POUR LA MARQUE
+  // ==========================================
+  const brandName = tool.brand || 'Marque N/A';
+  // Si le nom de l'outil commence déjà par la marque (ex: "RYOBI RRS1801"), on enlève le mot "RYOBI" du titre principal pour éviter le doublon visuel.
+  const cleanToolName = tool.toolName.toLowerCase().startsWith(brandName.toLowerCase())
+    ? tool.toolName.substring(brandName.length).trim()
+    : tool.toolName;
+
   return (
     <div className="flex flex-col h-full bg-transparent">
 
@@ -44,23 +53,23 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
       {/* ========================================== */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         {isEditing ? (
-          /* BOUTON SAVE (Carré Orange / Texte Noir, dans la fiche de modification) */
-          <button onClick={handleSave} className="w-12 h-12 bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
+          /* BOUTON SAVE (Carré Orange / Texte Noir) - Hauteur alignée sur le retour */
+          <button onClick={handleSave} className="h-14 px-4 min-w-[3.5rem] bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
             <span className="text-black font-black text-[11px] uppercase tracking-widest text-center">Save</span>
           </button>
         ) : (
-          /* BOUTON ÉDITER (Carré sombre / Texte Blanc, en mode lecture) */
-          <button onClick={() => setIsEditing(true)} className="w-12 h-12 bg-[#1E1E1E] border border-white/10 rounded-xl flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.5)] active:scale-95 transition-transform">
-            <span className="text-white font-black text-[10px] uppercase tracking-widest text-center">Édit<br/>er</span>
+          /* BOUTON ÉDITER (Carré Orange / Texte Noir / Sans coupure) - Hauteur alignée sur le retour */
+          <button onClick={() => setIsEditing(true)} className="h-14 px-3 min-w-[3.5rem] bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
+            <span className="text-black font-black text-[11px] uppercase tracking-widest text-center">Éditer</span>
           </button>
         )}
 
-        {/* BOUTON RETOUR (Ton icône personnalisée) */}
+        {/* BOUTON RETOUR */}
         <button onClick={isEditing ? () => setIsEditing(false) : onBack} className="w-14 h-14 active:scale-90 transition-transform">
           <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain drop-shadow-lg" />
         </button>
       </div>
-      
+
       {/* ========================================== */}
       {/* CORPS DE LA FICHE (SCROLLABLE) */}
       {/* ========================================== */}
@@ -73,14 +82,9 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
           <div className="bg-[#1E1E1E] rounded-xl border-2 border-[#FF6600] p-5 shadow-[0_10px_30px_rgba(255,102,0,0.15)] flex flex-col gap-4 mb-6">
             <h3 className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(1rem,4vw,1.2rem)] border-b border-white/10 pb-2 flex justify-between items-center">
               Mode Édition
-              <span className="text-[10px] text-gray-500">Rapport d'intervention</span>
             </h3>
 
-            {/* Bouton de reprise photo manuelle (visuel pour le moment) */}
-            <button className="w-full bg-[#121212] border border-white/10 py-3 rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform mb-2">
-              <span className="text-xl">📷</span>
-              <span className="text-white text-[10px] font-black uppercase tracking-widest">Reprendre la photo (Manuel)</span>
-            </button>
+            {/* Le bouton caméra non-fonctionnel a été supprimé ici */}
 
             <div>
               <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Marque</label>
@@ -158,9 +162,9 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
                 <img src={categoryIcon} className="w-10 h-10 object-contain drop-shadow-md" alt="Catégorie" />
               </div>
               <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <h2 className="text-gray-400 font-black text-[10px] tracking-widest uppercase">{tool.brand || 'Marque N/A'}</h2>
+                <h2 className="text-gray-400 font-black text-[10px] tracking-widest uppercase">{brandName}</h2>
                 <h1 className="text-white font-black text-[clamp(1.1rem,4.5vw,1.4rem)] uppercase leading-tight truncate">
-                  {tool.toolName}
+                  {cleanToolName}
                 </h1>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="bg-[#FF6600]/20 text-[#FF6600] border border-[#FF6600]/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">

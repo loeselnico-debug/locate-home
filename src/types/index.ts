@@ -30,6 +30,7 @@ export interface Location {
 };
 
 export interface InventoryItem {
+  brand: string;
   id: string;
   toolName: string;
   location: string;

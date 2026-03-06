@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CATEGORIES } from '../../types';
-import { INDUSTRIAL_RULES } from './expertiseRules';
+import { INDUSTRIAL_RULES } from './expertisemetier/home';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey || "");

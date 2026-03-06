@@ -1,24 +1,24 @@
-🔧 🚛 LOCATE GARAGE | RÉFÉRENTIEL MÉCANIQUE VL / PL (M5)
-Date : 05 Mars 2026
-Statut : BIBLE MÉTIER - ARCHITECTURE "LIVE DIAGNOSTIC" 🟢
+🔧 🚛 LOCATE GARAGE | RÉFÉRENTIEL MÉTIER (M5)
+Statut : ARCHITECTURE "LIVE DIAGNOSTIC" 🟢
 Vision : "L'IA est le Chef d'Atelier embarqué : l'œil qui sécurise, l'oreille qui écoute, le cerveau qui décale la panne."
 
-📂 0. ORGANIGRAMME TECHNIQUE (ARCHITECTURE M5)
-Plaintext
-LOCATE-SYSTEMS/
-└── src/
-    ├── core/                       # M1 : TRONC COMMUN (Le Socle IA & Zéro-Trust)
-    │   └── ai/
-    │       └── vehicleLiveDiag.ts  # Analyseur Multimodal (OBD-II, J1939, Audio/Vidéo)
-    └── modules/
-        └── garage/                 # M6 : LOCATE GARAGE (L'Application Mécanique)
-            ├── components/         # Interfaces utilisateur
-            │   ├── PitStopLive.tsx # Le Cockpit d'Intervention (Vidéo, Data OBD en overlay)
-            │   └── SafetyGate.tsx  # Verrouillage Sécurité (LOTO, EPI, Habilitation)
-            ├── services/           # Logique métier et données
-            │   └── fleetReport.ts  # Générateur de Rapports (Norme UTAC, Carnet d'entretien)
-            └── views/              # Écrans principaux
-                └── FleetDash.tsx   # Tableau de Bord Flotte (Disponibilité, Alertes critiques)
+📂 ORGANIGRAMME TECHNIQUE RÉEL (MODULE GARAGE & CORE M5)
+
+src/modules/garage/
+├── components/
+│   ├── GaragePdfButton.tsx  # Bouton d'export PDF isolé (Lazy Loading pour perfs)
+│   ├── GarageReport.tsx     # Template du rapport d'intervention (GMAO & Ordre de Réparation)
+│   └── LiveAssistant.tsx    # Cockpit Live IA (Flux Caméra, Safety Gates, Terminal Diagnostic)
+├── services/
+│   └── reportService.ts     # Formatage des données de clôture (MTTR, AFNOR / Mécanique)
+└── views/
+    └── GarageDashboard.tsx  # Menu d'aiguillage (Maintenance Industrielle vs Mécanique)
+
+src/core/ai/
+├── expertisemetier/
+│   └── mecanique.ts         # BIBLE MÉTIER : Règles GARAGE_M5_RULES (Sécurité, Couples, Thermique, J1939)
+├── liveService.ts           # Tunnel WebSocket sécurisé (Gemini Bidi Bêta)
+└── vehicleLiveDiag.ts       # Moteur de Sécurité Live M5 (Validation visuelle EPI/Levage)
 
 
 🎯 1. VISION ET BUSINESS MODEL (GO-TO-MARKET)

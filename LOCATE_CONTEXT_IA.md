@@ -208,7 +208,7 @@ export const validateLocateObject = (data: ScanResult) => {
 ```
 
 // ==========================================
-// 📂 FICHIER : \src\core\ai\expertiseRules.ts
+// 📂 FICHIER : \src\core\ai\expertisemetier\home.ts
 // ==========================================
 
 ```tsx
@@ -295,13 +295,84 @@ export const INDUSTRIAL_RULES = {
 ```
 
 // ==========================================
+// 📂 FICHIER : \src\core\ai\expertisemetier\maintenance.ts
+// ==========================================
+
+```tsx
+
+```
+
+// ==========================================
+// 📂 FICHIER : \src\core\ai\expertisemetier\mecanique.ts
+// ==========================================
+
+```tsx
+export const GARAGE_M5_RULES = {
+  // 1. PROTOCOLE DE COMMUNICATION (STRICT)
+  comm_logic: {
+    format: "Étape [X] : [Action]. Dis 'Fait' quand terminé.",
+    style: "Zéro courtoisie, isolation du doute, ordre de nettoyage lentille si flou."
+  },
+
+  // 2. SAFETY GATES (VETO IA)
+  safety_veto: {
+    levage: "Confirmation visuelle CHANDELLES/BÉQUILLES obligatoire. Veto si hydraulique seul.",
+    ve_hvb: "Si > 60V DC / 25V AC : Exiger Gants Classe 0 + Sur-gants + Habilitation B1VL/B2VL.",
+    hydraulique: "Consignation PTO (Prise de mouvement) obligatoire avant flexible."
+  },
+
+  // 3. DIAGNOSTIC J1939 (BUS CAN PL)
+  j1939_logic: {
+    fmi_codes: {
+      3: "Court-circuit au pôle + (Vcc)",
+      4: "Court-circuit à la masse (GND)",
+      5: "Circuit ouvert (Fil coupé/débranché)"
+    },
+    utac_braking: {
+      target_pressure: "7.2 à 8.1 bars",
+      min_test_pressure: "6.2 à 6.9 bars",
+      alert_threshold: "Dessiccateur anormal si < 7.2 bars"
+    }
+  },
+
+  // 4. COUPLES DE SERRAGE (SÉCURITÉ LIAISON AU SOL)
+  torque_specs: {
+    volvo_fh_fm: "610 Nm",
+    scania_mercedes_daf: "600 Nm",
+    renault_t: "450-500 Nm",
+    post_service: "Alerte resserrage obligatoire à 100 km"
+  },
+
+  // 5. THERMIQUE & COLORIMÉTRIE (VISION HDR)
+  thermal_analysis: {
+    scale: [
+      { color: "Jaune Paille", temp: "220°C", status: "Dureté Max / Cassant" },
+      { color: "Bleu", temp: "295°C", status: "DANGER : Acier détrempé / Remplacement obligatoire" },
+      { color: "Gris", temp: ">350°C", status: "CRITIQUE : Structure compromise" }
+    ],
+    hydraulique_tactile: {
+      "60C": "Tolérable 10s",
+      "70C": "Tolérable 3s",
+      "80C": "Douleur aiguë / Brûlure / Veto IA"
+    }
+  },
+
+  // 6. AUDIO SPECTRAL (SIGNATURES)
+  acoustic_signatures: {
+    claquement: "Injecteur / Embiellage / Distribution",
+    sifflement: "Fuite air (EBS) / Turbo / Cavitation pompe"
+  }
+};
+```
+
+// ==========================================
 // 📂 FICHIER : \src\core\ai\geminiService.ts
 // ==========================================
 
 ```tsx
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CATEGORIES } from '../../types';
-import { INDUSTRIAL_RULES } from './expertiseRules';
+import { INDUSTRIAL_RULES } from './expertisemetier/home';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey || "");
@@ -402,7 +473,7 @@ export const geminiService = {
  * Standard : OSA/CBM & RGPD Zéro-Trace
  */
 
-import { INDUSTRIAL_RULES } from './expertiseRules';
+import { INDUSTRIAL_RULES } from './expertisemetier/home';
 
 export interface LiveDiagnostic {
   hypothesis: string;
@@ -506,6 +577,49 @@ class LiveService {
 }
 
 export const liveService = new LiveService();
+```
+
+// ==========================================
+// 📂 FICHIER : \src\core\ai\vehicleLiveDiag.ts
+// ==========================================
+
+```tsx
+/**
+ * LOCATE GARAGE - Moteur de Sécurité Live (M5)
+ * Rôle : Validation visuelle avant intervention.
+ */
+
+export interface SafetyCheckResult {
+  authorized: boolean;
+  missingElement?: string;
+  alertLevel: 'INFO' | 'WARNING' | 'CRITICAL';
+}
+
+export const checkMechanicalSafety = (
+  mode: 'levage' | 'electrique' | 'hydraulique',
+  visualTags: string[]
+): SafetyCheckResult => {
+  
+  if (mode === 'levage') {
+    const hasChandelles = visualTags.includes('chandelle_securite');
+    return {
+      authorized: hasChandelles,
+      missingElement: hasChandelles ? undefined : "CHANDELLES DE SÉCURITÉ NON DÉTECTÉES",
+      alertLevel: hasChandelles ? 'INFO' : 'CRITICAL'
+    };
+  }
+
+  if (mode === 'electrique') {
+    const hasGants = visualTags.includes('gants_classe_0');
+    return {
+      authorized: hasGants,
+      missingElement: hasGants ? undefined : "GANTS ISOLANTS CLASSE 0 OBLIGATOIRES",
+      alertLevel: 'CRITICAL'
+    };
+  }
+
+  return { authorized: true, alertLevel: 'INFO' };
+};
 ```
 
 // ==========================================
@@ -4043,4 +4157,28 @@ export interface InventoryItem {
 
 // Alias de compatibilité pour les anciens fichiers (à supprimer en V2.0)
 export type ToolMemory = InventoryItem;
+
+// --- EXTENSION LOCATE GARAGE (M5) ---
+
+export type DiagnosticMode = 'maintenance' | 'mecanique';
+
+export interface J1939DTC {
+  spn: number; // Suspect Parameter Number
+  fmi: number; // Failure Mode Identifier (3, 4, 5...)
+  label: string;
+}
+
+export interface MetalThermalProfile {
+  zone: 1 | 2 | 3 | 4 | 5;
+  colorName: string;
+  tempCelsius: number;
+  isCritical: boolean;
+  instruction: string;
+}
+
+export const METAL_ZONES: Record<number, MetalThermalProfile> = {
+  1: { zone: 1, colorName: "Jaune Paille", tempCelsius: 220, isCritical: false, instruction: "Dureté max, attention au glaçage." },
+  4: { zone: 4, colorName: "Bleu", tempCelsius: 295, isCritical: true, instruction: "DANGER : Acier détrempé. Remplacement obligatoire." },
+  5: { zone: 5, colorName: "Gris", tempCelsius: 350, isCritical: true, instruction: "DESTRUCTION : Structure compromise." }
+};
 ```

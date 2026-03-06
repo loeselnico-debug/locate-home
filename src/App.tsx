@@ -5,17 +5,20 @@ import { useUserTier } from './core/security/useUserTier';
 
 import Hub from './core/ui/Hub';
 import Logo from './core/ui/Logo';
+import { Scanner } from './core/camera/Scanner';
+
 import HomeMenu from './modules/home/components/HomeMenu';
 import Dashboard from './modules/home/views/Dashboard';
 import Library from './modules/home/components/Library';
-import { Scanner } from './core/camera/Scanner';
 import Search from './modules/home/components/Search';
 import { SettingsPage } from './modules/home/views/SettingsPage';
 import ValidationSas from './modules/home/views/ValidationSas';
 import ToolDetail from './modules/home/components/ToolDetail';
 import type { AIScanResult } from './modules/home/views/ValidationSas';
 
-type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
+import GarageDashboard from './modules/garage/views/GarageDashboard';
+
+type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail' | 'garage';
 
 const App = () => {
   const [view, setView] = useState<ViewState>('hub');
@@ -105,9 +108,9 @@ const App = () => {
       )}
 
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
-        {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
+        {view === 'hub' && <Hub onSelectModule={(m: string) => { if (m === 'home' || m === 'garage') setView(m as ViewState); }} />}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
-
+        {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}
         {view === 'inventory' && (
           <Dashboard
             inventory={inventory}

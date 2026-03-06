@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { Factory, Wrench, ChevronRight } from 'lucide-react';
 import LiveAssistant from '../components/LiveAssistant';
 
-const GarageDashboard: React.FC = () => {
+
+interface GarageDashboardProps {
+  onBack?: () => void;
+}
+
+const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<'menu' | 'maintenance' | 'mecanique'>('menu');
 
   if (activeMode !== 'menu') {
@@ -12,10 +17,17 @@ const GarageDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col md:flex-row overflow-hidden font-sans">
       
-      {/* Header HUD */}
-      <div className="absolute top-6 left-6 z-10 pointer-events-none">
-        <h1 className="text-white font-black text-xl tracking-widest uppercase">Locate Garage</h1>
-        <p className="text-red-600 text-[10px] font-bold uppercase tracking-widest mt-1">Terminal de Diagnostic IA</p>
+      {/* Header HUD & Retour */}
+      <div className="absolute top-6 left-6 z-10 pointer-events-auto flex items-start gap-4">
+        {onBack && (
+          <button onClick={onBack} className="w-12 h-12 bg-black/50 backdrop-blur border border-white/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+            <img src="/icon-return.png" alt="Retour" className="w-[60%] h-[60%] object-contain opacity-80" />
+          </button>
+        )}
+        <div className="pointer-events-none">
+          <h1 className="text-white font-black text-xl tracking-widest uppercase">Locate Garage</h1>
+          <p className="text-red-600 text-[10px] font-bold uppercase tracking-widest mt-1">Terminal de Diagnostic IA</p>
+        </div>
       </div>
 
       {/* 🏭 BOUTON 1 : MAINTENANCE INDUSTRIELLE */}

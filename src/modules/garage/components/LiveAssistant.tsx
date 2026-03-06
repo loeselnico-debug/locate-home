@@ -29,12 +29,21 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const frameIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
-  const [checks, setChecks] = useState([
-    { id: 'loto', label: 'Consignation LOTO effectuée', icon: <Power size={18} />, validated: false },
-    { id: 'vat', label: 'VAT (Absence Tension)', icon: <Zap size={18} />, validated: false },
-    { id: 'h2s', label: 'Détecteur H2S & Gaz actif', icon: <Wind size={18} />, validated: false },
-    { id: 'epi', label: 'EPI adéquats portés', icon: <Shield size={18} />, validated: false },
-  ]);
+  // Aiguillage dynamique des Safety Gates selon le métier (Bible M5)
+  const [checks, setChecks] = useState(
+    mode === 'maintenance'
+      ? [
+          { id: 'loto', label: 'Consignation LOTO effectuée', icon: <Power size={18} />, validated: false },
+          { id: 'vat', label: 'VAT (Absence Tension)', icon: <Zap size={18} />, validated: false },
+          { id: 'h2s', label: 'Détecteur H2S & Gaz actif', icon: <Wind size={18} />, validated: false },
+          { id: 'epi', label: 'EPI adéquats portés', icon: <Shield size={18} />, validated: false },
+        ]
+      : [
+          { id: 'levage', label: 'Chandelles / Béquilles en place', icon: <Shield size={18} />, validated: false },
+          { id: 'pto', label: 'Consignation PTO (Prise de mouvement)', icon: <Power size={18} />, validated: false },
+          { id: 've', label: 'EPI VE (Gants Classe 0 si > 60V)', icon: <Zap size={18} />, validated: false },
+        ]
+  );
 
   const allValidated = checks.every(c => c.validated);
 

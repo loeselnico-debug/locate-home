@@ -1,10 +1,12 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.1)
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.2 - Architecture Cloisonnée)
  * Architecture : WebSocket Multimodal (Gemini 2.0 Flash)
- * Standard : OSA/CBM & RGPD Zéro-Trace
+ * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
-import { INDUSTRIAL_RULES } from './expertiseRules';
+// IMPORT STRICTEMENT SÉPARÉ DES BIBLES MÉTIERS
+import { GARAGE_M5_RULES } from './expertisemetier/mecanique';
+import { MAINTENANCE_M5_RULES } from './expertisemetier/maintenance';
 
 export interface LiveDiagnostic {
   hypothesis: string;
@@ -26,22 +28,42 @@ class LiveService {
       throw new Error("Impossible d'établir le tunnel sécurisé.");
     }
 
+    // 2. AIGUILLAGE DU CERVEAU (ZÉRO CROSS-CONTAMINATION)
+    let role = "";
+    let rulesContext = "";
+
+    if (mode === 'mecanique') {
+      role = "Expert Mécanique Auto & Poids Lourds (OBD2, J1939, UTAC, Thermique)";
+      rulesContext = JSON.stringify(GARAGE_M5_RULES, null, 2);
+    } else if (mode === 'maintenance') {
+      role = "Expert Maintenance Industrielle (AFNOR, OSA/CBM, LOTO)";
+      rulesContext = JSON.stringify(MAINTENANCE_M5_RULES, null, 2);
+    }
+
+    // Injection de la directive militaire "Zéro-Fioriture"
     const systemInstruction = `
-      Tu es l'Expert de Maintenance Industrielle LOCATE. 
-      Mode actuel : ${mode.toUpperCase()}.
-      Protocole de sécurité strict : ${INDUSTRIAL_RULES.security.epi_alert}
-      Utilise la méthode AMDEC pour le diagnostic.
+      Tu es l'${role} du système LOCATE. 
+      Mode actif : ${mode.toUpperCase()}.
+      
+      VOICI TA BIBLE MÉTIER STRICTE À APPLIQUER ABSOLUMENT :
+      ${rulesContext}
+
+      PROTOCOLE DE COMMUNICATION OBLIGATOIRE :
+      - Zéro phrase de courtoisie. Va à l'essentiel.
+      - Format exigé : "Étape [X] : [Action]. Dis 'Fait' quand c'est terminé."
+      - Isolement du doute : Aucune extrapolation. Si la vidéo est floue, dis : "Visuel non conforme. Nettoie la lentille."
+      - Droit de veto absolu : Si une condition de sécurité manque (levage sans chandelle, tension haute sans EPI), bloque le diagnostic immédiatement.
     `;
 
     try {
-      // 2. Injection de la clé directement dans l'URL (Requis par Gemini WebSocket)
+      // 3. Établissement du tunnel WebSocket
       const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BiDiGenerateContent?key=${apiKey}`;
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
-        console.log("🔗 Tunnel Live LOCATE établi.");
+        console.log(`🔗 Tunnel Live LOCATE établi en mode : ${mode.toUpperCase()}`);
         
-        // 3. Envoi du Setup Message avec le Manifeste Métier
+        // 4. Envoi du Setup Message avec le Manifeste Métier spécifique au mode
         const setupMessage = {
           setup: {
             model: "models/gemini-2.0-flash",
@@ -57,14 +79,15 @@ class LiveService {
         try {
           const response = JSON.parse(event.data);
           
-          // Log brut pour surveiller les retours complexes de l'API Bidi
+          // Log brut pour surveiller les retours de l'API Bidi
           console.log("Trame IA reçue :", response);
 
-          // Remplacement du hardcoding par un retour générique en attendant le parsing complet des 'serverContent'
+          // En attendant le vrai parsing complexe des 'serverContent' de Gemini Bidi, 
+          // on garde ce stub fonctionnel pour que l'UI ne crashe pas.
           onMessage({
-            hypothesis: "Analyse du flux visuel en cours...",
+            hypothesis: `Analyse du flux visuel ${mode.toUpperCase()} en cours...`,
             confidence: 0.90,
-            nextStep: "Attente de votre directive vocale ou visuelle."
+            nextStep: "Attente de données capteurs ou visuelles."
           });
         } catch (error) {
           console.error("Erreur de lecture de la trame IA :", error);
@@ -79,7 +102,6 @@ class LiveService {
 
   sendVideoFrame(canvas: HTMLCanvasElement) {
     if (this.socket?.readyState === WebSocket.OPEN) {
-      // 4. Nettoyage du signal : Gemini refuse l'en-tête "data:image/jpeg;base64,"
       const base64Data = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
       
       const message = {

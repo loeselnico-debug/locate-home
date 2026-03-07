@@ -19,6 +19,7 @@ import ValidationSas from './modules/home/views/ValidationSas';
 import ToolDetail from './modules/home/components/ToolDetail';
 import type { AIScanResult } from './modules/home/views/ValidationSas';
 import GarageDashboard from './modules/garage/views/GarageDashboard';
+import KitchenDashboard from './modules/kitchen/views/KitchenDashboard';
 
 
 type ViewState = 'hub' | 'home' | 'garage' | 'kitchen' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
@@ -154,6 +155,7 @@ const App = () => {
         {/* ROUTES DES MODULES PRINCIPAUX */}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
         {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}
+        {view === 'kitchen' && <KitchenDashboard onBack={() => setView('hub')} />}
 
         {view === 'inventory' && (
           <Dashboard

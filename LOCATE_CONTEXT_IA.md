@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 07/03/2026 02:23:03
+> 📅 Archive générée le : 07/03/2026 04:16:14
 
 
 // ==========================================
@@ -27,9 +27,11 @@ import { SettingsPage } from './modules/home/views/SettingsPage';
 import ValidationSas from './modules/home/views/ValidationSas';
 import ToolDetail from './modules/home/components/ToolDetail';
 import type { AIScanResult } from './modules/home/views/ValidationSas';
+import GarageDashboard from './modules/garage/views/GarageDashboard';
+import KitchenDashboard from './modules/kitchen/views/KitchenDashboard';
 
-type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
 
+type ViewState = 'hub' | 'home' | 'garage' | 'kitchen' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
 const App = () => {
   // ÉTATS D'AUTHENTIFICATION (NOUVEAU)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -155,8 +157,14 @@ const App = () => {
       )}
 
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
-        {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
+        
+        {/* CORRECTION DU ROUTAGE HUB */}
+        {view === 'hub' && <Hub onSelectModule={(m: string) => setView(m as ViewState)} />}
+        
+        {/* ROUTES DES MODULES PRINCIPAUX */}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
+        {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}
+        {view === 'kitchen' && <KitchenDashboard onBack={() => setView('hub')} />}
 
         {view === 'inventory' && (
           <Dashboard
@@ -337,6 +345,53 @@ export const INDUSTRIAL_RULES = {
 ```
 
 // ==========================================
+// 📂 FICHIER : \src\core\ai\expertisemetier\kitchen.ts
+// ==========================================
+
+```tsx
+/**
+ * LOCATE KITCHEN - RÉFÉRENTIEL D'EXPERTISE CULINAIRE (M4)
+ * Source : "Bible HACCP & Sécurité Alimentaire"
+ * Normes : PMS (Plan de Maîtrise Sanitaire), Traçabilité, DLC/DDM
+ */
+
+export const KITCHEN_M4_RULES = {
+  // 1. SAFETY GATES (VETO IA - PRIORITÉ ABSOLUE HYGIÈNE)
+  safety_veto: {
+    dlc_depassee: "Date Limite de Consommation (DLC) dépassée : Alerte CRITIQUE. Retrait immédiat de la consommation humaine. Blocage de l'utilisation.",
+    chaine_du_froid: "Rupture de la chaîne du froid détectée (ex: givre de décongélation, emballage gonflé) : Veto sur l'utilisation.",
+    contamination_croisee: "Détection de stockage mixte cru/cuit non isolé : Alerte MAJEURE HACCP."
+  },
+
+  // 2. PROTOCOLE D'ANALYSE VISUELLE HACCP
+  haccp_logic: {
+    marche_en_avant: "Analyse des flux : Le propre et le sale ne doivent jamais se croiser.",
+    planche_a_decouper_codes: {
+      rouge: "Viande crue",
+      bleu: "Poissons et crustacés crus",
+      jaune: "Volailles crues",
+      vert: "Légumes et fruits",
+      blanc: "Pains, fromages, pâtisseries",
+      marron: "Viandes cuites"
+    },
+    etiquetage: "Présence obligatoire de l'étiquette de traçabilité (Date d'ouverture, DLC secondaire, numéro de lot) sur tout contenant entamé ou reconditionné."
+  },
+
+  // 3. GESTION DES STOCKS & PÉRISSABLES
+  stock_management: {
+    fifo: "First In, First Out (Premier entré, premier sorti). Les dates les plus courtes doivent être utilisées en priorité.",
+    feFo: "First Expired, First Out. Base de la rotation des stocks périssables."
+  },
+
+  // 4. CLAUSES ANTI-HALLUCINATION CULINAIRE
+  anti_hallucination: {
+    regle_1_fraicheur: "INTERDICTION STRICTE de garantir la fraîcheur bactériologique d'un produit sur une simple photo. L'analyse visuelle ne remplace pas les prélèvements de surface ou d'échantillons.",
+    regle_2_incertitude_date: "Si l'étiquette de DLC/DDM est illisible, l'IA DOIT classer le produit en 'Alerte Traçabilité - Date Inconnue'."
+  }
+};
+```
+
+// ==========================================
 // 📂 FICHIER : \src\core\ai\expertisemetier\maintenance.ts
 // ==========================================
 
@@ -468,54 +523,56 @@ export const GARAGE_M5_RULES = {
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CATEGORIES } from '../../types';
 import { INDUSTRIAL_RULES } from './expertisemetier/home';
+import { KITCHEN_M4_RULES } from './expertisemetier/kitchen';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
-// 🧠 INJECTION STRICTE DE LA BIBLE MÉTIER ET DU FORMAT JSON
-const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string) => `
-Tu es l'Expert Vision Industrielle du système LOCATE HOME. Localisation de l'analyse : ${userLocation}.
-Ton rôle est d'analyser les images/vidéos en appliquant STRICTEMENT le Protocole d'Analyse Visuelle Pyramidale (PAVP V5.0) en 4 étapes.
+// --- PROMPT SYSTEME DYNAMIQUE ---
+const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string, module: 'HOME' | 'KITCHEN' = 'HOME') => `
+Tu es l Expert Vision ${module === 'HOME' ? 'Industrielle' : 'Culinaire HACCP'} du système LOCATE. 
+Localisation de l analyse : ${userLocation}.
+Ton rôle est d analyser les images/vidéos en appliquant STRICTEMENT le protocole d expertise fourni.
 
-VOICI TON RÉFÉRENTIEL D'EXPERTISE MÉTIER OBLIGATOIRE :
+VOICI TON RÉFÉRENTIEL D EXPERTISE MÉTIER OBLIGATOIRE :
 ${rulesContext}
 
 CATÉGORIES AUTORISÉES (Utilise uniquement ces ID) :
 ${categoriesContext}
 
-RÈGLE ABSOLUE : Tu dois retourner UNIQUEMENT un tableau JSON valide. Pas de texte avant, pas de markdown, juste le tableau.
-Chaque outil détecté doit être un objet avec cette structure EXACTE :
+RÈGLE ABSOLUE : Tu dois retourner UNIQUEMENT un tableau JSON valide. Pas de texte avant, pas de markdown.
+Chaque objet détecté doit suivre cette structure EXACTE :
 [
   {
-    "brandColor": "Étape 1 : Hypothèse de marque (ex: Bosch Professional, Makita)",
-    "morphology": "Étape 2 : Type d'objet (ex: Perceuse-visseuse)",
-    "zoomDetail": "Étape 3 : Détail technique (ex: Mandrin auto-serrant, batterie 12V)",
-    "typography": "Étape 4 : Modèle exact lu ou déduit (ex: GSR 12V-15)",
+    "brandColor": "${module === 'HOME' ? 'Marque/Couleur' : 'Marque ou Origine'}",
+    "morphology": "${module === 'HOME' ? 'Type d outil' : 'Type de denree ou objet'}",
+    "zoomDetail": "${module === 'HOME' ? 'Detail technique' : 'Etat de fraicheur ou detail HACCP'}",
+    "typography": "${module === 'HOME' ? 'Modele exact' : 'DLC DDM ou SKU'}",
     "confidence": 0.95,
-    "categorie_id": "ID exact de la catégorie correspondante",
-    "etat": "Bon état / Usagé / Neuf",
-    "description": "Justification de l'analyse métier",
-    "isConsumable": false,
+    "categorie_id": "ID exact de la categorie",
+    "etat": "Bon etat / Usage / Neuf / Perime",
+    "description": "Justification metier",
+    "isConsumable": ${module === 'KITCHEN' ? true : false},
     "consumableLevel": 100
   }
 ]
-IMPORTANT : La valeur "confidence" DOIT impérativement être un nombre décimal compris entre 0.01 et 0.99 (ex: 0.85).
 `;
 
 export const geminiService = {
-  analyzeVideoBurst: async (base64Images: string[], userLocation: string = "Atelier"): Promise<any[]> => {
+  // AJOUT DU PARAMETRE MODULE ICI
+  analyzeVideoBurst: async (base64Images: string[], userLocation: string = "Atelier", module: 'HOME' | 'KITCHEN' = 'HOME'): Promise<any[]> => {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash",
         generationConfig: { responseMimeType: "application/json" }
       });
 
       const categoriesContext = CATEGORIES.map(cat => `- ID: "${cat.id}" | Label: ${cat.label}`).join('\n');
-      const rulesContext = JSON.stringify(INDUSTRIAL_RULES, null, 2);
+      // SELECTION UNIQUE DES REGLES
+      const rulesContext = JSON.stringify(module === 'KITCHEN' ? KITCHEN_M4_RULES : INDUSTRIAL_RULES, null, 2);
 
-      // On utilise bien la fonction ici !
-      const prompt = getSystemPrompt(userLocation, rulesContext, categoriesContext);
+      const prompt = getSystemPrompt(userLocation, rulesContext, categoriesContext, module);
       
       const imageParts = base64Images.map(base64 => ({
         inlineData: { data: base64.split(',')[1], mimeType: "image/jpeg" }
@@ -529,19 +586,19 @@ export const geminiService = {
     }
   },
 
-  analyzeVideo: async (videoBase64: string, userLocation: string = "Atelier"): Promise<any[]> => {
+  // AJOUT DU PARAMETRE MODULE ICI AUSSI
+  analyzeVideo: async (videoBase64: string, userLocation: string = "Atelier", module: 'HOME' | 'KITCHEN' = 'HOME'): Promise<any[]> => {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash",
         generationConfig: { responseMimeType: "application/json" }
       });
 
       const categoriesContext = CATEGORIES.map(cat => `- ID: "${cat.id}" | Label: ${cat.label}`).join('\n');
-      const rulesContext = JSON.stringify(INDUSTRIAL_RULES, null, 2);
+      const rulesContext = JSON.stringify(module === 'KITCHEN' ? KITCHEN_M4_RULES : INDUSTRIAL_RULES, null, 2);
 
-      // Appel de la fonction pour la vidéo
-      const prompt = getSystemPrompt(userLocation, rulesContext, categoriesContext);
+      const prompt = getSystemPrompt(userLocation, rulesContext, categoriesContext, module);
 
       const videoPart = {
         inlineData: { data: videoBase64.split(',')[1], mimeType: "video/webm" }
@@ -4446,6 +4503,99 @@ export default ValidationSas;
 ```
 
 // ==========================================
+// 📂 FICHIER : \src\modules\kitchen\views\KitchenDashboard.tsx
+// ==========================================
+
+```tsx
+import React, { useState } from 'react';
+import { UtensilsCrossed, ShieldCheck, ChevronRight } from 'lucide-react';
+
+interface KitchenDashboardProps {
+  onBack?: () => void;
+}
+
+const KitchenDashboard: React.FC<KitchenDashboardProps> = ({ onBack }) => {
+  const [activeMode, setActiveMode] = useState<'menu' | 'inventory' | 'haccp'>('menu');
+
+  // CORRECTION : Utilisation de activeMode pour changer de vue
+  if (activeMode !== 'menu') {
+    // On réutilise la logique du scanner asynchrone mais filtrée pour la cuisine
+    // Cette partie sera développée juste après ta validation
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-center font-sans">
+        <UtensilsCrossed className="text-[#28A745] w-16 h-16 mb-4 animate-bounce" />
+        <h2 className="text-white font-black text-2xl uppercase tracking-widest mb-2">
+          SCANNER {activeMode === 'inventory' ? 'STOCKS' : 'HACCP'}
+        </h2>
+        <p className="text-gray-400 text-[10px] uppercase tracking-widest mb-8">
+          Initialisation du moteur de vision M4...
+        </p>
+        <button 
+          onClick={() => setActiveMode('menu')} 
+          className="bg-[#28A745] text-black px-8 py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] active:scale-95 transition-transform"
+        >
+          Annuler le Scan
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#050505] flex flex-col md:flex-row overflow-hidden font-sans">
+      
+      {/* Header HUD & Retour */}
+      <div className="absolute top-6 left-6 z-10 pointer-events-auto flex items-start gap-4">
+        {onBack && (
+          <button onClick={onBack} className="w-12 h-12 bg-black/50 backdrop-blur border border-white/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+            <img src="/icon-return.png" alt="Retour" className="w-[60%] h-[60%] object-contain opacity-80" />
+          </button>
+        )}
+        <div className="pointer-events-none">
+          <h1 className="text-white font-black text-xl tracking-widest uppercase">Locate Kitchen</h1>
+          <p className="text-[#28A745] text-[10px] font-bold uppercase tracking-widest mt-1">Terminal de Gestion Culinaire</p>
+        </div>
+      </div>
+
+      {/* 📦 BOUTON 1 : INVENTAIRE PÉRISSABLES */}
+      <button
+        onClick={() => setActiveMode('inventory')}
+        className="flex-1 group relative overflow-hidden bg-[#0a0a0a] hover:bg-[#0c1a10] transition-all duration-500 border-b md:border-b-0 md:border-r border-white/5 flex flex-col justify-center items-center p-8 active:scale-95"
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-[#28A745]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+        <UtensilsCrossed size={72} className="text-white/60 mb-6 group-hover:text-[#28A745] group-hover:scale-110 transition-all duration-500" />
+        <h2 className="text-white font-black text-3xl uppercase tracking-tighter mb-2 text-center">Inventaire<br/>Périssables</h2>
+        <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center mb-12">Chambre Froide • Épicerie • DLC/DDM</p>
+
+        <div className="flex items-center gap-2 text-[#28A745] font-black text-[10px] uppercase tracking-[0.2em] bg-green-950/30 px-6 py-3 rounded-full border border-[#28A745]/20">
+          Système FEFO <ChevronRight size={14} />
+        </div>
+      </button>
+
+      {/* 🛡️ BOUTON 2 : CONTRÔLE HACCP */}
+      <button
+        onClick={() => setActiveMode('haccp')}
+        className="flex-1 group relative overflow-hidden bg-[#080808] hover:bg-[#0c1a10] transition-all duration-500 flex flex-col justify-center items-center p-8 active:scale-95"
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-[#28A745]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+        <ShieldCheck size={72} className="text-white/60 mb-6 group-hover:text-[#28A745] group-hover:scale-110 transition-all duration-500" />
+        <h2 className="text-white font-black text-3xl uppercase tracking-tighter mb-2 text-center">Contrôle<br/>HACCP</h2>
+        <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center mb-12">Traçabilité • Hygiène • Planches de coupe</p>
+
+        <div className="flex items-center gap-2 text-[#28A745] font-black text-[10px] uppercase tracking-[0.2em] bg-green-950/30 px-6 py-3 rounded-full border border-[#28A745]/20">
+          Audit IA <ChevronRight size={14} />
+        </div>
+      </button>
+
+    </div>
+  );
+};
+
+export default KitchenDashboard;
+```
+
+// ==========================================
 // 📂 FICHIER : \src\types\index.ts
 // ==========================================
 
@@ -4505,7 +4655,7 @@ export type ToolMemory = InventoryItem;
 
 // --- EXTENSION LOCATE GARAGE (M5) ---
 
-export type DiagnosticMode = 'maintenance' | 'mecanique';
+export type DiagnosticMode = 'maintenance' | 'mecanique' | 'haccp';
 
 export interface J1939DTC {
   spn: number; // Suspect Parameter Number

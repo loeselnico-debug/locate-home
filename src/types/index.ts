@@ -53,7 +53,7 @@ export type ToolMemory = InventoryItem;
 
 // --- EXTENSION LOCATE GARAGE (M5) ---
 
-export type DiagnosticMode = 'maintenance' | 'mecanique';
+export type DiagnosticMode = 'maintenance' | 'mecanique' | 'haccp';
 
 export interface J1939DTC {
   spn: number; // Suspect Parameter Number

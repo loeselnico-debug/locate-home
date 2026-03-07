@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 06/03/2026 11:02:41
+> 📅 Archive générée le : 07/03/2026 02:23:03
 
 
 // ==========================================
@@ -12,24 +12,29 @@ import { get, set } from 'idb-keyval';
 import type { InventoryItem } from './types';
 import { useUserTier } from './core/security/useUserTier';
 
+// NOUVEAUX IMPORTS SUPABASE & AUTH
+import AuthShield from './core/ui/AuthShield';
+import { supabase } from './core/security/supabaseClient';
+
 import Hub from './core/ui/Hub';
 import Logo from './core/ui/Logo';
-import { Scanner } from './core/camera/Scanner';
-
 import HomeMenu from './modules/home/components/HomeMenu';
 import Dashboard from './modules/home/views/Dashboard';
 import Library from './modules/home/components/Library';
+import { Scanner } from './core/camera/Scanner';
 import Search from './modules/home/components/Search';
 import { SettingsPage } from './modules/home/views/SettingsPage';
 import ValidationSas from './modules/home/views/ValidationSas';
 import ToolDetail from './modules/home/components/ToolDetail';
 import type { AIScanResult } from './modules/home/views/ValidationSas';
 
-import GarageDashboard from './modules/garage/views/GarageDashboard';
-
-type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail' | 'garage';
+type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
 
 const App = () => {
+  // ÉTATS D'AUTHENTIFICATION (NOUVEAU)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
   const [view, setView] = useState<ViewState>('hub');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
@@ -38,6 +43,21 @@ const App = () => {
   const [pendingItems, setPendingItems] = useState<AIScanResult[]>([]);
   const { currentTier } = useUserTier();
 
+  // VERIFICATION DE LA SESSION SUPABASE (NOUVEAU)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      setIsAuthChecking(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // CHARGEMENT DE LA BASE DE DONNEES LOCALE
   useEffect(() => {
     get('locate_systems_db').then((savedItems: InventoryItem[] | undefined) => {
       if (savedItems) setInventory(savedItems);
@@ -63,7 +83,6 @@ const App = () => {
     }
   };
 
-  // LA FONCTION MANQUANTE EST ICI :
   const handleUpdateTool = (updatedTool: InventoryItem) => {
     setInventory(prev => prev.map(item => item.id === updatedTool.id ? updatedTool : item));
     setSelectedTool(updatedTool);
@@ -74,11 +93,10 @@ const App = () => {
     setView('validation');
   };
 
- const handleValidatePending = (validatedItems: AIScanResult[]) => {
+  const handleValidatePending = (validatedItems: AIScanResult[]) => {
     const itemsToAdd: InventoryItem[] = validatedItems.map(item => ({
       id: crypto.randomUUID(),
       date: new Date().toLocaleString(),
-      // On utilise uniquement le nouveau vocabulaire strict (typography, brandColor)
       toolName: item.label || item.typography || 'Outil Inconnu',
       brand: item.brandColor || 'Marque N/A',
       category: item.categorie_id || 'main',
@@ -88,7 +106,7 @@ const App = () => {
       isConsumable: item.isConsumable,
       consumableLevel: item.consumableLevel,
       confidence: item.confidence ? item.confidence : undefined,
-      imageUrl: item.imageUrl // L'image est sauvegardée ici
+      imageUrl: item.imageUrl
     }));
 
     setInventory(prev => [...itemsToAdd, ...prev]);
@@ -107,6 +125,26 @@ const App = () => {
   };
   const currentModule = getActiveModule();
 
+  // ==========================================
+  // 🛡️ BOUCLIERS D'AUTHENTIFICATION
+  // La logique est bien placée AVANT le rendu HTML
+  // ==========================================
+  
+  if (isAuthChecking) {
+    return (
+      <div className="w-screen h-[100dvh] bg-[#050505] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-black border-t-[#FF6600] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthShield onSuccess={() => setIsAuthenticated(true)} />;
+  }
+
+  // ==========================================
+  // 🖥️ AFFICHAGE NORMAL DE L'APP
+  // ==========================================
   return (
     <main className="w-screen min-h-[100dvh] bg-[#121212] text-white font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
 
@@ -117,9 +155,9 @@ const App = () => {
       )}
 
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
-        {view === 'hub' && <Hub onSelectModule={(m: string) => { if (m === 'home' || m === 'garage') setView(m as ViewState); }} />}
+        {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
-        {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}
+
         {view === 'inventory' && (
           <Dashboard
             inventory={inventory}
@@ -147,8 +185,8 @@ const App = () => {
           <ToolDetail 
             tool={selectedTool} 
             onBack={() => setView('category_detail')} 
-            onUpdate={handleUpdateTool} // BRANCHEMENT SAUVEGARDE
-            onDelete={() => deleteTool(selectedTool.id)} // BRANCHEMENT SUPPRESSION
+            onUpdate={handleUpdateTool}
+            onDelete={() => deleteTool(selectedTool.id)}
           />
         )}
 
@@ -1177,6 +1215,29 @@ export const checkToolSafety = (toolName: string, analysisData: { hasGripDamage:
 ```
 
 // ==========================================
+// 📂 FICHIER : \src\core\security\supabaseClient.ts
+// ==========================================
+
+```tsx
+// ==========================================
+// 📂 FICHIER : \src\core\security\supabaseClient.ts
+// ==========================================
+import { createClient } from '@supabase/supabase-js';
+
+// Récupération des variables d'environnement depuis le .env.local
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Garde-fou : Avertissement si les clés sont introuvables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("🔴 ERREUR CRITIQUE : Variables d'environnement Supabase introuvables. Vérifiez le fichier .env.local");
+}
+
+// Création et exportation de l'instance unique du client Supabase
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+```
+
+// ==========================================
 // 📂 FICHIER : \src\core\security\tiers.ts
 // ==========================================
 
@@ -1452,6 +1513,142 @@ export const useAppSettings = () => {
   }
   return context;
 };
+```
+
+// ==========================================
+// 📂 FICHIER : \src\core\ui\AuthShield.tsx
+// ==========================================
+
+```tsx
+// ==========================================
+// 📂 FICHIER : \src\core\ui\AuthShield.tsx
+// ==========================================
+import React, { useState } from 'react';
+import { supabase } from '../security/supabaseClient';
+
+interface AuthShieldProps {
+  onSuccess: () => void;
+}
+
+export default function AuthShield({ onSuccess }: AuthShieldProps) {
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (isSignUp) {
+        // Logique d'inscription
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        alert("Compte créé ! Vérifiez vos emails pour valider l'inscription.");
+      } else {
+        // Logique de connexion
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        // Déverrouillage de l'application
+        onSuccess(); 
+      }
+    } catch (err: any) {
+      setError(err.message || "Une erreur est survenue lors de l'authentification.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-[#050505] flex flex-col items-center justify-center p-[5vw] font-sans">
+      
+      {/* Grille matricielle de fond */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none"></div>
+
+      {/* Conteneur Glassmorphism */}
+      <div className="relative w-full max-w-sm bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-[0_0_40px_rgba(255,102,0,0.15)] z-10 flex flex-col">
+        
+        {/* En-tête / Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-white font-black text-3xl tracking-widest uppercase mb-1 drop-shadow-lg">
+            LOCATE <span className="text-[#FF6600]">SYSTEMS</span>
+          </h1>
+          <p className="text-gray-500 text-xs uppercase tracking-widest font-bold">
+            Portail Sécurisé
+          </p>
+        </div>
+
+        {/* Formulaire interactif */}
+        <form onSubmit={handleAuth} className="flex flex-col gap-5">
+          
+          {/* Bloc d'erreur dynamique */}
+          {error && (
+            <div className="bg-red-900/30 border border-red-500/50 text-red-400 text-xs p-3 rounded-lg text-center font-bold tracking-wide">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">
+              Identifiant (Email)
+            </label>
+            <input 
+              type="email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-[#121212] border border-white/10 rounded-lg p-3 text-white focus:border-[#FF6600] outline-none transition-colors shadow-inner"
+              placeholder="technicien@locate.com"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">
+              Clé d'accès (Mot de passe)
+            </label>
+            <input 
+              type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-[#121212] border border-white/10 rounded-lg p-3 text-white focus:border-[#FF6600] outline-none transition-colors shadow-inner"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          {/* Bouton de soumission primaire */}
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-[#FF6600] text-white font-black uppercase tracking-widest py-4 rounded-lg mt-2 active:scale-95 transition-all shadow-[0_0_15px_rgba(255,102,0,0.4)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#e65c00]"
+          >
+            {loading ? 'Connexion au serveur...' : (isSignUp ? 'Créer un compte' : 'Accéder au terminal')}
+          </button>
+        </form>
+
+        {/* Switch Inscription / Connexion */}
+        <button 
+          onClick={() => {
+            setIsSignUp(!isSignUp);
+            setError(null); // Réinitialise les erreurs au changement de mode
+          }}
+          className="mt-6 text-gray-500 text-[10px] uppercase font-bold tracking-widest hover:text-white transition-colors"
+        >
+          {isSignUp ? 'Déjà accrédité ? Se connecter' : 'Nouvel opérateur ? Créer un profil'}
+        </button>
+      </div>
+    </div>
+  );
+}
 ```
 
 // ==========================================
@@ -3066,19 +3263,34 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
     recognition.start();
   };
 
-  // --- FILTRAGE INTELLIGENT MULTI-CRITÈRES ---
+  // --- FILTRAGE INTELLIGENT MULTI-CRITÈRES (FULL-TEXT) ---
   const results = useMemo(() => {
     return inventory.filter(tool => {
-      // Découpage de la requête en mots pour une recherche plus tolérante (ex: "bosch perceuse" trouve "Perceuse Bosch")
-      const searchTerms = query.toLowerCase().split(' ').filter(word => word.length > 2);
+      // Découpage de la requête en mots (ex: "bosch perceuse")
+      const searchTerms = query.toLowerCase().split(' ').filter(word => word.length > 1);
       
-      const matchesQuery = query.trim() === '' || searchTerms.every(term => 
-        tool.toolName.toLowerCase().includes(term) || 
-        tool.category.toLowerCase().includes(term) ||
-        (tool.sku && tool.sku.toLowerCase().includes(term))
-      );
+      // 1. Création d'un index "Full-Text" pour cet outil.
+      // On regroupe TOUTES les informations de l'outil dans une seule grande chaîne de texte (en minuscules)
+      const toolIndex = [
+        tool.toolName,
+        tool.brand,
+        tool.category,
+        tool.sku,
+        tool.location,
+        tool.notes,
+        (tool as any).energy,
+        (tool as any).motor,
+        (tool as any).type // Si tu as un champ spécifique 'type' un jour
+      ]
+        .filter(Boolean) // Retire les champs vides ou undefined
+        .join(' ')       // Colle tous les mots ensemble avec un espace
+        .toLowerCase();  // Passe tout en minuscules
+
+      // 2. Vérification : Est-ce que CHAQUE mot tapé (ou dicté) se trouve quelque part dans l'index de cet outil ?
+      const matchesQuery = query.trim() === '' || searchTerms.every(term => toolIndex.includes(term));
       
       const matchesLocation = selectedLocation === 'ALL' || tool.location === selectedLocation;
+      
       return matchesQuery && matchesLocation;
     });
   }, [query, selectedLocation, inventory]);
@@ -3301,6 +3513,9 @@ export default StoreModal;
 // ==========================================
 
 ```tsx
+// ==========================================
+// 📂 FICHIER : \src\modules\home\components\ToolDetail.tsx
+// ==========================================
 import React, { useState, useEffect } from 'react';
 import { CATEGORIES } from '../views/Dashboard';
 import type { InventoryItem } from '../../../types';
@@ -3315,12 +3530,9 @@ interface ToolDetailProps {
 
 const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelete }) => {
   const [isStoreOpen, setIsStoreOpen] = useState(false);
-  
-  // ÉTATS DU MODE ÉDITION
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTool, setEditedTool] = useState<InventoryItem>(tool);
+  const [editedTool, setEditedTool] = useState<any>(tool); 
 
-  // Synchronisation si l'outil change
   useEffect(() => {
     setEditedTool(tool);
   }, [tool]);
@@ -3330,52 +3542,84 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
   
   const handleSave = () => {
     if (onUpdate) {
-      onUpdate(editedTool);
+      onUpdate(editedTool as InventoryItem);
     }
     setIsEditing(false);
   };
 
-  const handleChange = (field: keyof InventoryItem, value: any) => {
-    setEditedTool(prev => ({ ...prev, [field]: value }));
+  const handleChange = (field: string, value: any) => {
+    setEditedTool((prev: any) => ({ ...prev, [field]: value }));
   };
+
+  // ==========================================
+  // LOGIQUE ANTI-REDONDANCE POUR LA MARQUE
+  // ==========================================
+  const brandName = tool.brand || 'Marque N/A';
+  // Si le nom de l'outil commence déjà par la marque (ex: "RYOBI RRS1801"), on enlève le mot "RYOBI" du titre principal pour éviter le doublon visuel.
+  const cleanToolName = tool.toolName.toLowerCase().startsWith(brandName.toLowerCase())
+    ? tool.toolName.substring(brandName.length).trim()
+    : tool.toolName;
 
   return (
     <div className="flex flex-col h-full bg-transparent">
 
+      {/* ========================================== */}
       {/* EN-TÊTE DYNAMIQUE */}
+      {/* ========================================== */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         {isEditing ? (
-          <button onClick={handleSave} className="w-12 h-12 bg-[#2EA043] rounded-xl flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.5)] active:scale-95 transition-transform">
-            <span className="text-white font-black text-[9px] uppercase tracking-widest text-center">Sauver</span>
+          /* BOUTON SAVE (Carré Orange / Texte Noir) - Hauteur alignée sur le retour */
+          <button onClick={handleSave} className="h-14 px-4 min-w-[3.5rem] bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
+            <span className="text-black font-black text-[11px] uppercase tracking-widest text-center">Save</span>
           </button>
         ) : (
-          <button onClick={() => setIsEditing(true)} className="w-12 h-12 bg-[#1E1E1E] border border-white/10 rounded-xl flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.5)] active:scale-95 transition-transform">
-            <span className="text-white font-black text-[10px] uppercase tracking-widest text-center">Édit<br/>er</span>
+          /* BOUTON ÉDITER (Carré Orange / Texte Noir / Sans coupure) - Hauteur alignée sur le retour */
+          <button onClick={() => setIsEditing(true)} className="h-14 px-3 min-w-[3.5rem] bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
+            <span className="text-black font-black text-[11px] uppercase tracking-widest text-center">Éditer</span>
           </button>
         )}
 
+        {/* BOUTON RETOUR */}
         <button onClick={isEditing ? () => setIsEditing(false) : onBack} className="w-14 h-14 active:scale-90 transition-transform">
           <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain drop-shadow-lg" />
         </button>
       </div>
 
+      {/* ========================================== */}
+      {/* CORPS DE LA FICHE (SCROLLABLE) */}
+      {/* ========================================== */}
       <div className="flex-1 overflow-y-auto px-[4vw] pb-[12vh] no-scrollbar">
 
-        {/* SI MODE ÉDITION ACTIF */}
         {isEditing ? (
+          /* ========================================== */
+          /* MODE ÉDITION (CHAMPS DE SAISIE) */
+          /* ========================================== */
           <div className="bg-[#1E1E1E] rounded-xl border-2 border-[#FF6600] p-5 shadow-[0_10px_30px_rgba(255,102,0,0.15)] flex flex-col gap-4 mb-6">
-            <h3 className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(1rem,4vw,1.2rem)] border-b border-white/10 pb-2">
+            <h3 className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(1rem,4vw,1.2rem)] border-b border-white/10 pb-2 flex justify-between items-center">
               Mode Édition
             </h3>
 
+            {/* Le bouton caméra non-fonctionnel a été supprimé ici */}
+
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Désignation</label>
-              <input type="text" value={editedTool.toolName} onChange={(e) => handleChange('toolName', e.target.value)} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Marque</label>
+              <input type="text" value={editedTool.brand || ''} onChange={(e) => handleChange('brand', e.target.value)} placeholder="Ex: Makita, Hilti..." className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
             </div>
 
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Valeur d'achat estimée (€)</label>
-              <input type="number" value={editedTool.price || ''} onChange={(e) => handleChange('price', parseFloat(e.target.value))} placeholder="Ex: 149.90" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Désignation / Type</label>
+              <input type="text" value={editedTool.toolName || ''} onChange={(e) => handleChange('toolName', e.target.value)} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Énergie</label>
+                <input type="text" value={editedTool.energy || ''} onChange={(e) => handleChange('energy', e.target.value)} placeholder="Ex: 18V" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Moteur</label>
+                <input type="text" value={editedTool.motor || ''} onChange={(e) => handleChange('motor', e.target.value)} placeholder="Ex: Brushless" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+              </div>
             </div>
 
             <div>
@@ -3383,81 +3627,105 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               <input type="text" value={editedTool.serialNumber || ''} onChange={(e) => handleChange('serialNumber', e.target.value)} placeholder="Ex: ABC123456789" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
             </div>
 
-            <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Zone de rangement</label>
-              <input type="text" value={editedTool.location} onChange={(e) => handleChange('location', e.target.value)} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Lieu / Zone</label>
+                <input type="text" value={editedTool.location || ''} onChange={(e) => handleChange('location', e.target.value)} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Valeur (€)</label>
+                <input type="number" value={editedTool.price || ''} onChange={(e) => handleChange('price', parseFloat(e.target.value))} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+              </div>
             </div>
 
             {onDelete && (
               <button onClick={onDelete} className="mt-4 bg-red-900/30 text-red-500 border border-red-500/50 py-3 rounded-lg font-black uppercase text-xs tracking-widest hover:bg-red-500 hover:text-white transition-colors">
-                Supprimer cet outil
+                Supprimer de l'inventaire
               </button>
             )}
           </div>
+
         ) : (
-          /* SI MODE LECTURE NORMAL (BLOC D DU SCHÉMA) */
-        <>
-          {/* PHOTO AJUSTÉE & BADGE OPÉRATIONNEL */}
-          <div className="w-full bg-[#0a0a0a] rounded-2xl border border-white/10 overflow-hidden relative shadow-[0_10px_20px_rgba(0,0,0,0.6)] mb-5 group">
-            {/* Le badge statut collé en haut à gauche comme sur le croquis */}
-            <div className={`absolute top-3 left-3 px-3 py-1.5 rounded-lg shadow-lg backdrop-blur-md border z-10 ${tool.safetyStatus ? 'bg-red-500/90 border-red-300 text-white' : 'bg-green-500/90 border-green-300 text-white'}`}>
-              <span className="font-black text-[9px] uppercase tracking-widest drop-shadow-md">
-                {tool.safetyStatus ? '⚠️ ALERTE' :  '✓ OPÉRATIONNEL' }
-              </span>
+
+          /* ========================================== */
+          /* MODE LECTURE (RAPPORT DÉTAILLÉ) */
+          /* ========================================== */
+          <div className="flex flex-col gap-5">
+            
+            {/* 1. PHOTO AJUSTÉE & ISOLÉE */}
+            <div className="w-full bg-[#0a0a0a] rounded-2xl border border-white/10 overflow-hidden relative shadow-[0_10px_20px_rgba(0,0,0,0.6)]">
+              <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-lg shadow-lg backdrop-blur-md border z-10 ${tool.safetyStatus ? 'bg-red-500/90 border-red-300 text-white' : 'bg-[#2EA043]/90 border-green-300 text-white'}`}>
+                <span className="font-black text-[9px] uppercase tracking-widest drop-shadow-md">
+                  {tool.safetyStatus ? '⚠️ ALERTE' :  '✓ OPÉRATIONNEL' }
+                </span>
+              </div>
+              <div className="h-[28vh] w-full flex items-center justify-center p-4">
+                {tool.imageUrl ? (
+                  <img src={tool.imageUrl} className="w-full h-full object-contain drop-shadow-2xl" alt={tool.toolName} />
+                ) : (
+                  <div className="flex flex-col items-center opacity-30">
+                    <span className="text-5xl mb-2 drop-shadow-lg">📷</span>
+                    <span className="text-white text-[10px] font-black tracking-widest uppercase">Photo requise</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Zone image (object-contain pour ne pas couper l'outil) */}
-            <div className="h-[25vh] w-full flex items-center justify-center p-4">
-              {tool.imageUrl ? (
-                <img src={tool.imageUrl} className="w-full h-full object-contain drop-shadow-2xl" alt={tool.toolName} />
-              ) : (
-                <div className="flex flex-col items-center opacity-30">
-                  <span className="text-5xl mb-2 drop-shadow-lg">📷</span>
-                  <span className="text-white text-[10px] font-black tracking-widest uppercase">Photo requise</span>
+            {/* 3. GAUCHE ICONE / DROITE INFOS (Marque, Type, Energie, Lieux) */}
+            <div className="flex items-center gap-4 bg-[#1E1E1E] p-4 rounded-xl border border-white/10 shadow-inner">
+              <div className="w-16 h-16 bg-[#D3D3D3] rounded-xl flex items-center justify-center border border-gray-300 shadow-md shrink-0">
+                <img src={categoryIcon} className="w-10 h-10 object-contain drop-shadow-md" alt="Catégorie" />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <h2 className="text-gray-400 font-black text-[10px] tracking-widest uppercase">{brandName}</h2>
+                <h1 className="text-white font-black text-[clamp(1.1rem,4.5vw,1.4rem)] uppercase leading-tight truncate">
+                  {cleanToolName}
+                </h1>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="bg-[#FF6600]/20 text-[#FF6600] border border-[#FF6600]/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">
+                    ⚡ {(tool as any).energy || 'N/A'}
+                  </span>
+                  <span className="text-[#D3D3D3] text-[10px] font-bold uppercase tracking-widest truncate">
+                    📍 {tool.location || 'Zone inconnue'}
+                  </span>
                 </div>
-              )}
+              </div>
             </div>
+
+            {/* 4. SPÉCIFICATIONS TECHNIQUES */}
+            <div className="bg-[#1E1E1E] rounded-xl border-t-4 border-[#FF6600] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex flex-col gap-2">
+              <h3 className="text-white text-[11px] font-black tracking-[0.2em] uppercase mb-2 flex items-center gap-2">
+                <span className="w-2 h-2 bg-[#FF6600] rounded-full"></span>
+                Spécifications Techniques
+              </h3>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
+                  <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Type de Moteur</span>
+                  <span className="text-white font-bold text-xs uppercase tracking-wider">{(tool as any).motor || 'Non spécifié'}</span>
+                </div>
+                <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
+                  <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Valeur estimée</span>
+                  <span className="text-white font-bold text-xs tracking-wider">{tool.price ? `${tool.price} €` : 'N/A'}</span>
+                </div>
+              </div>
+
+              <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex justify-between items-center mt-1">
+                <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">S/N (Numéro de série)</span>
+                <span className="text-[#FF6600] font-mono font-black text-[11px] tracking-widest bg-[#FF6600]/10 px-2 py-1 rounded border border-[#FF6600]/20">
+                  {tool.serialNumber || 'NON RENSEIGNÉ'}
+                </span>
+              </div>
+              
+              {/* ENREGISTRÉ LE... (TOUT EN BAS) */}
+              <div className="text-center mt-3 pt-3 border-t border-white/5">
+                <span className="text-gray-600 text-[9px] font-black uppercase tracking-widest">
+                  Fiche enregistrée le : {tool.date}
+                </span>
+              </div>
+            </div>
+
           </div>
-
-          {/* TITRE (ICON, MARQUE, ENERGIE, LIEUX) */}
-          <div className="flex items-center gap-4 mb-6 px-1">
-            <div className="w-14 h-14 bg-[#D3D3D3] rounded-xl flex items-center justify-center border border-gray-300 shadow-inner shrink-0">
-              <img src={categoryIcon} className="w-10 h-10 object-contain drop-shadow-md" alt="Catégorie" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-white font-black text-[clamp(1.1rem,4.5vw,1.4rem)] uppercase leading-tight">
-                {tool.toolName}
-              </h1>
-              <p className="text-[#FF6600] text-[11px] font-black mt-1 tracking-widest uppercase">
-                📍 {tool.location || 'ZONE NON DÉFINIE'}
-              </p>
-            </div>
-          </div>
-
-          {/* ENCART SPE. TECH. */}
-          <div className="bg-[#1E1E1E] rounded-xl border-l-4 border-[#FF6600] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex flex-col gap-3">
-            <h3 className="text-white/40 text-[10px] font-black tracking-[0.2em] uppercase border-b border-white/10 pb-2 mb-1">
-              SPE. TECH.
-            </h3>
-
-            <div className="flex justify-between items-center bg-[#121212] rounded-lg p-3 border border-white/5">
-              <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">S/N (Numéro de série)</span>
-              <span className="text-[#FF6600] font-mono font-black text-xs tracking-widest">
-                {tool.serialNumber || '---'}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center bg-[#121212] rounded-lg p-3 border border-white/5">
-              <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Valeur</span>
-              <span className="text-white font-bold text-sm tracking-wider">{tool.price ? `${tool.price} €` : '---'}</span>
-            </div>
-
-            <div className="flex justify-between items-center bg-[#121212] rounded-lg p-3 border border-white/5">
-              <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Enregistré le</span>
-              <span className="text-white/70 font-bold text-[10px] tracking-wider">{tool.date}</span>
-            </div>
-          </div>
-        </>
         )}
       </div>
 
@@ -4214,6 +4482,8 @@ export interface Location {
 };
 
 export interface InventoryItem {
+  [x: string]: any;
+  brand: string;
   id: string;
   toolName: string;
   location: string;

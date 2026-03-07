@@ -23,7 +23,8 @@ Chaque objet détecté doit suivre cette structure EXACTE :
 [
   {
     "brandColor": "${module === 'HOME' ? 'Marque/Couleur' : 'Marque ou Origine'}",
-    "morphology": "${module === 'HOME' ? 'Type d outil' : 'Type de denree ou objet'}",
+    "type": "${module === 'HOME' ? 'Nom générique usuel (ex: perceuse, tondeuse, marteau, mallette)' : 'Famille de produit'}",
+    "morphology": "${module === 'HOME' ? 'Type d outil détaillé' : 'Type de denree ou objet'}",
     "zoomDetail": "${module === 'HOME' ? 'Detail technique' : 'Etat de fraicheur ou detail HACCP'}",
     "typography": "${module === 'HOME' ? 'Modele exact' : 'DLC DDM ou SKU'}",
     "confidence": 0.95,
@@ -42,7 +43,7 @@ export const geminiService = {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash", // MIGRATION ROADMAP V4
         generationConfig: { responseMimeType: "application/json" }
       });
 
@@ -69,7 +70,7 @@ export const geminiService = {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash", // MIGRATION ROADMAP V4
         generationConfig: { responseMimeType: "application/json" }
       });
 

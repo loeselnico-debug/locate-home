@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 07/03/2026 04:16:14
+> 📅 Archive générée le : 07/03/2026 14:07:00
 
 
 // ==========================================
@@ -186,6 +186,7 @@ const App = () => {
               setSelectedTool(tool);
               setView('tool_detail');
             }}
+            onDelete={deleteTool}
           />
         )}
 
@@ -545,7 +546,8 @@ Chaque objet détecté doit suivre cette structure EXACTE :
 [
   {
     "brandColor": "${module === 'HOME' ? 'Marque/Couleur' : 'Marque ou Origine'}",
-    "morphology": "${module === 'HOME' ? 'Type d outil' : 'Type de denree ou objet'}",
+    "type": "${module === 'HOME' ? 'Nom générique usuel (ex: perceuse, tondeuse, marteau, mallette)' : 'Famille de produit'}",
+    "morphology": "${module === 'HOME' ? 'Type d outil détaillé' : 'Type de denree ou objet'}",
     "zoomDetail": "${module === 'HOME' ? 'Detail technique' : 'Etat de fraicheur ou detail HACCP'}",
     "typography": "${module === 'HOME' ? 'Modele exact' : 'DLC DDM ou SKU'}",
     "confidence": 0.95,
@@ -564,7 +566,7 @@ export const geminiService = {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash", // MIGRATION ROADMAP V4
         generationConfig: { responseMimeType: "application/json" }
       });
 
@@ -591,7 +593,7 @@ export const geminiService = {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash", // MIGRATION ROADMAP V4
         generationConfig: { responseMimeType: "application/json" }
       });
 
@@ -1123,24 +1125,62 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         </div>
       </div>
 
-      {/* MODAL RÉSULTATS */}
+      {/* ========================================== */}
+      {/* VUE A : MODAL DE RÉSULTAT (Divulgation progressive) */}
+      {/* ========================================== */}
       {pendingItems && (
         <div className="absolute inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col p-[4vw] animate-in fade-in zoom-in-95">
           <div className="flex items-center justify-between mt-[6vh] mb-[4vh] border-b border-white/10 pb-[2vh]">
             <h2 className="text-[#FF6600] font-black text-[6vw] sm:text-2xl tracking-widest uppercase">Inventaire Vidéo</h2>
             <span className="bg-[#1E1E1E] px-4 py-2 rounded-xl text-[#FF6600] font-black text-[3vw] sm:text-sm">{pendingItems.length} OBJETS</span>
           </div>
-          <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3">
-            {pendingItems.map((item, idx) => (
-                <div key={idx} className="bg-[#1E1E1E] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-lg leading-tight">{item.label || item.typography || "Outil identifié"}</span>
-                    <span className="text-white/40 text-[9px] uppercase tracking-widest">{item.categorie_id}</span>
+          
+          <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4">
+            {pendingItems.map((item, idx) => {
+              // Gestion dynamique du badge de score
+              const score = item.confidence ? Math.round(item.confidence * 100) : 0;
+              const scoreColor = score >= 90 ? 'bg-green-500/10 text-green-500 border-green-500/30' : score >= 70 ? 'bg-[#FF6600]/10 text-[#FF6600] border-[#FF6600]/30' : 'bg-red-500/10 text-red-500 border-red-500/30';
+
+              return (
+                <div key={idx} className="bg-[#1E1E1E] border border-white/10 rounded-2xl p-4 flex gap-4 items-center shadow-lg">
+                  
+                  {/* Miniature Isolée (Gauche) */}
+                  <div className="w-16 h-16 rounded-xl bg-black/50 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.label || 'Outil'} />
+                    ) : (
+                      <span className="text-xl opacity-30">📷</span>
+                    )}
                   </div>
-                  <div className="text-[#FF6600] font-black text-xs">{item.confidence ? Math.round(item.confidence * 100) : 0}%</div>
+
+                  {/* Hiérarchie de la Donnée (Centre) */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <span className="text-gray-400 font-black text-[9px] tracking-widest uppercase mb-1">
+                      {item.brandColor || 'Marque Inconnue'}
+                    </span>
+                    
+                    {/* Nom non tronqué (whitespace-normal) */}
+                    <h3 className="text-white font-bold text-sm leading-tight whitespace-normal">
+                      {item.label || item.typography || item.morphology || "Outil identifié"}
+                    </h3>
+
+                    {/* Nouveau champ TYPE GÉRIQUE pour la recherche vocale */}
+                    <span className="text-[#FF6600] text-[10px] font-bold mt-1.5 tracking-wider uppercase">
+                      {item.type || item.categorie_id}
+                    </span>
+                  </div>
+
+                  {/* Validation Technique (Droite) */}
+                  <div className="shrink-0 flex flex-col items-end">
+                     <span className={`px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${scoreColor}`}>
+                       {score}%
+                     </span>
+                  </div>
                 </div>
-              ))}
+              );
+            })}
           </div>
+
           <div className="flex gap-4 mt-auto pt-6 pb-[env(safe-area-inset-bottom,4vh)]">
             <button onClick={() => {setPendingItems(null);}} className="flex-1 py-4 rounded-2xl bg-[#1E1E1E] text-white font-black uppercase tracking-widest active:scale-95 border border-white/10">Rejeter</button>
             <button onClick={() => onAnalysisComplete(pendingItems)} className="flex-[2] py-4 rounded-2xl bg-[#FF6600] text-black font-black uppercase tracking-widest active:scale-95 shadow-[0_0_20px_rgba(255,102,0,0.4)]">Intégrer</button>
@@ -3086,11 +3126,11 @@ interface LibraryProps {
   selectedCategoryId: string | null;
   onStartScan: () => void;
   inventory?: InventoryItem[];
-  // NOUVEAU : Fonction pour gérer le clic sur un outil
-  onSelectTool: (tool: InventoryItem) => void; 
+  onSelectTool: (tool: InventoryItem) => void;
+  onDelete: (id: string) => void; 
 }
 
-const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory, onSelectTool }) => {
+const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory, onSelectTool, onDelete }) => {
   const [tools, setTools] = useState<InventoryItem[]>([]);
 
   // Récupération de la catégorie active
@@ -3153,9 +3193,20 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
             {tools.map((tool) => (
               <div
                 key={tool.id}
-                onClick={() => onSelectTool(tool)} // NOUVEAU : Action de clic ajoutée
-                className="bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] transition-transform"
+                onClick={() => onSelectTool(tool)}
+                className="relative bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] transition-transform"
               >
+                {/* BOUTON SUPPRIMER (Croix discrète) */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Empêche l'ouverture de la fiche détail
+                    onDelete(tool.id);   // Déclenche l'alerte de suppression
+                  }}
+                  className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-white/30 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-10"
+                >
+                  <span className="text-xl font-bold leading-none mb-1">×</span>
+                </button>
+
                 {/* Photo miniature */}
                 <div className="w-16 h-16 rounded-lg bg-black/50 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
                   {tool.imageUrl ? (
@@ -3165,26 +3216,36 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                   )}
                 </div>
 
-                {/* Détails */}
+                {/* Détails Restructurés (Vue C) */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-white font-black text-sm uppercase truncate leading-tight">
+                  <div className="pr-6"> {/* Padding right pour ne pas chevaucher la croix */}
+                    <span className="text-gray-400 font-black text-[9px] uppercase tracking-widest leading-none block mb-0.5">
+                      {tool.brand || 'MARQUE N/A'}
+                    </span>
+                    <h3 className="text-white font-bold text-[clamp(0.9rem,3.5vw,1.1rem)] uppercase leading-tight whitespace-normal">
                       {tool.toolName}
                     </h3>
-                    <p className="text-[#FF6600] text-[10px] font-bold mt-0.5 tracking-wider truncate">
-                      📍 {tool.location || 'ZONE NON DÉFINIE'}
-                    </p>
+                    
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/30 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">
+                        ⚡ {(tool as any).energy || 'N/A'}
+                      </span>
+                      <span className="text-[#D3D3D3] text-[9px] font-bold uppercase tracking-widest truncate">
+                        📍 {tool.location || 'ZONE NON DÉFINIE'}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-2">
-                    <span className={`px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
+                  <div className="flex items-center justify-between mt-3 border-t border-white/5 pt-2">
+                    <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
                       {tool.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
                     </span>
-                    <span className="text-[#B0BEC5] text-[9px] italic opacity-60">
+                    <span className="text-[#B0BEC5] text-[8px] italic opacity-60">
                       {tool.date}
                     </span>
                   </div>
                 </div>
+
               </div>
             ))}
           </div>
@@ -3570,9 +3631,6 @@ export default StoreModal;
 // ==========================================
 
 ```tsx
-// ==========================================
-// 📂 FICHIER : \src\modules\home\components\ToolDetail.tsx
-// ==========================================
 import React, { useState, useEffect } from 'react';
 import { CATEGORIES } from '../views/Dashboard';
 import type { InventoryItem } from '../../../types';
@@ -3612,7 +3670,6 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
   // LOGIQUE ANTI-REDONDANCE POUR LA MARQUE
   // ==========================================
   const brandName = tool.brand || 'Marque N/A';
-  // Si le nom de l'outil commence déjà par la marque (ex: "RYOBI RRS1801"), on enlève le mot "RYOBI" du titre principal pour éviter le doublon visuel.
   const cleanToolName = tool.toolName.toLowerCase().startsWith(brandName.toLowerCase())
     ? tool.toolName.substring(brandName.length).trim()
     : tool.toolName;
@@ -3625,18 +3682,15 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
       {/* ========================================== */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         {isEditing ? (
-          /* BOUTON SAVE (Carré Orange / Texte Noir) - Hauteur alignée sur le retour */
           <button onClick={handleSave} className="h-14 px-4 min-w-[3.5rem] bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
             <span className="text-black font-black text-[11px] uppercase tracking-widest text-center">Save</span>
           </button>
         ) : (
-          /* BOUTON ÉDITER (Carré Orange / Texte Noir / Sans coupure) - Hauteur alignée sur le retour */
           <button onClick={() => setIsEditing(true)} className="h-14 px-3 min-w-[3.5rem] bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
             <span className="text-black font-black text-[11px] uppercase tracking-widest text-center">Éditer</span>
           </button>
         )}
 
-        {/* BOUTON RETOUR */}
         <button onClick={isEditing ? () => setIsEditing(false) : onBack} className="w-14 h-14 active:scale-90 transition-transform">
           <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain drop-shadow-lg" />
         </button>
@@ -3649,56 +3703,82 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
 
         {isEditing ? (
           /* ========================================== */
-          /* MODE ÉDITION (CHAMPS DE SAISIE) */
+          /* MODE ÉDITION (PANNEAU DE CONTRÔLE DENSE) */
           /* ========================================== */
-          <div className="bg-[#1E1E1E] rounded-xl border-2 border-[#FF6600] p-5 shadow-[0_10px_30px_rgba(255,102,0,0.15)] flex flex-col gap-4 mb-6">
-            <h3 className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(1rem,4vw,1.2rem)] border-b border-white/10 pb-2 flex justify-between items-center">
-              Mode Édition
-            </h3>
-
-            {/* Le bouton caméra non-fonctionnel a été supprimé ici */}
-
-            <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Marque</label>
-              <input type="text" value={editedTool.brand || ''} onChange={(e) => handleChange('brand', e.target.value)} placeholder="Ex: Makita, Hilti..." className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+          <div className="bg-[#1E1E1E] rounded-xl border border-[#FF6600]/50 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col gap-4 mb-6">
+            
+            {/* BLOC 1 : IDENTITÉ (Avec Miniature) */}
+            <div className="flex gap-4 items-start">
+              <div className="w-[20vw] h-[20vw] max-w-[80px] max-h-[80px] bg-black rounded-lg border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-inner mt-1">
+                {tool.imageUrl ? (
+                  <img src={tool.imageUrl} className="w-full h-full object-cover" alt="Miniature" />
+                ) : (
+                  <span className="text-2xl opacity-30">📷</span>
+                )}
+              </div>
+              <div className="flex-1 flex flex-col gap-3">
+                <div>
+                  <label className="text-[9px] text-[#FF6600] font-black uppercase tracking-widest ml-1">Marque</label>
+                  <input type="text" value={editedTool.brand || ''} onChange={(e) => handleChange('brand', e.target.value)} placeholder="Ex: Makita" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] font-bold outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all" />
+                </div>
+                <div>
+                  <label className="text-[9px] text-[#FF6600] font-black uppercase tracking-widest ml-1">Modèle / Réf</label>
+                  <input type="text" value={editedTool.toolName || ''} onChange={(e) => handleChange('toolName', e.target.value)} placeholder="Ex: DDF482" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] font-bold outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all" />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Désignation / Type</label>
-              <input type="text" value={editedTool.toolName || ''} onChange={(e) => handleChange('toolName', e.target.value)} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
-            </div>
-
+            {/* BLOC 2 : SPÉCIFICATIONS TECHNIQUES (Grille) */}
+            <h4 className="text-white/40 text-[9px] font-black uppercase tracking-widest border-b border-white/10 pb-1 mt-2">
+              Spécifications Matérielles
+            </h4>
+            
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Énergie</label>
-                <input type="text" value={editedTool.energy || ''} onChange={(e) => handleChange('energy', e.target.value)} placeholder="Ex: 18V" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Énergie</label>
+                <input type="text" value={editedTool.energy || ''} onChange={(e) => handleChange('energy', e.target.value)} placeholder="Ex: 18V" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Moteur</label>
-                <input type="text" value={editedTool.motor || ''} onChange={(e) => handleChange('motor', e.target.value)} placeholder="Ex: Brushless" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Moteur</label>
+                <input type="text" value={editedTool.motor || ''} onChange={(e) => handleChange('motor', e.target.value)} placeholder="Ex: Brushless" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Numéro de Série (S/N)</label>
+                <input type="text" value={editedTool.serialNumber || ''} onChange={(e) => handleChange('serialNumber', e.target.value)} placeholder="Ex: ABC123456789" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-[#FF6600] font-mono text-[13px] outline-none focus:border-[#FF6600]" />
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Numéro de Série (S/N)</label>
-              <input type="text" value={editedTool.serialNumber || ''} onChange={(e) => handleChange('serialNumber', e.target.value)} placeholder="Ex: ABC123456789" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
-            </div>
-
+            {/* BLOC 3 : LOGISTIQUE ET ÉTAT */}
+            <h4 className="text-white/40 text-[9px] font-black uppercase tracking-widest border-b border-white/10 pb-1 mt-2">
+              Logistique & Audit
+            </h4>
+            
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Lieu / Zone</label>
-                <input type="text" value={editedTool.location || ''} onChange={(e) => handleChange('location', e.target.value)} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Valeur (€)</label>
+                <input type="number" value={editedTool.price || ''} onChange={(e) => handleChange('price', parseFloat(e.target.value))} placeholder="0.00" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Valeur (€)</label>
-                <input type="number" value={editedTool.price || ''} onChange={(e) => handleChange('price', parseFloat(e.target.value))} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">État</label>
+                <input type="text" value={editedTool.condition || ''} onChange={(e) => handleChange('condition', e.target.value)} placeholder="Ex: Bon état" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Zone de stockage</label>
+                <input type="text" value={editedTool.location || ''} onChange={(e) => handleChange('location', e.target.value)} placeholder="Ex: Atelier, Fourgon..." className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Observations (Notes)</label>
+                <textarea rows={2} value={editedTool.notes || ''} onChange={(e) => handleChange('notes', e.target.value)} placeholder="Détails, défauts, révisions..." className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600] resize-none"></textarea>
               </div>
             </div>
 
+            {/* ZONE DE DANGER (Suppression) */}
             {onDelete && (
-              <button onClick={onDelete} className="mt-4 bg-red-900/30 text-red-500 border border-red-500/50 py-3 rounded-lg font-black uppercase text-xs tracking-widest hover:bg-red-500 hover:text-white transition-colors">
-                Supprimer de l'inventaire
-              </button>
+              <div className="mt-4 pt-4 border-t border-red-500/20">
+                <button onClick={onDelete} className="w-full bg-red-500/10 text-red-500 border border-red-500/30 py-3.5 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-colors active:scale-95 flex justify-center items-center gap-2">
+                  <span className="text-lg leading-none mb-0.5">×</span> Supprimer définitivement
+                </button>
+              </div>
             )}
           </div>
 
@@ -3728,17 +3808,17 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               </div>
             </div>
 
-            {/* 3. GAUCHE ICONE / DROITE INFOS (Marque, Type, Energie, Lieux) */}
+            {/* 2. GAUCHE ICONE / DROITE INFOS (Marque, Type, Energie, Lieux) */}
             <div className="flex items-center gap-4 bg-[#1E1E1E] p-4 rounded-xl border border-white/10 shadow-inner">
               <div className="w-16 h-16 bg-[#D3D3D3] rounded-xl flex items-center justify-center border border-gray-300 shadow-md shrink-0">
                 <img src={categoryIcon} className="w-10 h-10 object-contain drop-shadow-md" alt="Catégorie" />
               </div>
               <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <h2 className="text-gray-400 font-black text-[10px] tracking-widest uppercase">{brandName}</h2>
-                <h1 className="text-white font-black text-[clamp(1.1rem,4.5vw,1.4rem)] uppercase leading-tight truncate">
+                <h1 className="text-white font-black text-[clamp(1.1rem,4.5vw,1.4rem)] uppercase leading-tight whitespace-normal">
                   {cleanToolName}
                 </h1>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <span className="bg-[#FF6600]/20 text-[#FF6600] border border-[#FF6600]/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">
                     ⚡ {(tool as any).energy || 'N/A'}
                   </span>
@@ -3749,33 +3829,44 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               </div>
             </div>
 
-            {/* 4. SPÉCIFICATIONS TECHNIQUES */}
-            <div className="bg-[#1E1E1E] rounded-xl border-t-4 border-[#FF6600] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex flex-col gap-2">
-              <h3 className="text-white text-[11px] font-black tracking-[0.2em] uppercase mb-2 flex items-center gap-2">
-                <span className="w-2 h-2 bg-[#FF6600] rounded-full"></span>
+            {/* 3. SPÉCIFICATIONS TECHNIQUES EXHAUSTIVES */}
+            <div className="bg-[#1E1E1E] rounded-xl border-t-4 border-[#FF6600] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex flex-col gap-3">
+              <h3 className="text-white text-[11px] font-black tracking-[0.2em] uppercase mb-1 flex items-center gap-2">
+                <span className="w-2 h-2 bg-[#FF6600] rounded-full shadow-[0_0_8px_#FF6600]"></span>
                 Spécifications Techniques
               </h3>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
-                  <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Type de Moteur</span>
+                  <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1">Type de Moteur</span>
                   <span className="text-white font-bold text-xs uppercase tracking-wider">{(tool as any).motor || 'Non spécifié'}</span>
                 </div>
                 <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
-                  <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Valeur estimée</span>
-                  <span className="text-white font-bold text-xs tracking-wider">{tool.price ? `${tool.price} €` : 'N/A'}</span>
+                  <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1">État Matériel</span>
+                  <span className="text-white font-bold text-xs tracking-wider capitalize">{tool.condition || 'Usagé'}</span>
+                </div>
+                <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex justify-between items-center col-span-2">
+                  <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">Valeur estimée</span>
+                  <span className="text-white font-bold text-sm tracking-wider bg-white/5 px-3 py-1 rounded">{tool.price ? `${tool.price} €` : 'N/A'}</span>
                 </div>
               </div>
 
               <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex justify-between items-center mt-1">
-                <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">S/N (Numéro de série)</span>
+                <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">S/N (Numéro de série)</span>
                 <span className="text-[#FF6600] font-mono font-black text-[11px] tracking-widest bg-[#FF6600]/10 px-2 py-1 rounded border border-[#FF6600]/20">
                   {tool.serialNumber || 'NON RENSEIGNÉ'}
                 </span>
               </div>
+
+              {tool.notes && (
+                <div className="bg-[#121212] rounded-lg p-3 border border-white/5 mt-1">
+                  <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1 block">Observations</span>
+                  <p className="text-white/80 text-[11px] leading-relaxed italic">{tool.notes}</p>
+                </div>
+              )}
               
               {/* ENREGISTRÉ LE... (TOUT EN BAS) */}
-              <div className="text-center mt-3 pt-3 border-t border-white/5">
+              <div className="text-center mt-4 pt-3 border-t border-white/5">
                 <span className="text-gray-600 text-[9px] font-black uppercase tracking-widest">
                   Fiche enregistrée le : {tool.date}
                 </span>
@@ -4386,7 +4477,9 @@ export interface AIScanResult {
   typography?: string;
   brandColor?: string;
   categorie_id?: string;
-  confidence?: number; // <-- C'est LE mot que Gemini utilise
+  type?: string; // Notre nouvel ajout de la session précédente
+  morphology?: string; // Pour l'effet Waouh
+  confidence?: number;
   etat?: string;
   description?: string;
   label?: string;
@@ -4403,9 +4496,29 @@ interface ValidationSasProps {
 
 const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateAll, onRejectAll }) => {
   const [itemsToValidate, setItemsToValidate] = useState<AIScanResult[]>(pendingItems);
+  
+  // État pour gérer les cases à cocher (par défaut, tout est coché)
+  const [selectedItems, setSelectedItems] = useState<boolean[]>(pendingItems.map(() => true));
 
-  const handleRemoveItem = (index: number) => {
-    setItemsToValidate(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveItem = (indexToRemove: number) => {
+    setItemsToValidate(prev => prev.filter((_, i) => i !== indexToRemove));
+    setSelectedItems(prev => prev.filter((_, i) => i !== indexToRemove));
+  };
+
+  const toggleSelection = (index: number) => {
+    const newSelection = [...selectedItems];
+    newSelection[index] = !newSelection[index];
+    setSelectedItems(newSelection);
+  };
+
+  const handleFinalValidation = () => {
+    // On ne garde que les items qui ont leur case cochée
+    const itemsToKeep = itemsToValidate.filter((_, index) => selectedItems[index]);
+    if (itemsToKeep.length > 0) {
+      onValidateAll(itemsToKeep);
+    } else {
+      alert("Aucun outil n'est sélectionné pour l'intégration.");
+    }
   };
 
   if (itemsToValidate.length === 0) {
@@ -4426,7 +4539,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
       {/* HEADER DU SAS */}
       <div className="flex flex-col mb-[3vh]">
         <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.2rem,5vw,1.8rem)]">
-          SAS DE VALIDATION <span className="text-[#FF6600]">(01 C1)</span>
+          SAS DE VALIDATION <span className="text-[#FF6600]">(SCAN)</span>
         </h2>
         <p className="text-white/60 text-[clamp(0.7rem,2.5vw,0.9rem)] italic mt-[0.5vh]">
           Vérification métier requise avant injection base de données.
@@ -4434,64 +4547,127 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
       </div>
 
       {/* LISTE DES OUTILS DÉTECTÉS */}
-      <div className="flex-1 overflow-y-auto space-y-[2vh] pr-[1vw]">
+      <div className="flex-1 overflow-y-auto space-y-[3vh] pr-[1vw] no-scrollbar">
         {itemsToValidate.map((item, index) => {
-         // On utilise 'confidence' (ex: 0.95) qu'on multiplie par 100
           const score = item.confidence ? Math.round(item.confidence * 100) : 0;
           const scoreColor = score >= 90 ? 'text-green-500' : score >= 70 ? 'text-[#FF6600]' : 'text-red-500';
+          const isSelected = selectedItems[index];
 
           return (
-            <div key={index} className="bg-[#1E1E1E] border border-white/10 p-[3vw] rounded-lg flex flex-col relative">
+            <div 
+              key={index} 
+              className={`bg-[#1E1E1E] border rounded-xl flex flex-col overflow-hidden transition-all duration-300 ${isSelected ? 'border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.15)]' : 'border-white/5 opacity-50 grayscale-[50%]'}`}
+            >
               
-              <button 
-                onClick={() => handleRemoveItem(index)}
-                className="absolute top-[2vw] right-[2vw] text-white/40 hover:text-red-500 font-bold text-[clamp(1rem,4vw,1.5rem)] leading-none"
-              >
-                ×
-              </button>
-
-              <div className="flex justify-between items-start pr-[6vw]">
-                <div>
-                  <h3 className="text-white font-bold text-[clamp(0.9rem,3.5vw,1.2rem)]">{item.label || item.typography || 'Outil Inconnu'}</h3>
-                  <p className="text-white/60 uppercase tracking-widest text-[clamp(0.6rem,2vw,0.8rem)] mt-[0.5vh]">
-                    {item.brandColor || 'Marque N/A'}
-                  </p>
+              {/* BLOC SUPÉRIEUR : PHOTO + INFOS */}
+              <div className="flex p-[3vw] gap-[3vw]">
+                
+                {/* Photo détourée (Gauche) */}
+                <div className="w-[22vw] h-[22vw] max-w-[90px] max-h-[90px] bg-[#0a0a0a] border border-white/10 rounded-lg flex items-center justify-center p-2 shrink-0 relative">
+                  {item.imageUrl ? (
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.label} 
+                      // Le drop-shadow crée l'effet détouré "waouh" si l'image s'y prête
+                      className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]" 
+                    />
+                  ) : (
+                    <span className="text-2xl opacity-30">📷</span>
+                  )}
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className={`font-black text-[clamp(1.2rem,5vw,1.8rem)] ${scoreColor}`}>
-                    {score}%
-                  </span>
-                  <span className="text-white/40 text-[clamp(0.5rem,1.5vw,0.6rem)] uppercase tracking-widest">
-                    Confiance
-                  </span>
+
+                {/* Infos (Centre / Droite) */}
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 pr-2">
+                      <span className="text-gray-400 font-black text-[9px] uppercase tracking-widest leading-none">
+                        {item.brandColor || 'Marque N/A'}
+                      </span>
+                      <h3 className="text-white font-bold text-[clamp(0.9rem,3.5vw,1.1rem)] leading-tight whitespace-normal mt-0.5">
+                        {item.label || item.typography || 'Outil Inconnu'}
+                      </h3>
+                      <span className="text-[#FF6600] text-[10px] font-bold tracking-wider uppercase">
+                        {item.type || item.categorie_id}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end shrink-0">
+                      <span className={`font-black text-[clamp(1.1rem,4vw,1.4rem)] leading-none ${scoreColor}`}>
+                        {score}%
+                      </span>
+                      <span className="text-white/40 text-[8px] uppercase tracking-widest mt-1">
+                        IA CONF.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* L'EFFET "WAOUH" : Terminal IA */}
+                  <div className="mt-auto pt-2">
+                    <div className="bg-black/60 border border-white/5 rounded p-2 font-mono text-[9px] text-gray-400 leading-snug h-[4.5em] overflow-hidden relative">
+                      <span className="text-[#FF6600] animate-pulse"> {">"} </span>
+                      <span className="text-white/80">SCAN_STRUCT : </span> 
+                      {item.morphology ? `${item.morphology}. ` : ''}
+                      <span className="italic opacity-80">{item.description}</span>
+                      {/* Fondu vers le bas si le texte est trop long */}
+                      <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
-              {item.description && (
-                <div className="mt-[2vh] p-[2vw] bg-[#121212] rounded border border-white/5">
-                  <p className="text-white/70 italic text-[clamp(0.7rem,2vw,0.85rem)] leading-snug">
-                    " {item.description} "
-                  </p>
-                </div>
-              )}
+              {/* BLOC INFÉRIEUR : LIGNE D'ACTIONS */}
+              <div className="flex border-t border-white/10 bg-[#121212]">
+                
+                {/* 1. Case à cocher (Valider) */}
+                <button 
+                  onClick={() => toggleSelection(index)}
+                  className={`flex-1 py-3 flex items-center justify-center gap-2 transition-colors ${isSelected ? 'text-[#FF6600] bg-[#FF6600]/10' : 'text-gray-500 hover:text-white'}`}
+                >
+                  <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${isSelected ? 'border-[#FF6600] bg-[#FF6600]' : 'border-gray-500'}`}>
+                    {isSelected && <span className="text-black text-[10px] font-black leading-none">✓</span>}
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {isSelected ? 'Prêt' : 'Ignoré'}
+                  </span>
+                </button>
+
+                {/* 2. Bouton Éditer (Prépare le terrain pour D) */}
+                <button 
+                  onClick={() => alert("L'édition détaillée sera disponible dans la fiche outil après validation.")}
+                  className="flex-1 py-3 border-l border-white/10 flex items-center justify-center gap-2 text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <span className="text-sm">✎</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Éditer</span>
+                </button>
+
+                {/* 3. Bouton Supprimer (Croix) */}
+                <button 
+                  onClick={() => handleRemoveItem(index)}
+                  className="w-[15%] py-3 border-l border-white/10 flex items-center justify-center text-white/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                  title="Supprimer définitivement"
+                >
+                  <span className="text-lg font-black leading-none">×</span>
+                </button>
+
+              </div>
             </div>
           );
         })}
       </div>
 
       {/* THUMB ZONE : ACTIONS GLOBALES */}
-      <div className="mt-auto pt-[2vh] flex justify-between gap-[3vw]">
+      <div className="mt-auto pt-[2vh] flex justify-between gap-[3vw] shrink-0">
         <button 
           onClick={onRejectAll}
-          className="flex-1 bg-[#333333] active:bg-[#444] text-white py-[2vh] rounded-md font-black uppercase tracking-widest text-[clamp(0.8rem,3vw,1rem)] transition-colors"
+          className="flex-1 bg-[#333333] active:bg-[#444] text-white py-[2vh] rounded-xl font-black uppercase tracking-widest text-[clamp(0.8rem,3vw,1rem)] transition-colors border border-white/5"
         >
-          Rejeter
+          Tout Rejeter
         </button>
         <button 
-          onClick={() => onValidateAll(itemsToValidate)}
-          className="flex-[2] bg-[#FF6600] active:bg-[#e65c00] text-white py-[2vh] rounded-md font-black uppercase tracking-widest text-[clamp(0.8rem,3vw,1rem)] shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-colors"
+          onClick={handleFinalValidation}
+          className="flex-[2] bg-[#FF6600] active:bg-[#e65c00] text-black py-[2vh] rounded-xl font-black uppercase tracking-widest text-[clamp(0.8rem,3vw,1rem)] shadow-[0_0_20px_rgba(255,102,0,0.4)] transition-transform active:scale-95"
         >
-          Valider & Ranger
+          Valider & Ranger ({selectedItems.filter(Boolean).length})
         </button>
       </div>
 

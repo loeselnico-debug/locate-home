@@ -1,6 +1,3 @@
-// ==========================================
-// 📂 FICHIER : \src\modules\home\components\ToolDetail.tsx
-// ==========================================
 import React, { useState, useEffect } from 'react';
 import { CATEGORIES } from '../views/Dashboard';
 import type { InventoryItem } from '../../../types';
@@ -40,7 +37,6 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
   // LOGIQUE ANTI-REDONDANCE POUR LA MARQUE
   // ==========================================
   const brandName = tool.brand || 'Marque N/A';
-  // Si le nom de l'outil commence déjà par la marque (ex: "RYOBI RRS1801"), on enlève le mot "RYOBI" du titre principal pour éviter le doublon visuel.
   const cleanToolName = tool.toolName.toLowerCase().startsWith(brandName.toLowerCase())
     ? tool.toolName.substring(brandName.length).trim()
     : tool.toolName;
@@ -53,18 +49,15 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
       {/* ========================================== */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         {isEditing ? (
-          /* BOUTON SAVE (Carré Orange / Texte Noir) - Hauteur alignée sur le retour */
           <button onClick={handleSave} className="h-14 px-4 min-w-[3.5rem] bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
             <span className="text-black font-black text-[11px] uppercase tracking-widest text-center">Save</span>
           </button>
         ) : (
-          /* BOUTON ÉDITER (Carré Orange / Texte Noir / Sans coupure) - Hauteur alignée sur le retour */
           <button onClick={() => setIsEditing(true)} className="h-14 px-3 min-w-[3.5rem] bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
             <span className="text-black font-black text-[11px] uppercase tracking-widest text-center">Éditer</span>
           </button>
         )}
 
-        {/* BOUTON RETOUR */}
         <button onClick={isEditing ? () => setIsEditing(false) : onBack} className="w-14 h-14 active:scale-90 transition-transform">
           <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain drop-shadow-lg" />
         </button>
@@ -77,56 +70,82 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
 
         {isEditing ? (
           /* ========================================== */
-          /* MODE ÉDITION (CHAMPS DE SAISIE) */
+          /* MODE ÉDITION (PANNEAU DE CONTRÔLE DENSE) */
           /* ========================================== */
-          <div className="bg-[#1E1E1E] rounded-xl border-2 border-[#FF6600] p-5 shadow-[0_10px_30px_rgba(255,102,0,0.15)] flex flex-col gap-4 mb-6">
-            <h3 className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(1rem,4vw,1.2rem)] border-b border-white/10 pb-2 flex justify-between items-center">
-              Mode Édition
-            </h3>
-
-            {/* Le bouton caméra non-fonctionnel a été supprimé ici */}
-
-            <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Marque</label>
-              <input type="text" value={editedTool.brand || ''} onChange={(e) => handleChange('brand', e.target.value)} placeholder="Ex: Makita, Hilti..." className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+          <div className="bg-[#1E1E1E] rounded-xl border border-[#FF6600]/50 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col gap-4 mb-6">
+            
+            {/* BLOC 1 : IDENTITÉ (Avec Miniature) */}
+            <div className="flex gap-4 items-start">
+              <div className="w-[20vw] h-[20vw] max-w-[80px] max-h-[80px] bg-black rounded-lg border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-inner mt-1">
+                {tool.imageUrl ? (
+                  <img src={tool.imageUrl} className="w-full h-full object-cover" alt="Miniature" />
+                ) : (
+                  <span className="text-2xl opacity-30">📷</span>
+                )}
+              </div>
+              <div className="flex-1 flex flex-col gap-3">
+                <div>
+                  <label className="text-[9px] text-[#FF6600] font-black uppercase tracking-widest ml-1">Marque</label>
+                  <input type="text" value={editedTool.brand || ''} onChange={(e) => handleChange('brand', e.target.value)} placeholder="Ex: Makita" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] font-bold outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all" />
+                </div>
+                <div>
+                  <label className="text-[9px] text-[#FF6600] font-black uppercase tracking-widest ml-1">Modèle / Réf</label>
+                  <input type="text" value={editedTool.toolName || ''} onChange={(e) => handleChange('toolName', e.target.value)} placeholder="Ex: DDF482" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] font-bold outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all" />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Désignation / Type</label>
-              <input type="text" value={editedTool.toolName || ''} onChange={(e) => handleChange('toolName', e.target.value)} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
-            </div>
-
+            {/* BLOC 2 : SPÉCIFICATIONS TECHNIQUES (Grille) */}
+            <h4 className="text-white/40 text-[9px] font-black uppercase tracking-widest border-b border-white/10 pb-1 mt-2">
+              Spécifications Matérielles
+            </h4>
+            
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Énergie</label>
-                <input type="text" value={editedTool.energy || ''} onChange={(e) => handleChange('energy', e.target.value)} placeholder="Ex: 18V" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Énergie</label>
+                <input type="text" value={editedTool.energy || ''} onChange={(e) => handleChange('energy', e.target.value)} placeholder="Ex: 18V" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Moteur</label>
-                <input type="text" value={editedTool.motor || ''} onChange={(e) => handleChange('motor', e.target.value)} placeholder="Ex: Brushless" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Moteur</label>
+                <input type="text" value={editedTool.motor || ''} onChange={(e) => handleChange('motor', e.target.value)} placeholder="Ex: Brushless" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Numéro de Série (S/N)</label>
+                <input type="text" value={editedTool.serialNumber || ''} onChange={(e) => handleChange('serialNumber', e.target.value)} placeholder="Ex: ABC123456789" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-[#FF6600] font-mono text-[13px] outline-none focus:border-[#FF6600]" />
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Numéro de Série (S/N)</label>
-              <input type="text" value={editedTool.serialNumber || ''} onChange={(e) => handleChange('serialNumber', e.target.value)} placeholder="Ex: ABC123456789" className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
-            </div>
-
+            {/* BLOC 3 : LOGISTIQUE ET ÉTAT */}
+            <h4 className="text-white/40 text-[9px] font-black uppercase tracking-widest border-b border-white/10 pb-1 mt-2">
+              Logistique & Audit
+            </h4>
+            
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Lieu / Zone</label>
-                <input type="text" value={editedTool.location || ''} onChange={(e) => handleChange('location', e.target.value)} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Valeur (€)</label>
+                <input type="number" value={editedTool.price || ''} onChange={(e) => handleChange('price', parseFloat(e.target.value))} placeholder="0.00" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Valeur (€)</label>
-                <input type="number" value={editedTool.price || ''} onChange={(e) => handleChange('price', parseFloat(e.target.value))} className="w-full bg-[#121212] border border-white/10 rounded p-3 text-white mt-1 text-sm outline-none focus:border-[#FF6600]" />
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">État</label>
+                <input type="text" value={editedTool.condition || ''} onChange={(e) => handleChange('condition', e.target.value)} placeholder="Ex: Bon état" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Zone de stockage</label>
+                <input type="text" value={editedTool.location || ''} onChange={(e) => handleChange('location', e.target.value)} placeholder="Ex: Atelier, Fourgon..." className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Observations (Notes)</label>
+                <textarea rows={2} value={editedTool.notes || ''} onChange={(e) => handleChange('notes', e.target.value)} placeholder="Détails, défauts, révisions..." className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600] resize-none"></textarea>
               </div>
             </div>
 
+            {/* ZONE DE DANGER (Suppression) */}
             {onDelete && (
-              <button onClick={onDelete} className="mt-4 bg-red-900/30 text-red-500 border border-red-500/50 py-3 rounded-lg font-black uppercase text-xs tracking-widest hover:bg-red-500 hover:text-white transition-colors">
-                Supprimer de l'inventaire
-              </button>
+              <div className="mt-4 pt-4 border-t border-red-500/20">
+                <button onClick={onDelete} className="w-full bg-red-500/10 text-red-500 border border-red-500/30 py-3.5 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-colors active:scale-95 flex justify-center items-center gap-2">
+                  <span className="text-lg leading-none mb-0.5">×</span> Supprimer définitivement
+                </button>
+              </div>
             )}
           </div>
 
@@ -156,17 +175,17 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               </div>
             </div>
 
-            {/* 3. GAUCHE ICONE / DROITE INFOS (Marque, Type, Energie, Lieux) */}
+            {/* 2. GAUCHE ICONE / DROITE INFOS (Marque, Type, Energie, Lieux) */}
             <div className="flex items-center gap-4 bg-[#1E1E1E] p-4 rounded-xl border border-white/10 shadow-inner">
               <div className="w-16 h-16 bg-[#D3D3D3] rounded-xl flex items-center justify-center border border-gray-300 shadow-md shrink-0">
                 <img src={categoryIcon} className="w-10 h-10 object-contain drop-shadow-md" alt="Catégorie" />
               </div>
               <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <h2 className="text-gray-400 font-black text-[10px] tracking-widest uppercase">{brandName}</h2>
-                <h1 className="text-white font-black text-[clamp(1.1rem,4.5vw,1.4rem)] uppercase leading-tight truncate">
+                <h1 className="text-white font-black text-[clamp(1.1rem,4.5vw,1.4rem)] uppercase leading-tight whitespace-normal">
                   {cleanToolName}
                 </h1>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <span className="bg-[#FF6600]/20 text-[#FF6600] border border-[#FF6600]/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">
                     ⚡ {(tool as any).energy || 'N/A'}
                   </span>
@@ -177,33 +196,44 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               </div>
             </div>
 
-            {/* 4. SPÉCIFICATIONS TECHNIQUES */}
-            <div className="bg-[#1E1E1E] rounded-xl border-t-4 border-[#FF6600] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex flex-col gap-2">
-              <h3 className="text-white text-[11px] font-black tracking-[0.2em] uppercase mb-2 flex items-center gap-2">
-                <span className="w-2 h-2 bg-[#FF6600] rounded-full"></span>
+            {/* 3. SPÉCIFICATIONS TECHNIQUES EXHAUSTIVES */}
+            <div className="bg-[#1E1E1E] rounded-xl border-t-4 border-[#FF6600] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex flex-col gap-3">
+              <h3 className="text-white text-[11px] font-black tracking-[0.2em] uppercase mb-1 flex items-center gap-2">
+                <span className="w-2 h-2 bg-[#FF6600] rounded-full shadow-[0_0_8px_#FF6600]"></span>
                 Spécifications Techniques
               </h3>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
-                  <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Type de Moteur</span>
+                  <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1">Type de Moteur</span>
                   <span className="text-white font-bold text-xs uppercase tracking-wider">{(tool as any).motor || 'Non spécifié'}</span>
                 </div>
                 <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
-                  <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Valeur estimée</span>
-                  <span className="text-white font-bold text-xs tracking-wider">{tool.price ? `${tool.price} €` : 'N/A'}</span>
+                  <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1">État Matériel</span>
+                  <span className="text-white font-bold text-xs tracking-wider capitalize">{tool.condition || 'Usagé'}</span>
+                </div>
+                <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex justify-between items-center col-span-2">
+                  <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">Valeur estimée</span>
+                  <span className="text-white font-bold text-sm tracking-wider bg-white/5 px-3 py-1 rounded">{tool.price ? `${tool.price} €` : 'N/A'}</span>
                 </div>
               </div>
 
               <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex justify-between items-center mt-1">
-                <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">S/N (Numéro de série)</span>
+                <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">S/N (Numéro de série)</span>
                 <span className="text-[#FF6600] font-mono font-black text-[11px] tracking-widest bg-[#FF6600]/10 px-2 py-1 rounded border border-[#FF6600]/20">
                   {tool.serialNumber || 'NON RENSEIGNÉ'}
                 </span>
               </div>
+
+              {tool.notes && (
+                <div className="bg-[#121212] rounded-lg p-3 border border-white/5 mt-1">
+                  <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1 block">Observations</span>
+                  <p className="text-white/80 text-[11px] leading-relaxed italic">{tool.notes}</p>
+                </div>
+              )}
               
               {/* ENREGISTRÉ LE... (TOUT EN BAS) */}
-              <div className="text-center mt-3 pt-3 border-t border-white/5">
+              <div className="text-center mt-4 pt-3 border-t border-white/5">
                 <span className="text-gray-600 text-[9px] font-black uppercase tracking-widest">
                   Fiche enregistrée le : {tool.date}
                 </span>

@@ -320,24 +320,62 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         </div>
       </div>
 
-      {/* MODAL RÉSULTATS */}
+      {/* ========================================== */}
+      {/* VUE A : MODAL DE RÉSULTAT (Divulgation progressive) */}
+      {/* ========================================== */}
       {pendingItems && (
         <div className="absolute inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col p-[4vw] animate-in fade-in zoom-in-95">
           <div className="flex items-center justify-between mt-[6vh] mb-[4vh] border-b border-white/10 pb-[2vh]">
             <h2 className="text-[#FF6600] font-black text-[6vw] sm:text-2xl tracking-widest uppercase">Inventaire Vidéo</h2>
             <span className="bg-[#1E1E1E] px-4 py-2 rounded-xl text-[#FF6600] font-black text-[3vw] sm:text-sm">{pendingItems.length} OBJETS</span>
           </div>
-          <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3">
-            {pendingItems.map((item, idx) => (
-                <div key={idx} className="bg-[#1E1E1E] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-lg leading-tight">{item.label || item.typography || "Outil identifié"}</span>
-                    <span className="text-white/40 text-[9px] uppercase tracking-widest">{item.categorie_id}</span>
+          
+          <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4">
+            {pendingItems.map((item, idx) => {
+              // Gestion dynamique du badge de score
+              const score = item.confidence ? Math.round(item.confidence * 100) : 0;
+              const scoreColor = score >= 90 ? 'bg-green-500/10 text-green-500 border-green-500/30' : score >= 70 ? 'bg-[#FF6600]/10 text-[#FF6600] border-[#FF6600]/30' : 'bg-red-500/10 text-red-500 border-red-500/30';
+
+              return (
+                <div key={idx} className="bg-[#1E1E1E] border border-white/10 rounded-2xl p-4 flex gap-4 items-center shadow-lg">
+                  
+                  {/* Miniature Isolée (Gauche) */}
+                  <div className="w-16 h-16 rounded-xl bg-black/50 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.label || 'Outil'} />
+                    ) : (
+                      <span className="text-xl opacity-30">📷</span>
+                    )}
                   </div>
-                  <div className="text-[#FF6600] font-black text-xs">{item.confidence ? Math.round(item.confidence * 100) : 0}%</div>
+
+                  {/* Hiérarchie de la Donnée (Centre) */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <span className="text-gray-400 font-black text-[9px] tracking-widest uppercase mb-1">
+                      {item.brandColor || 'Marque Inconnue'}
+                    </span>
+                    
+                    {/* Nom non tronqué (whitespace-normal) */}
+                    <h3 className="text-white font-bold text-sm leading-tight whitespace-normal">
+                      {item.label || item.typography || item.morphology || "Outil identifié"}
+                    </h3>
+
+                    {/* Nouveau champ TYPE GÉRIQUE pour la recherche vocale */}
+                    <span className="text-[#FF6600] text-[10px] font-bold mt-1.5 tracking-wider uppercase">
+                      {item.type || item.categorie_id}
+                    </span>
+                  </div>
+
+                  {/* Validation Technique (Droite) */}
+                  <div className="shrink-0 flex flex-col items-end">
+                     <span className={`px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${scoreColor}`}>
+                       {score}%
+                     </span>
+                  </div>
                 </div>
-              ))}
+              );
+            })}
           </div>
+
           <div className="flex gap-4 mt-auto pt-6 pb-[env(safe-area-inset-bottom,4vh)]">
             <button onClick={() => {setPendingItems(null);}} className="flex-1 py-4 rounded-2xl bg-[#1E1E1E] text-white font-black uppercase tracking-widest active:scale-95 border border-white/10">Rejeter</button>
             <button onClick={() => onAnalysisComplete(pendingItems)} className="flex-[2] py-4 rounded-2xl bg-[#FF6600] text-black font-black uppercase tracking-widest active:scale-95 shadow-[0_0_20px_rgba(255,102,0,0.4)]">Intégrer</button>

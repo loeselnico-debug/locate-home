@@ -96,6 +96,9 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 * [X] Stockage Robuste : Unification IndexedDB, système de 4 zones d'intervention dynamiques.
 * [X] E-Commerce : Catalogue local dropshipping servant de référentiel dimensionnel IA.
 * [X] Sécurité : Consentement IA bloquant, Politique de Confidentialité, Limites Freemium actives.
+**[07/03/2026] IA / Modèle :** Migration du endpoint API de `gemini-2.0-flash` vers `gemini-2.5-flash` pour des performances de vision accrues. Ajout de la clé `type` dans le prompt JSON pour structurer l'affichage et doper l'efficacité de la recherche vocale (module "Retrouver").
+
+
 
 **👁️ Vision & Interface (Scanner & Hub)**
 * [X] Scanner HDR : Mode hybride (Photo/Vidéo/Import), calibré 12 fps/20s.
@@ -103,6 +106,11 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 * [X] Hub Central (M2) : Dashboard interactif, navigation 3 niveaux.
 * [X] Vocal Pro : Parseur d'intention local compréhensif filtrant la Web Speech API.
 * [X] UI Boutique : Jauge visuelle de consommables, `StoreModal.tsx` connectée.
+- **[07/03/2026] UX/UI Home (Vue A) :** Remplacement de l'affichage en ligne du scanner par une carte aérée (Miniature + Marque + Nom complet + Type générique + Badge Score) selon le principe de divulgation progressive. Préparation du terrain pour optimiser la recherche vocale.
+- **[07/03/2026] UX/UI Home (Vue B) :** Refonte majeure de `ValidationSas.tsx`. Changement de titre ("SCAN"). Création d'une carte à 3 zones (Image détourée, Terminal IA "Waouh effect" masquant le JSON brut, et Barre d'action basse). Ajout d'une Checkbox permettant d'ignorer un outil sans le supprimer, illustrant le concept de divulgation progressive et de Sas "Zéro-Trust".
+- **[07/03/2026] UX/UI Home (Vue C) :** Refonte de la carte outil dans `Library.tsx` (Divulgation progressive). Suppression de la troncature pour le nom de l'outil, ajout de la Marque en surtitre, intégration du badge d'Énergie et réalignement du bloc de statut en bas de carte. Le bouton "Export PDF par rubrique" est décalé à une V2 pour des raisons de stabilité.
+- **[07/03/2026] UX/UI Home (Vue D) :** Refonte majeure de `ToolDetail.tsx`. Transformation du formulaire d'édition en "Panneau de Contrôle" structuré (Grid) avec miniature persistante. Ajout des champs `condition` (État) et `notes` (Observations) pour créer une spécification technique ultra-détaillée type "Fiche Produit" assumant un scroll justifié par l'exhaustivité des données métiers.
+
 
 ---
 
@@ -132,6 +140,7 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 - [ ] Ajuster les sous-rubriques pour afficher le nom complet de l'outil.
 - [ ] Revoir la taille et les infos des fiches outils (noms tronqués).
 - [ ] Refondre le design du bouton "Éditer" (suppression du scroll en mode édition).
+- [ ] Réaliser la connexion de PDFassurance présent dans src\modules\home\components\Library.tsx
 
 ### 6. MODULE SCANNER
 - [ ] **Accès (Tiers) :** Limiter "Fourgon/Atelier" (FREE) ; réserver "Chantier/Prêt" (PREMIUM/PRO).

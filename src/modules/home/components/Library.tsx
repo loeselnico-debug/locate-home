@@ -8,7 +8,6 @@ interface LibraryProps {
   onStartScan: () => void;
   inventory?: InventoryItem[];
   onSelectTool: (tool: InventoryItem) => void;
-  // NOUVEAU : Ajout de la commande de suppression
   onDelete: (id: string) => void; 
 }
 
@@ -76,10 +75,9 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
               <div
                 key={tool.id}
                 onClick={() => onSelectTool(tool)}
-                // NOUVEAU : Ajout de "relative" ici pour positionner la croix
                 className="relative bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] transition-transform"
               >
-                {/* NOUVEAU : BOUTON SUPPRIMER (Croix discrète) */}
+                {/* BOUTON SUPPRIMER (Croix discrète) */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation(); // Empêche l'ouverture de la fiche détail
@@ -99,26 +97,36 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                   )}
                 </div>
 
-                {/* Détails */}
+                {/* Détails Restructurés (Vue C) */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-white font-black text-sm uppercase truncate leading-tight pr-6">
+                  <div className="pr-6"> {/* Padding right pour ne pas chevaucher la croix */}
+                    <span className="text-gray-400 font-black text-[9px] uppercase tracking-widest leading-none block mb-0.5">
+                      {tool.brand || 'MARQUE N/A'}
+                    </span>
+                    <h3 className="text-white font-bold text-[clamp(0.9rem,3.5vw,1.1rem)] uppercase leading-tight whitespace-normal">
                       {tool.toolName}
                     </h3>
-                    <p className="text-[#FF6600] text-[10px] font-bold mt-0.5 tracking-wider truncate">
-                      📍 {tool.location || 'ZONE NON DÉFINIE'}
-                    </p>
+                    
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/30 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">
+                        ⚡ {(tool as any).energy || 'N/A'}
+                      </span>
+                      <span className="text-[#D3D3D3] text-[9px] font-bold uppercase tracking-widest truncate">
+                        📍 {tool.location || 'ZONE NON DÉFINIE'}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-2">
-                    <span className={`px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
+                  <div className="flex items-center justify-between mt-3 border-t border-white/5 pt-2">
+                    <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
                       {tool.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
                     </span>
-                    <span className="text-[#B0BEC5] text-[9px] italic opacity-60">
+                    <span className="text-[#B0BEC5] text-[8px] italic opacity-60">
                       {tool.date}
                     </span>
                   </div>
                 </div>
+
               </div>
             ))}
           </div>

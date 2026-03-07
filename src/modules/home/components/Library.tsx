@@ -1,18 +1,13 @@
-// ==========================================
-// 📂 FICHIER : \src\modules\home\components\Library.tsx
-// ==========================================
 import React, { useState, useEffect } from 'react';
 import { CATEGORIES } from '../views/Dashboard';
 import type { InventoryItem } from '../../../types';
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import { InsuranceReport } from '../components/InsuranceReport';
-
 
 interface LibraryProps {
   onBack: () => void;
   selectedCategoryId: string | null;
   onStartScan: () => void;
   inventory?: InventoryItem[];
+  // NOUVEAU : Fonction pour gérer le clic sur un outil
   onSelectTool: (tool: InventoryItem) => void; 
 }
 
@@ -47,26 +42,9 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
     <div className="flex flex-col h-full bg-transparent">
       {/* EN-TÊTE PREMIUM 3D */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
-        
-        {/* NOUVEAU BOUTON PDF DYNAMIQUE */}
-        <PDFDownloadLink
-          document={<InsuranceReport items={tools} userInfo={{ name: 'Opérateur', address: 'Atelier / ' + categoryLabel }} />}
-          fileName={`Rapport_Inventaire_${categoryLabel.replace(/\s+/g, '_')}.pdf`}
-          className="w-14 h-14 active:scale-90 transition-transform"
-        >
-          {({ loading }) => (
-            <div className="w-full h-full relative flex items-center justify-center">
-              <img 
-                src="/icon-assurance.png" 
-                alt="Assurance" 
-                className={`w-full h-full object-contain drop-shadow-lg transition-opacity ${loading ? 'opacity-30' : 'opacity-100'}`} 
-              />
-              {/* Petit indicateur de chargement si le PDF est lourd */}
-              {loading && <span className="absolute text-[8px] font-black text-[#FF6600] tracking-widest uppercase">Calc...</span>}
-            </div>
-          )}
-        </PDFDownloadLink>
-
+        <button className="w-14 h-14 active:scale-90 transition-transform">
+          <img src="/icon-assurance.png" alt="Assurance" className="w-full h-full object-contain drop-shadow-lg" />
+        </button>
         <button onClick={onBack} className="w-14 h-14 active:scale-90 transition-transform">
           <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain drop-shadow-lg" />
         </button>
@@ -89,73 +67,47 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
         </div>
       )}
 
-      {/* LISTE DES OUTILS (Format "Croquis C") */}
+      {/* LISTE DES OUTILS SCANNÉS */}
       <div className="flex-1 overflow-y-auto px-[4vw] pb-[12vh] no-scrollbar">
         {tools.length > 0 ? (
           <div className="flex flex-col gap-4">
-            {tools.map((tool) => {
-              
-              // Logique Anti-Redondance (séparation Marque / Modèle)
-              const brandName = tool.brand || 'Marque N/A';
-              const cleanToolName = tool.toolName.toLowerCase().startsWith(brandName.toLowerCase())
-                ? tool.toolName.substring(brandName.length).trim()
-                : tool.toolName;
+            {tools.map((tool) => (
+              <div
+                key={tool.id}
+                onClick={() => onSelectTool(tool)} // NOUVEAU : Action de clic ajoutée
+                className="bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] transition-transform"
+              >
+                {/* Photo miniature */}
+                <div className="w-16 h-16 rounded-lg bg-black/50 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
+                  {tool.imageUrl ? (
+                    <img src={tool.imageUrl} className="w-full h-full object-cover" alt={tool.toolName} />
+                  ) : (
+                    <span className="text-[8px] font-black text-white/20">NO IMG</span>
+                  )}
+                </div>
 
-              return (
-                <div
-                  key={tool.id}
-                  onClick={() => onSelectTool(tool)}
-                  className="bg-[#1E1E1E] rounded-xl border border-white/10 p-3 flex gap-4 shadow-[0_8px_20px_rgba(0,0,0,0.4)] cursor-pointer active:scale-[0.98] transition-transform relative overflow-hidden group"
-                >
-                  {/* Petit liseré orange sur la gauche */}
-                  <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FF6600]"></div>
-
-                  {/* 1. PHOTO ISOLÉE (Gauche) */}
-                  <div className="w-24 h-24 rounded-lg bg-[#0a0a0a] border border-white/5 overflow-hidden shrink-0 flex items-center justify-center shadow-inner relative ml-1">
-                    {tool.imageUrl ? (
-                      <img src={tool.imageUrl} className="w-full h-full object-contain p-2 drop-shadow-lg" alt={tool.toolName} />
-                    ) : (
-                      <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">No IMG</span>
-                    )}
+                {/* Détails */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-white font-black text-sm uppercase truncate leading-tight">
+                      {tool.toolName}
+                    </h3>
+                    <p className="text-[#FF6600] text-[10px] font-bold mt-0.5 tracking-wider truncate">
+                      📍 {tool.location || 'ZONE NON DÉFINIE'}
+                    </p>
                   </div>
 
-                  {/* 2. DÉTAILS (Droite) */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
-                    
-                    {/* Bloc Titre (Marque + Désignation) */}
-                    <div>
-                      <h4 className="text-gray-400 font-black text-[9px] uppercase tracking-[0.2em] mb-0.5 truncate">
-                        {brandName}
-                      </h4>
-                      <h3 className="text-white font-black text-[clamp(0.9rem,3.5vw,1.1rem)] uppercase leading-tight truncate">
-                        {cleanToolName}
-                      </h3>
-                    </div>
-
-                    {/* Bloc Infos (Énergie + Lieu) */}
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="bg-[#FF6600]/10 text-[#FF6600] px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border border-[#FF6600]/20">
-                        ⚡ {(tool as any).energy || 'N/A'}
-                      </span>
-                      <span className="text-[#D3D3D3] text-[9px] font-bold uppercase tracking-widest truncate">
-                        📍 {tool.location || 'ZONE INCONNUE'}
-                      </span>
-                    </div>
-
-                    {/* Ligne du bas : Statut + Date */}
-                    <div className="flex items-end justify-between mt-auto pt-2">
-                      <span className={`px-2 py-1 rounded font-black text-[8px] uppercase tracking-widest shadow-sm ${tool.safetyStatus ? 'bg-red-500 text-white' : 'bg-[#2EA043] text-white'}`}>
-                        {tool.safetyStatus ? '⚠️ ALERTE' : '✓ OPÉRATIONNEL'}
-                      </span>
-                      <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest text-right">
-                        {tool.date}
-                      </span>
-                    </div>
-
+                  <div className="flex items-center justify-between mt-2">
+                    <span className={`px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
+                      {tool.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
+                    </span>
+                    <span className="text-[#B0BEC5] text-[9px] italic opacity-60">
+                      {tool.date}
+                    </span>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         ) : (
           <div className="h-[40vh] flex flex-col items-center justify-center opacity-30">

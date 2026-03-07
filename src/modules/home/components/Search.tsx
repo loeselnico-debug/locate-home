@@ -71,19 +71,34 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
     recognition.start();
   };
 
-  // --- FILTRAGE INTELLIGENT MULTI-CRITÈRES ---
+  // --- FILTRAGE INTELLIGENT MULTI-CRITÈRES (FULL-TEXT) ---
   const results = useMemo(() => {
     return inventory.filter(tool => {
-      // Découpage de la requête en mots pour une recherche plus tolérante (ex: "bosch perceuse" trouve "Perceuse Bosch")
-      const searchTerms = query.toLowerCase().split(' ').filter(word => word.length > 2);
+      // Découpage de la requête en mots (ex: "bosch perceuse")
+      const searchTerms = query.toLowerCase().split(' ').filter(word => word.length > 1);
       
-      const matchesQuery = query.trim() === '' || searchTerms.every(term => 
-        tool.toolName.toLowerCase().includes(term) || 
-        tool.category.toLowerCase().includes(term) ||
-        (tool.sku && tool.sku.toLowerCase().includes(term))
-      );
+      // 1. Création d'un index "Full-Text" pour cet outil.
+      // On regroupe TOUTES les informations de l'outil dans une seule grande chaîne de texte (en minuscules)
+      const toolIndex = [
+        tool.toolName,
+        tool.brand,
+        tool.category,
+        tool.sku,
+        tool.location,
+        tool.notes,
+        (tool as any).energy,
+        (tool as any).motor,
+        (tool as any).type // Si tu as un champ spécifique 'type' un jour
+      ]
+        .filter(Boolean) // Retire les champs vides ou undefined
+        .join(' ')       // Colle tous les mots ensemble avec un espace
+        .toLowerCase();  // Passe tout en minuscules
+
+      // 2. Vérification : Est-ce que CHAQUE mot tapé (ou dicté) se trouve quelque part dans l'index de cet outil ?
+      const matchesQuery = query.trim() === '' || searchTerms.every(term => toolIndex.includes(term));
       
       const matchesLocation = selectedLocation === 'ALL' || tool.location === selectedLocation;
+      
       return matchesQuery && matchesLocation;
     });
   }, [query, selectedLocation, inventory]);

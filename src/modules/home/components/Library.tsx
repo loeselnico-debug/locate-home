@@ -7,11 +7,12 @@ interface LibraryProps {
   selectedCategoryId: string | null;
   onStartScan: () => void;
   inventory?: InventoryItem[];
-  // NOUVEAU : Fonction pour gérer le clic sur un outil
-  onSelectTool: (tool: InventoryItem) => void; 
+  onSelectTool: (tool: InventoryItem) => void;
+  // NOUVEAU : Ajout de la commande de suppression
+  onDelete: (id: string) => void; 
 }
 
-const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory, onSelectTool }) => {
+const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory, onSelectTool, onDelete }) => {
   const [tools, setTools] = useState<InventoryItem[]>([]);
 
   // Récupération de la catégorie active
@@ -74,9 +75,21 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
             {tools.map((tool) => (
               <div
                 key={tool.id}
-                onClick={() => onSelectTool(tool)} // NOUVEAU : Action de clic ajoutée
-                className="bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] transition-transform"
+                onClick={() => onSelectTool(tool)}
+                // NOUVEAU : Ajout de "relative" ici pour positionner la croix
+                className="relative bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] transition-transform"
               >
+                {/* NOUVEAU : BOUTON SUPPRIMER (Croix discrète) */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Empêche l'ouverture de la fiche détail
+                    onDelete(tool.id);   // Déclenche l'alerte de suppression
+                  }}
+                  className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-white/30 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-10"
+                >
+                  <span className="text-xl font-bold leading-none mb-1">×</span>
+                </button>
+
                 {/* Photo miniature */}
                 <div className="w-16 h-16 rounded-lg bg-black/50 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
                   {tool.imageUrl ? (
@@ -89,7 +102,7 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                 {/* Détails */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-white font-black text-sm uppercase truncate leading-tight">
+                    <h3 className="text-white font-black text-sm uppercase truncate leading-tight pr-6">
                       {tool.toolName}
                     </h3>
                     <p className="text-[#FF6600] text-[10px] font-bold mt-0.5 tracking-wider truncate">

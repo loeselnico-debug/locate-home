@@ -177,6 +177,7 @@ const App = () => {
               setSelectedTool(tool);
               setView('tool_detail');
             }}
+            onDelete={deleteTool}
           />
         )}
 

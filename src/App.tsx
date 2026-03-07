@@ -18,9 +18,10 @@ import { SettingsPage } from './modules/home/views/SettingsPage';
 import ValidationSas from './modules/home/views/ValidationSas';
 import ToolDetail from './modules/home/components/ToolDetail';
 import type { AIScanResult } from './modules/home/views/ValidationSas';
+import GarageDashboard from './modules/garage/views/GarageDashboard';
 
-type ViewState = 'hub' | 'home' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
 
+type ViewState = 'hub' | 'home' | 'garage' | 'kitchen' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
 const App = () => {
   // ÉTATS D'AUTHENTIFICATION (NOUVEAU)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -146,8 +147,13 @@ const App = () => {
       )}
 
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
-        {view === 'hub' && <Hub onSelectModule={(m: string) => m === 'home' && setView('home')} />}
+        
+        {/* CORRECTION DU ROUTAGE HUB */}
+        {view === 'hub' && <Hub onSelectModule={(m: string) => setView(m as ViewState)} />}
+        
+        {/* ROUTES DES MODULES PRINCIPAUX */}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
+        {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}
 
         {view === 'inventory' && (
           <Dashboard

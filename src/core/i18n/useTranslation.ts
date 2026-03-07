@@ -23,7 +23,7 @@ const dictionary = {
     profile_company: "Nom de l'entreprise (Optionnel)",
     profile_address: "Adresse complète",
   },
-  UK: {
+  EN: {
     settings_title: "Settings",
     settings_subtitle: "Locate Home System Configuration",
     intl_title: "INTERNATIONALIZATION",

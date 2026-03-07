@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
-export type Language = 'FR' | 'UK';
+export type Language = 'FR' | 'EN';
 export type UnitSystem = 'METRIC' | 'IMPERIAL';
 
 const SETTINGS_KEY = 'locate_app_settings';

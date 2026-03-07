@@ -8,7 +8,7 @@ interface PrivacyPolicyProps {
 const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
   // Connexion au cerveau global pour connaître la langue active
   const { settings } = useAppSettings();
-  const isUK = settings.language === 'UK';
+  const isEN = settings.language === 'EN';
 
   return (
     <div className="flex flex-col h-full bg-[#121212] px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))] overflow-y-auto relative z-[110]">
@@ -18,11 +18,11 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
         onClick={onBack}
         className="self-start text-[#FF6600] border border-[#FF6600] bg-[#1E1E1E] px-[4vw] py-[1vh] rounded-md font-black uppercase tracking-widest text-[clamp(0.7rem,3vw,1rem)] mb-[3vh] active:scale-95 transition-transform"
       >
-        ← {isUK ? 'Back' : 'Retour'}
+        ← {isEN ? 'Back' : 'Retour'}
       </button>
 
-      {/* CONTENU ANGLAIS (UK) */}
-      {isUK ? (
+      {/* CONTENU ANGLAIS (EN) */}
+      {isEN ? (
         <div className="space-y-[4vh] pb-[5vh] text-white/70 text-[clamp(0.8rem,2.8vw,0.95rem)] leading-relaxed">
           
           <div className="mb-[4vh] border-b border-white/10 pb-[2vh]">

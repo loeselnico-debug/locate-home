@@ -128,9 +128,9 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 - [X] **HOMEMENU :** Ajouter un badge "néon" (promesse CGU/CGV).
 
 ### 4. MODULE PARAMÈTRES
-- [ ] Réduire l'en-tête (head) de -30%.
+- [X] Réduire l'en-tête (head) de -30%.
 - [ ] Créer une cohérence visuelle (inscription tiers / offre tiers).
-- [ ] Ajouter un bouton de contact (contact@locate-systems.com).
+- [X] Ajouter un bouton de contact (contact@locate-systems.com).
 - [X] Intégrer le switch de langue "FR / EN" (exclusif à cette vue).
 - [ ] Etendre langue "FR / EN" à la totalité de l'application.
 

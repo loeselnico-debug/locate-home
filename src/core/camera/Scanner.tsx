@@ -7,6 +7,7 @@ import { geminiService } from '../ai/geminiService';
 import { getCustomLocations } from '../../core/storage/memoryService';
 import { validateLocateObject } from '../ai/decisionEngine';
 import type { ScanResult } from '../ai/decisionEngine';
+import { useUserTier } from '../security/useUserTier'; // <-- NOUVEAU : Cerveau de sécurité
 
 interface ScannerProps {
   onBack: () => void;
@@ -22,6 +23,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   const [recordingTime, setRecordingTime] = useState<number>(0);
   
   const [hasConsented, setHasConsented] = useState<boolean | null>(null);
+  const { currentTier } = useUserTier(); // <-- NOUVEAU
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -227,20 +229,17 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
       {/* AFFICHAGE TÊTE HAUTE (HUD TOP BAR) */}
       <div className="absolute top-[env(safe-area-inset-top,2vh)] left-0 w-full flex justify-between items-center px-[4vw] pt-[2vh] z-20">
-        
-        {/* Bouton Retour (w-14 h-14) */}
         <button onClick={onBack} className="w-14 h-14 bg-black/40 border border-white/10 rounded-xl backdrop-blur-md flex items-center justify-center active:scale-90 shrink-0">
-          <img src="/icon-return.png" alt="Retour" className="w-[100%] h-[100%] object-contain opacity-80" />
+          <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain opacity-80" />
         </button>
         
         <div className="flex flex-col items-center">
-          <h1 className="text-[6vw] sm:text-xl tracking-widest uppercase flex gap-2">
+          <h1 className="text-[4vw] sm:text-xl tracking-widest uppercase flex gap-2">
             <span className="font-bold text-white">LOCATE</span>
             <span className="font-black text-[#FF6600] drop-shadow-[0_0_10px_rgba(255,102,0,0.8)]">SCAN</span>
           </h1>
         </div>
 
-        {/* Bouton Flash (w-14 h-14) */}
         <button onClick={toggleTorch} className={`w-14 h-14 rounded-xl backdrop-blur-md flex items-center justify-center border transition-all active:scale-90 shrink-0 ${flashOn ? 'bg-[#FF6600]/20 border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'bg-black/40 border-white/10'}`}>
           <span className={`text-xl ${flashOn ? 'text-[#FF6600]' : 'text-white/50 opacity-50 grayscale'}`}>⚡</span>
         </button>
@@ -277,41 +276,56 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
       {/* CONSOLE DE COMMANDE INFERIEURE */}
       <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-[10vh] pb-[max(8vh,env(safe-area-inset-bottom))] px-[4vw] z-20 flex flex-col gap-[3vh]">
+        
+        {/* NOUVEAU : VERROUILLAGE DES ZONES PREMIUM */}
         <div className="flex gap-[2vw] overflow-x-auto no-scrollbar w-full px-[2vw]">
-          {getCustomLocations().map(loc => (
-            <button 
-              key={loc.id} 
-              onClick={() => setSelectedLocation(loc.label)} 
-              className={`whitespace-nowrap px-[4vw] py-[1vh] rounded-lg text-[2.5vw] sm:text-[10px] font-black border transition-all ${selectedLocation === loc.label ? 'bg-black border-[#FF6600] text-[#FF6600] shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'bg-black/50 border-white/10 text-white/40'}`}
-            >
-              {loc.label.toUpperCase()}
-            </button>
-          ))}
+          {getCustomLocations().map(loc => {
+            const isLocked = currentTier === 'FREE' && (loc.id === 'chantier' || loc.id === 'pret');
+            
+            return (
+              <button 
+                key={loc.id} 
+                onClick={() => {
+                  if (isLocked) {
+                    alert("🔒 La gestion des zones Chantier et Prêt est réservée aux membres PREMIUM.");
+                    return;
+                  }
+                  setSelectedLocation(loc.label);
+                }} 
+                className={`whitespace-nowrap px-[4vw] py-[1vh] rounded-lg text-[2.5vw] sm:text-[10px] font-black border transition-all ${
+                  isLocked 
+                    ? 'bg-black/80 border-red-500/30 text-gray-500 opacity-60' 
+                    : selectedLocation === loc.label 
+                      ? 'bg-black border-[#FF6600] text-[#FF6600] shadow-[0_0_10px_rgba(255,102,0,0.3)]' 
+                      : 'bg-black/50 border-white/10 text-white/40'
+                }`}
+              >
+                {isLocked && <span className="mr-1">🔒</span>}
+                {loc.label.toUpperCase()}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex justify-between items-end w-full px-[2vw]">
-          
-          {/* Bouton Import (w-14 h-14, arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center active:scale-90 backdrop-blur shrink-0">
-              <img src="/icon-import.png" className="w-[90%] h-[90%] object-contain" alt="Import" />
+              <img src="/icon-import.png" className="w-[50%] h-[50%] object-contain" alt="Import" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 5MO<br/>/ 10S</span>
             <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*,video/*" />
           </div>
 
-          {/* Bouton Photo (w-14 h-14, carré arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-14 h-14 bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-95 backdrop-blur shadow-[0_5px_20px_rgba(0,0,0,0.5)] shrink-0">
-              <img src="/icon-photo.png" className="w-[100%] h-[100%] object-contain" alt="Photo" />
+              <img src="/icon-photo.png" className="w-[60%] h-[60%] object-contain" alt="Photo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 5MO</span>
           </div>
 
-          {/* Bouton Vidéo (w-14 h-14, carré arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={handleVideoRecord} disabled={isScanning || isAnalyzing} className={`w-14 h-14 bg-black/60 border rounded-2xl flex items-center justify-center backdrop-blur active:scale-95 transition-all shrink-0 ${isScanning ? 'border-[#FF6600] shadow-[0_0_20px_rgba(255,102,0,0.5)] animate-pulse' : 'border-white/10 shadow-[0_5px_20px_rgba(0,0,0,0.5)]'}`}>
-              <img src="/icon-video.png" className="w-[100%] h-[100%] object-contain" alt="Vidéo" />
+              <img src="/icon-video.png" className="w-[60%] h-[60%] object-contain" alt="Vidéo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">
               {isScanning ? `SCAN... ${recordingTime}S` : 'MAX 10S'}

@@ -170,7 +170,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             _validationStatus: validation.status,
             _validationMessage: validation.message,
             label: validation.status === "CERTIFIED" ? validation.label : item.label,
-            imageUrl: isImage ? data : undefined 
+            imageUrl: isImage ? data : undefined,
+            location: selectedLocation // <-- NOUVEAU : On injecte la zone cliquée
           };
         }).filter((item: any) => item._validationStatus === "CERTIFIED");
         
@@ -184,7 +185,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       setIsAnalyzing(false); 
     }
   };
-
+  
   return (
     <div className="fixed inset-0 z-[100] bg-black text-white overflow-hidden flex flex-col font-sans">
       

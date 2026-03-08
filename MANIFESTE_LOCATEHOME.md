@@ -129,7 +129,7 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 
 ### 4. MODULE PARAMÈTRES
 - [X] Réduire l'en-tête (head) de -30%.
-- [ ] Créer une cohérence visuelle (inscription tiers / offre tiers).
+- [X] Créer une cohérence visuelle (inscription tiers / offre tiers).
 - [X] Ajouter un bouton de contact (contact@locate-systems.com).
 - [X] Intégrer le switch de langue "FR / EN" (exclusif à cette vue).
 - [ ] Etendre langue "FR / EN" à la totalité de l'application QUAND nous aurons des abonnés.
@@ -141,7 +141,7 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 - [ ] Réaliser la connexion de PDFassurance présent dans src\modules\home\components\Library.tsx
 
 ### 6. MODULE SCANNER
-- [ ] **Accès (Tiers) :** Limiter "Fourgon/Atelier" (FREE) ; réserver "Chantier/Prêt" (PREMIUM/PRO).
+- [X] **Accès (Tiers) :** Limiter "Fourgon/Atelier" (FREE) ; réserver "Chantier/Prêt" (PREMIUM/PRO).
 - [X] **Ergo Mobile :** Remonter les boutons Import, Photo et Vidéo.
 - [X] **Interface :** Reprendre la pertinence des infos sous les boutons.
 - [X] **Fonctionnalité :** Inclure un compteur de temps (0 à 10s) pour la vidéo.

@@ -17,6 +17,7 @@ export interface AIScanResult {
   isConsumable?: boolean;
   consumableLevel?: number;
   imageUrl?: string;
+  location?: string; // <-- NOUVEAU : On autorise le transit de la zone
 }
 
 interface ValidationSasProps {
@@ -28,7 +29,7 @@ interface ValidationSasProps {
 const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateAll, onRejectAll }) => {
   const [itemsToValidate, setItemsToValidate] = useState<AIScanResult[]>(pendingItems);
   const [selectedItems, setSelectedItems] = useState<boolean[]>(pendingItems.map(() => true));
-  const { currentTier } = useUserTier(); // <-- NOUVEAU : On invoque la sécurité
+  const { currentTier } = useUserTier();
 
   const handleRemoveItem = (indexToRemove: number) => {
     setItemsToValidate(prev => prev.filter((_, i) => i !== indexToRemove));
@@ -65,7 +66,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
   return (
     <div className="flex flex-col h-full bg-[#121212] px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))] font-sans">
       
-      {/* HEADER DU SAS */}
       <div className="flex flex-col mb-[3vh]">
         <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.2rem,5vw,1.8rem)]">
           SAS DE VALIDATION <span className="text-[#FF6600]">(SCAN)</span>
@@ -75,7 +75,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
         </p>
       </div>
 
-      {/* LISTE DES OUTILS DÉTECTÉS */}
       <div className="flex-1 overflow-y-auto space-y-[3vh] pr-[1vw] no-scrollbar">
         {itemsToValidate.map((item, index) => {
           const score = item.confidence ? Math.round(item.confidence * 100) : 0;
@@ -87,11 +86,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
               key={index} 
               className={`bg-[#1E1E1E] border rounded-xl flex flex-col overflow-hidden transition-all duration-300 ${isSelected ? 'border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.15)]' : 'border-white/5 opacity-50 grayscale-[50%]'}`}
             >
-              
-              {/* BLOC SUPÉRIEUR : PHOTO + INFOS */}
               <div className="flex p-[3vw] gap-[3vw]">
-                
-                {/* Photo détourée */}
                 <div className="w-[22vw] h-[22vw] max-w-[90px] max-h-[90px] bg-[#0a0a0a] border border-white/10 rounded-lg flex items-center justify-center p-2 shrink-0 relative">
                   {item.imageUrl ? (
                     <img 
@@ -104,7 +99,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                   )}
                 </div>
 
-                {/* Infos (Centre / Droite) */}
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-2">
@@ -118,7 +112,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                         {item.type || item.categorie_id}
                       </span>
                     </div>
-                    {/* <-- NOUVEAU : Score visible uniquement en PREMIUM/PRO */}
                     {currentTier !== 'FREE' && (
                       <div className="flex flex-col items-end shrink-0">
                         <span className={`font-black text-[clamp(1.1rem,4vw,1.4rem)] leading-none ${scoreColor}`}>
@@ -131,7 +124,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                     )}
                   </div>
 
-                  {/* <-- NOUVEAU : Terminal visible uniquement en PREMIUM/PRO */}
                   {currentTier !== 'FREE' && (
                     <div className="mt-auto pt-2">
                       <div className="bg-black/60 border border-white/5 rounded p-2 font-mono text-[9px] text-gray-400 leading-snug h-[4.5em] overflow-hidden relative">
@@ -147,7 +139,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                 </div>
               </div>
 
-              {/* BLOC INFÉRIEUR : LIGNE D'ACTIONS */}
               <div className="flex border-t border-white/10 bg-[#121212]">
                 <button 
                   onClick={() => toggleSelection(index)}
@@ -182,7 +173,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
         })}
       </div>
 
-      {/* THUMB ZONE : ACTIONS GLOBALES */}
       <div className="mt-auto pt-[2vh] flex justify-between gap-[3vw] shrink-0">
         <button 
           onClick={onRejectAll}

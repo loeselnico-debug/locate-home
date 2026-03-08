@@ -93,7 +93,7 @@ const App = () => {
       toolName: item.label || item.typography || 'Outil Inconnu',
       brand: item.brandColor || 'Marque N/A',
       category: item.categorie_id || 'main',
-      location: 'Atelier',
+      location: item.location || 'Atelier', // <-- NOUVEAU : Lecture dynamique (avec filet de sécurité)
       condition: item.etat || 'Bon état',
       notes: item.description || '',
       isConsumable: item.isConsumable,

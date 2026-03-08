@@ -230,11 +230,11 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         
         {/* Bouton Retour (w-14 h-14) */}
         <button onClick={onBack} className="w-14 h-14 bg-black/40 border border-white/10 rounded-xl backdrop-blur-md flex items-center justify-center active:scale-90 shrink-0">
-          <img src="/icon-return.png" alt="Retour" className="w-[60%] h-[60%] object-contain opacity-80" />
+          <img src="/icon-return.png" alt="Retour" className="w-[100%] h-[100%] object-contain opacity-80" />
         </button>
         
         <div className="flex flex-col items-center">
-          <h1 className="text-[4vw] sm:text-xl tracking-widest uppercase flex gap-2">
+          <h1 className="text-[8vw] sm:text-xl tracking-widest uppercase flex gap-2">
             <span className="font-bold text-white">LOCATE</span>
             <span className="font-black text-[#FF6600] drop-shadow-[0_0_10px_rgba(255,102,0,0.8)]">SCAN</span>
           </h1>
@@ -294,7 +294,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           {/* Bouton Import (w-14 h-14, arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center active:scale-90 backdrop-blur shrink-0">
-              <img src="/icon-import.png" className="w-[50%] h-[50%] object-contain" alt="Import" />
+              <img src="/icon-import.png" className="w-[100%] h-[100%] object-contain" alt="Import" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 5MO<br/>/ 10S</span>
             <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*,video/*" />
@@ -303,7 +303,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           {/* Bouton Photo (w-14 h-14, carré arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-14 h-14 bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-95 backdrop-blur shadow-[0_5px_20px_rgba(0,0,0,0.5)] shrink-0">
-              <img src="/icon-photo.png" className="w-[60%] h-[60%] object-contain" alt="Photo" />
+              <img src="/icon-photo.png" className="w-[100%] h-[100%] object-contain" alt="Photo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 5MO</span>
           </div>
@@ -311,7 +311,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           {/* Bouton Vidéo (w-14 h-14, carré arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={handleVideoRecord} disabled={isScanning || isAnalyzing} className={`w-14 h-14 bg-black/60 border rounded-2xl flex items-center justify-center backdrop-blur active:scale-95 transition-all shrink-0 ${isScanning ? 'border-[#FF6600] shadow-[0_0_20px_rgba(255,102,0,0.5)] animate-pulse' : 'border-white/10 shadow-[0_5px_20px_rgba(0,0,0,0.5)]'}`}>
-              <img src="/icon-video.png" className="w-[60%] h-[60%] object-contain" alt="Vidéo" />
+              <img src="/icon-video.png" className="w-[100%] h-[100%] object-contain" alt="Vidéo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">
               {isScanning ? `SCAN... ${recordingTime}S` : 'MAX 10S'}

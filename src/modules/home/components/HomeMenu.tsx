@@ -19,7 +19,7 @@ const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
         
         {/* Badge Néon Orange (Hauteur standardisée h-14) */}
         <div className="h-14 bg-[#121212] px-[4vw] sm:px-5 rounded-full border border-[#FF6600]/50 shadow-[0_0_15px_rgba(255,102,0,0.4),inset_0_0_10px_rgba(255,102,0,0.2)] flex items-center justify-center">
-          <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#ffffff,#c0c0c0,#8a8a8a,#ffffff)] bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+          <span className="text-[clamp(0.6rem,4vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#ffffff,#c0c0c0,#8a8a8a,#ffffff)] bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
             {tier}
           </span>
         </div>
@@ -31,7 +31,7 @@ const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
         >
           <img 
             src="/gear.png" 
-            className="w-[70%] h-[70%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
+            className="w-[100%] h-[100%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
             alt="Paramètres" 
           />
         </button>

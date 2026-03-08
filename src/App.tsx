@@ -3,7 +3,7 @@ import { get, set } from 'idb-keyval';
 import type { InventoryItem } from './types';
 import { useUserTier } from './core/security/useUserTier';
 
-// NOUVEAUX IMPORTS SUPABASE & AUTH
+// IMPORTS SUPABASE & AUTH
 import AuthShield from './core/ui/AuthShield';
 import { supabase } from './core/security/supabaseClient';
 
@@ -21,10 +21,10 @@ import type { AIScanResult } from './modules/home/views/ValidationSas';
 import GarageDashboard from './modules/garage/views/GarageDashboard';
 import KitchenDashboard from './modules/kitchen/views/KitchenDashboard';
 
-
 type ViewState = 'hub' | 'home' | 'garage' | 'kitchen' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
+
 const App = () => {
-  // ÉTATS D'AUTHENTIFICATION (NOUVEAU)
+  // ÉTATS D'AUTHENTIFICATION
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
@@ -36,8 +36,23 @@ const App = () => {
   const [pendingItems, setPendingItems] = useState<AIScanResult[]>([]);
   const { currentTier } = useUserTier();
 
-  // VERIFICATION DE LA SESSION SUPABASE (NOUVEAU)
+  // VERIFICATION DE LA SESSION SUPABASE ET INTERCEPTION STRIPE
   useEffect(() => {
+    // ---> NOUVEAU : INTERCEPTION DU RETOUR STRIPE <---
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      // 1. On nettoie l'URL pour cacher le paramètre (esthétique & sécurité)
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // 2. On met à jour l'utilisateur dans Supabase définitivement
+      supabase.auth.updateUser({ data: { tier: 'PREMIUM' } }).then(() => {
+        localStorage.setItem('locate_user_tier', 'PREMIUM');
+        alert("✅ Paiement validé ! Bienvenue dans l'univers LOCATE PREMIUM.");
+        window.location.reload();
+      });
+    }
+    // --------------------------------------------------
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
       setIsAuthChecking(false);
@@ -93,7 +108,7 @@ const App = () => {
       toolName: item.label || item.typography || 'Outil Inconnu',
       brand: item.brandColor || 'Marque N/A',
       category: item.categorie_id || 'main',
-      location: item.location || 'Atelier', // <-- NOUVEAU : Lecture dynamique (avec filet de sécurité)
+      location: item.location || 'Atelier',
       condition: item.etat || 'Bon état',
       notes: item.description || '',
       isConsumable: item.isConsumable,
@@ -118,11 +133,7 @@ const App = () => {
   };
   const currentModule = getActiveModule();
 
-  // ==========================================
   // 🛡️ BOUCLIERS D'AUTHENTIFICATION
-  // La logique est bien placée AVANT le rendu HTML
-  // ==========================================
-  
   if (isAuthChecking) {
     return (
       <div className="w-screen h-[100dvh] bg-[#050505] flex items-center justify-center">
@@ -135,9 +146,7 @@ const App = () => {
     return <AuthShield onSuccess={() => setIsAuthenticated(true)} />;
   }
 
-  // ==========================================
   // 🖥️ AFFICHAGE NORMAL DE L'APP
-  // ==========================================
   return (
     <main className="w-screen min-h-[100dvh] bg-[#121212] text-white font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
 
@@ -149,10 +158,8 @@ const App = () => {
 
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
         
-        {/* CORRECTION DU ROUTAGE HUB */}
         {view === 'hub' && <Hub onSelectModule={(m: string) => setView(m as ViewState)} />}
         
-        {/* ROUTES DES MODULES PRINCIPAUX */}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
         {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}
         {view === 'kitchen' && <KitchenDashboard onBack={() => setView('hub')} />}

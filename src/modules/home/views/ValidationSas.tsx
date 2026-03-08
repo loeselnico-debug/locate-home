@@ -1,12 +1,15 @@
+// ==========================================
+// 📂 FICHIER : \src\modules\home\views\ValidationSas.tsx
+// ==========================================
 import React, { useState } from 'react';
+import { useUserTier } from '../../../core/security/useUserTier';
 
-// 1. Définition stricte du format renvoyé par l'IA Gemini
 export interface AIScanResult {
   typography?: string;
   brandColor?: string;
   categorie_id?: string;
-  type?: string; // Notre nouvel ajout de la session précédente
-  morphology?: string; // Pour l'effet Waouh
+  type?: string; 
+  morphology?: string; 
   confidence?: number;
   etat?: string;
   description?: string;
@@ -24,9 +27,8 @@ interface ValidationSasProps {
 
 const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateAll, onRejectAll }) => {
   const [itemsToValidate, setItemsToValidate] = useState<AIScanResult[]>(pendingItems);
-  
-  // État pour gérer les cases à cocher (par défaut, tout est coché)
   const [selectedItems, setSelectedItems] = useState<boolean[]>(pendingItems.map(() => true));
+  const { currentTier } = useUserTier(); // <-- NOUVEAU : On invoque la sécurité
 
   const handleRemoveItem = (indexToRemove: number) => {
     setItemsToValidate(prev => prev.filter((_, i) => i !== indexToRemove));
@@ -40,7 +42,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
   };
 
   const handleFinalValidation = () => {
-    // On ne garde que les items qui ont leur case cochée
     const itemsToKeep = itemsToValidate.filter((_, index) => selectedItems[index]);
     if (itemsToKeep.length > 0) {
       onValidateAll(itemsToKeep);
@@ -51,7 +52,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
 
   if (itemsToValidate.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full px-[5vw] text-center gap-[2vh]">
+      <div className="flex flex-col items-center justify-center h-full px-[5vw] text-center gap-[2vh] font-sans">
         <h2 className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(1rem,4vw,1.5rem)]">Scan Vide</h2>
         <p className="text-white/70 text-[clamp(0.8rem,2.5vw,1rem)]">Aucun outil détecté ou validé.</p>
         <button onClick={onRejectAll} className="mt-[4vh] bg-[#333333] text-white px-[6vw] py-[1.5vh] rounded-md font-bold uppercase tracking-wide">
@@ -62,7 +63,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#121212] px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))]">
+    <div className="flex flex-col h-full bg-[#121212] px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))] font-sans">
       
       {/* HEADER DU SAS */}
       <div className="flex flex-col mb-[3vh]">
@@ -90,14 +91,13 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
               {/* BLOC SUPÉRIEUR : PHOTO + INFOS */}
               <div className="flex p-[3vw] gap-[3vw]">
                 
-                {/* Photo détourée (Gauche) */}
+                {/* Photo détourée */}
                 <div className="w-[22vw] h-[22vw] max-w-[90px] max-h-[90px] bg-[#0a0a0a] border border-white/10 rounded-lg flex items-center justify-center p-2 shrink-0 relative">
                   {item.imageUrl ? (
                     <img 
                       src={item.imageUrl} 
                       alt={item.label} 
-                      // Le drop-shadow crée l'effet détouré "waouh" si l'image s'y prête
-                      className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]" 
+                      className={`w-full h-full object-contain ${currentTier !== 'FREE' ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]' : ''}`}
                     />
                   ) : (
                     <span className="text-2xl opacity-30">📷</span>
@@ -118,35 +118,37 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                         {item.type || item.categorie_id}
                       </span>
                     </div>
-                    <div className="flex flex-col items-end shrink-0">
-                      <span className={`font-black text-[clamp(1.1rem,4vw,1.4rem)] leading-none ${scoreColor}`}>
-                        {score}%
-                      </span>
-                      <span className="text-white/40 text-[8px] uppercase tracking-widest mt-1">
-                        IA CONF.
-                      </span>
-                    </div>
+                    {/* <-- NOUVEAU : Score visible uniquement en PREMIUM/PRO */}
+                    {currentTier !== 'FREE' && (
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className={`font-black text-[clamp(1.1rem,4vw,1.4rem)] leading-none ${scoreColor}`}>
+                          {score}%
+                        </span>
+                        <span className="text-white/40 text-[8px] uppercase tracking-widest mt-1">
+                          IA CONF.
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* L'EFFET "WAOUH" : Terminal IA */}
-                  <div className="mt-auto pt-2">
-                    <div className="bg-black/60 border border-white/5 rounded p-2 font-mono text-[9px] text-gray-400 leading-snug h-[4.5em] overflow-hidden relative">
-                      <span className="text-[#FF6600] animate-pulse"> {">"} </span>
-                      <span className="text-white/80">SCAN_STRUCT : </span> 
-                      {item.morphology ? `${item.morphology}. ` : ''}
-                      <span className="italic opacity-80">{item.description}</span>
-                      {/* Fondu vers le bas si le texte est trop long */}
-                      <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-black/60 to-transparent"></div>
+                  {/* <-- NOUVEAU : Terminal visible uniquement en PREMIUM/PRO */}
+                  {currentTier !== 'FREE' && (
+                    <div className="mt-auto pt-2">
+                      <div className="bg-black/60 border border-white/5 rounded p-2 font-mono text-[9px] text-gray-400 leading-snug h-[4.5em] overflow-hidden relative">
+                        <span className="text-[#FF6600] animate-pulse"> {">"} </span>
+                        <span className="text-white/80">SCAN_STRUCT : </span> 
+                        {item.morphology ? `${item.morphology}. ` : ''}
+                        <span className="italic opacity-80">{item.description}</span>
+                        <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-black/60 to-transparent"></div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                 </div>
               </div>
 
               {/* BLOC INFÉRIEUR : LIGNE D'ACTIONS */}
               <div className="flex border-t border-white/10 bg-[#121212]">
-                
-                {/* 1. Case à cocher (Valider) */}
                 <button 
                   onClick={() => toggleSelection(index)}
                   className={`flex-1 py-3 flex items-center justify-center gap-2 transition-colors ${isSelected ? 'text-[#FF6600] bg-[#FF6600]/10' : 'text-gray-500 hover:text-white'}`}
@@ -159,16 +161,14 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                   </span>
                 </button>
 
-                {/* 2. Bouton Éditer (Prépare le terrain pour D) */}
                 <button 
-                  onClick={() => alert("L'édition détaillée sera disponible dans la fiche outil après validation.")}
+                  onClick={() => alert(currentTier === 'FREE' ? "L'édition détaillée est réservée aux membres PREMIUM." : "L'édition détaillée sera disponible dans la fiche outil après validation.")}
                   className="flex-1 py-3 border-l border-white/10 flex items-center justify-center gap-2 text-white/60 hover:text-white hover:bg-white/5 transition-colors"
                 >
-                  <span className="text-sm">✎</span>
+                  <span className="text-sm">{currentTier === 'FREE' ? '🔒' : '✎'}</span>
                   <span className="text-[10px] font-black uppercase tracking-widest">Éditer</span>
                 </button>
 
-                {/* 3. Bouton Supprimer (Croix) */}
                 <button 
                   onClick={() => handleRemoveItem(index)}
                   className="w-[15%] py-3 border-l border-white/10 flex items-center justify-center text-white/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
@@ -176,7 +176,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                 >
                   <span className="text-lg font-black leading-none">×</span>
                 </button>
-
               </div>
             </div>
           );

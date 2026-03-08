@@ -114,8 +114,8 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 ## 🚀 ROADMAP V4 - OPTIMISATION UX/UI MOBILE
 
 ### 1. OBSERVATIONS GÉNÉRALES & DESIGN SYSTEM
-- [ ] Homogénéiser les polices d'écriture (tailles et positions titres/sous-titres).
-- [ ] Standardiser la position de tous les boutons "Return/Retour".
+- [X] Homogénéiser les polices d'écriture (tailles et positions titres/sous-titres).
+- [X] Standardiser la position de tous les boutons "Return/Retour".
 - [X] Créer le visuel pour le Sas de validation.
 
 ### 2. LOGO & IDENTITÉ

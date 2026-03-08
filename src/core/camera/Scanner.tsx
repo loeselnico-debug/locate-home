@@ -234,7 +234,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         </button>
         
         <div className="flex flex-col items-center">
-          <h1 className="text-[8vw] sm:text-xl tracking-widest uppercase flex gap-2">
+          <h1 className="text-[6vw] sm:text-xl tracking-widest uppercase flex gap-2">
             <span className="font-bold text-white">LOCATE</span>
             <span className="font-black text-[#FF6600] drop-shadow-[0_0_10px_rgba(255,102,0,0.8)]">SCAN</span>
           </h1>
@@ -294,7 +294,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           {/* Bouton Import (w-14 h-14, arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
             <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center active:scale-90 backdrop-blur shrink-0">
-              <img src="/icon-import.png" className="w-[100%] h-[100%] object-contain" alt="Import" />
+              <img src="/icon-import.png" className="w-[90%] h-[90%] object-contain" alt="Import" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 5MO<br/>/ 10S</span>
             <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*,video/*" />

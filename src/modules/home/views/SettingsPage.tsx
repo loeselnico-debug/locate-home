@@ -33,7 +33,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
     return <PrivacyPolicy onBack={() => setShowPrivacy(false)} />;
   }
 
-  // Constante de verrouillage juridique
   const hasAcceptedTerms = settings.acceptedTerms === true;
 
   return (
@@ -51,7 +50,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </div>
         
         {onBack && (
-          <button onClick={onBack} className="w-14 h-14 active:scale-90 transition-transform shrink-0">
+          <button onClick={onBack} className="w-14 h-14 active:scale-90 transition-transform shrink-0 flex items-center justify-center">
             <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain drop-shadow-lg" />
           </button>
         )}
@@ -79,7 +78,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               >
                 FR (CM)
               </button>
-              {/* Remplacement UK par EN */}
               <button 
                 onClick={() => updateSettings({ language: 'EN', unitSystem: 'IMPERIAL' })}
                 className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${lang === 'EN' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
@@ -91,14 +89,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* SECTION 2 : ACCÈS TOTAL & ABONNEMENTS (Avec Verrou Légal) */}
+      {/* SECTION 2 : ACCÈS TOTAL & ABONNEMENTS */}
       <div className="mb-[5vh]">
         <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
           <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
           {t('tier_title')}
         </h2>
         
-        {/* Message d'alerte si CGU non acceptées */}
         {!hasAcceptedTerms && (
           <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest mb-2 animate-pulse flex items-center gap-2">
             <span className="text-sm">⚠️</span> Veuillez accepter les CGU/CGV ci-dessous pour débloquer les accès.
@@ -115,27 +112,32 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             </span>
           </div>
           
+          {/* <-- NOUVEAU : Injection du terme (Devis) pour le tier PRO */}
           <div className="flex gap-[2vw] justify-between">
-            {(Object.keys(TIERS_CONFIG) as UserTier[]).map((tier) => (
-              <button
-                key={tier}
-                onClick={() => setTier(tier)}
-                disabled={!hasAcceptedTerms}
-                className={`flex-1 py-[1.5vh] rounded-2xl font-black text-[clamp(0.7rem,2.5vw,0.9rem)] uppercase tracking-widest transition-all border ${
-                  !hasAcceptedTerms 
-                    ? 'bg-[#121212] text-gray-700 border-white/5 cursor-not-allowed opacity-50'
-                    : currentTier === tier 
-                      ? 'bg-[#121212] text-white border-[#FF6600]/80 shadow-[0_0_15px_rgba(255,102,0,0.3),inset_0_0_10px_rgba(255,102,0,0.1)]' 
-                      : 'bg-[#0A0A0A] text-gray-600 border-white/5 hover:text-gray-400'
-                }`}
-              >
-                {!hasAcceptedTerms ? (
-                  <span className="flex justify-center items-center gap-2">🔒 {tier}</span>
-                ) : (
-                  tier
-                )}
-              </button>
-            ))}
+            {(Object.keys(TIERS_CONFIG) as UserTier[]).map((tier) => {
+              const displayLabel = tier === 'PRO' ? 'PRO (Devis)' : tier;
+              
+              return (
+                <button
+                  key={tier}
+                  onClick={() => setTier(tier)}
+                  disabled={!hasAcceptedTerms}
+                  className={`flex-1 py-[1.5vh] rounded-2xl font-black text-[clamp(0.7rem,2vw,0.9rem)] uppercase tracking-widest transition-all border ${
+                    !hasAcceptedTerms 
+                      ? 'bg-[#121212] text-gray-700 border-white/5 cursor-not-allowed opacity-50'
+                      : currentTier === tier 
+                        ? 'bg-[#121212] text-white border-[#FF6600]/80 shadow-[0_0_15px_rgba(255,102,0,0.3),inset_0_0_10px_rgba(255,102,0,0.1)]' 
+                        : 'bg-[#0A0A0A] text-gray-600 border-white/5 hover:text-gray-400'
+                  }`}
+                >
+                  {!hasAcceptedTerms ? (
+                    <span className="flex justify-center items-center gap-2">🔒 {displayLabel}</span>
+                  ) : (
+                    displayLabel
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

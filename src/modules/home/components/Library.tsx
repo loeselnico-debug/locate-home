@@ -1,6 +1,10 @@
+// ==========================================
+// 📂 FICHIER : \src\modules\home\components\Library.tsx
+// ==========================================
 import React, { useState, useEffect } from 'react';
 import { CATEGORIES } from '../views/Dashboard';
 import type { InventoryItem } from '../../../types';
+import { useUserTier } from '../../../core/security/useUserTier';
 
 interface LibraryProps {
   onBack: () => void;
@@ -13,8 +17,8 @@ interface LibraryProps {
 
 const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory, onSelectTool, onDelete }) => {
   const [tools, setTools] = useState<InventoryItem[]>([]);
+  const { currentTier } = useUserTier(); // <-- NOUVEAU : On invoque la sécurité
 
-  // Récupération de la catégorie active
   const activeCategoryIndex = CATEGORIES.findIndex(c => c.id === selectedCategoryId);
   const activeCategory = CATEGORIES[activeCategoryIndex];
 
@@ -22,7 +26,6 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
   const categoryIcon = activeCategory ? `/${activeCategory.id}.png` : '/icon-photo.png';
   const categoryNumber = activeCategoryIndex !== -1 ? String(activeCategoryIndex + 1).padStart(2, '0') + '.' : '';
 
-  // Filtre Zéro-Bug (Gère les espaces et la casse)
   useEffect(() => {
     const data = inventory || [];
     const safeCategoryId = selectedCategoryId?.trim().toLowerCase();
@@ -39,7 +42,7 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
   }, [selectedCategoryId, inventory, activeCategory]);
 
   return (
-    <div className="flex flex-col h-full bg-transparent">
+    <div className="flex flex-col h-full bg-transparent font-sans">
       {/* EN-TÊTE PREMIUM 3D */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         <button className="w-14 h-14 active:scale-90 transition-transform">
@@ -74,14 +77,21 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
             {tools.map((tool) => (
               <div
                 key={tool.id}
-                onClick={() => onSelectTool(tool)}
+                onClick={() => {
+                  // <-- NOUVEAU : VERROU PREMIUM POUR L'ÉDITION
+                  if (currentTier === 'FREE') {
+                    alert("🔒 La fiche détaillée et l'édition sont réservées aux membres PREMIUM.");
+                  } else {
+                    onSelectTool(tool);
+                  }
+                }}
                 className="relative bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] transition-transform"
               >
-                {/* BOUTON SUPPRIMER (Croix discrète) */}
+                {/* BOUTON SUPPRIMER */}
                 <button
                   onClick={(e) => {
-                    e.stopPropagation(); // Empêche l'ouverture de la fiche détail
-                    onDelete(tool.id);   // Déclenche l'alerte de suppression
+                    e.stopPropagation();
+                    onDelete(tool.id);   
                   }}
                   className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-white/30 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-10"
                 >
@@ -97,9 +107,9 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                   )}
                 </div>
 
-                {/* Détails Restructurés (Vue C) */}
+                {/* Détails */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
-                  <div className="pr-6"> {/* Padding right pour ne pas chevaucher la croix */}
+                  <div className="pr-6">
                     <span className="text-gray-400 font-black text-[9px] uppercase tracking-widest leading-none block mb-0.5">
                       {tool.brand || 'MARQUE N/A'}
                     </span>
@@ -108,9 +118,12 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                     </h3>
                     
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/30 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">
-                        ⚡ {(tool as any).energy || 'N/A'}
-                      </span>
+                      {/* <-- NOUVEAU : L'énergie est un privilège PREMIUM/PRO */}
+                      {currentTier !== 'FREE' && (
+                        <span className="bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/30 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">
+                          ⚡ {(tool as any).energy || 'N/A'}
+                        </span>
+                      )}
                       <span className="text-[#D3D3D3] text-[9px] font-bold uppercase tracking-widest truncate">
                         📍 {tool.location || 'ZONE NON DÉFINIE'}
                       </span>

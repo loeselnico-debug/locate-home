@@ -132,7 +132,7 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 - [ ] Créer une cohérence visuelle (inscription tiers / offre tiers).
 - [X] Ajouter un bouton de contact (contact@locate-systems.com).
 - [X] Intégrer le switch de langue "FR / EN" (exclusif à cette vue).
-- [ ] Etendre langue "FR / EN" à la totalité de l'application.
+- [ ] Etendre langue "FR / EN" à la totalité de l'application QUAND nous aurons des abonnés.
 
 ### 5. MODULE RANGER (Inventaire)
 - [X] Ajuster les sous-rubriques pour afficher le nom complet de l'outil.

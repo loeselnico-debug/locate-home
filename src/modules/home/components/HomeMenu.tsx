@@ -1,3 +1,6 @@
+// ==========================================
+// 📂 FICHIER : \src\modules\home\components\HomeMenu.tsx
+// ==========================================
 import React from 'react';
 
 interface HomeMenuProps {
@@ -7,28 +10,28 @@ interface HomeMenuProps {
 
 const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
   return (
-    // NOUVEAU : Hauteur fluide et flexibilité interne pour bloquer tout scroll
-    <div className="h-full w-full flex flex-col justify-between px-[5vw] pt-[1vh] pb-[3vh] overflow-hidden">
+    <div className="h-full w-full flex flex-col justify-between px-[5vw] pt-[1vh] pb-[3vh] overflow-hidden font-sans">
       
       {/* ========================================== */}
       {/* STRATE HAUTE (Contrôles du Module)         */}
       {/* ========================================== */}
       <div className="w-full flex justify-between items-center shrink-0">
         
-        {/* NOUVEAU : Badge Néon Orange avec Texte Argent pour les Offres */}
-        <div className="bg-[#121212] px-[4vw] sm:px-5 py-[0.8vh] rounded-full border border-[#FF6600]/50 shadow-[0_0_15px_rgba(255,102,0,0.4),inset_0_0_10px_rgba(255,102,0,0.2)] flex items-center justify-center">
+        {/* Badge Néon Orange (Hauteur standardisée h-14) */}
+        <div className="h-14 bg-[#121212] px-[4vw] sm:px-5 rounded-full border border-[#FF6600]/50 shadow-[0_0_15px_rgba(255,102,0,0.4),inset_0_0_10px_rgba(255,102,0,0.2)] flex items-center justify-center">
           <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#ffffff,#c0c0c0,#8a8a8a,#ffffff)] bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
             {tier}
           </span>
         </div>
 
+        {/* Bouton Paramètres (Format standard w-14 h-14) */}
         <button 
           onClick={() => onNavigate('settings')} 
-          className="opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1"
+          className="w-14 h-14 flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity active:scale-90 shrink-0"
         >
           <img 
             src="/gear.png" 
-            className="w-[8vw] h-[8vw] max-w-[35px] max-h-[35px] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
+            className="w-[70%] h-[70%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
             alt="Paramètres" 
           />
         </button>
@@ -37,7 +40,6 @@ const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
       {/* ========================================== */}
       {/* STRATE MÉDIANE (Le Manifeste - "Le Ressort") */}
       {/* ========================================== */}
-      {/* NOUVEAU : Le flex-1 est ici pour pousser le contenu bas vers le fond */}
       <div className="flex-1 flex flex-col justify-center items-center w-full max-w-[85vw] mx-auto min-h-[15vh]">
         <p className="text-center text-white font-black uppercase tracking-wide leading-tight text-[clamp(0.6rem,2.5vw,0.9rem)] drop-shadow-md">
           "L'homme ne parle pas à l'IA pour l'écouter,<br />

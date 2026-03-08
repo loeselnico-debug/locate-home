@@ -1,3 +1,6 @@
+// ==========================================
+// 📂 FICHIER : \src\core\camera\Scanner.tsx
+// ==========================================
 import React, { useState, useRef, useEffect } from 'react';
 import { get, set } from 'idb-keyval';
 import { geminiService } from '../ai/geminiService';
@@ -18,7 +21,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   const [pendingItems, setPendingItems] = useState<any[] | null>(null);
   const [recordingTime, setRecordingTime] = useState<number>(0);
   
-  // NOUVEAU : État du consentement légal
   const [hasConsented, setHasConsented] = useState<boolean | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -33,14 +35,13 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     } catch (err) { console.error("Accès caméra refusé", err); }
   };
 
-  // Initialisation : Vérification du consentement avant d'allumer la caméra
   useEffect(() => {
     get('locate_ai_consent').then((val) => {
       if (val === true) {
         setHasConsented(true);
         startCamera();
       } else {
-        setHasConsented(false); // Affiche la modale
+        setHasConsented(false);
       }
     });
 
@@ -88,7 +89,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     if (!videoRef.current?.srcObject) return;
     
     const stream = videoRef.current.srcObject as MediaStream;
-    // On force un bitrate bas pour garantir un fichier léger
     const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 1000000 });
     const chunks: Blob[] = [];
 
@@ -112,7 +112,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
     mediaRecorder.start();
 
-    // Coupe-circuit strict et chronomètre visuel
     let timeElapsed = 0;
     const timerInterval = setInterval(() => {
       timeElapsed++;
@@ -128,7 +127,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. Videur : Cas d'une image
     if (file.type.startsWith('image/')) {
       if (file.size > 5 * 1024 * 1024) {
         alert("ERREUR ZÉRO-TRUST : L'image dépasse la limite stricte de 5 Mo.");
@@ -138,13 +136,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       reader.onloadend = () => runAnalysis(reader.result as string, true);
       reader.readAsDataURL(file);
     } 
-    // 2. Videur : Cas d'une vidéo
     else if (file.type.startsWith('video/')) {
       const videoElement = document.createElement('video');
       videoElement.preload = 'metadata';
       videoElement.onloadedmetadata = () => {
         URL.revokeObjectURL(videoElement.src);
-        if (videoElement.duration > 11) { // 1s de tolérance technique
+        if (videoElement.duration > 11) {
           alert("ERREUR ZÉRO-TRUST : La vidéo dépasse la limite stricte de 10 secondes.");
           return;
         }
@@ -171,7 +168,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             _validationStatus: validation.status,
             _validationMessage: validation.message,
             label: validation.status === "CERTIFIED" ? validation.label : item.label,
-            // C'est ICI qu'on sauve l'image en Base64 pour l'inventaire !
             imageUrl: isImage ? data : undefined 
           };
         }).filter((item: any) => item._validationStatus === "CERTIFIED");
@@ -190,9 +186,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   return (
     <div className="fixed inset-0 z-[100] bg-black text-white overflow-hidden flex flex-col font-sans">
       
-      {/* ========================================== */}
-      {/* SAS LÉGAL - CONSENTEMENT IA OBLIGATOIRE    */}
-      {/* ========================================== */}
+      {/* SAS LÉGAL - CONSENTEMENT IA OBLIGATOIRE */}
       {hasConsented === false && (
         <div className="absolute inset-0 z-[300] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-[6vw] text-center">
           <div className="bg-[#1E1E1E] border border-[#FF6600]/30 rounded-2xl p-[6vw] max-w-sm w-full shadow-[0_0_30px_rgba(255,102,0,0.15)] flex flex-col items-center">
@@ -233,7 +227,9 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
       {/* AFFICHAGE TÊTE HAUTE (HUD TOP BAR) */}
       <div className="absolute top-[env(safe-area-inset-top,2vh)] left-0 w-full flex justify-between items-center px-[4vw] pt-[2vh] z-20">
-        <button onClick={onBack} className="w-[12vw] h-[12vw] max-w-[50px] max-h-[50px] bg-black/40 border border-white/10 rounded-xl backdrop-blur-md flex items-center justify-center active:scale-90">
+        
+        {/* Bouton Retour (w-14 h-14) */}
+        <button onClick={onBack} className="w-14 h-14 bg-black/40 border border-white/10 rounded-xl backdrop-blur-md flex items-center justify-center active:scale-90 shrink-0">
           <img src="/icon-return.png" alt="Retour" className="w-[60%] h-[60%] object-contain opacity-80" />
         </button>
         
@@ -244,7 +240,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           </h1>
         </div>
 
-        <button onClick={toggleTorch} className={`w-[12vw] h-[12vw] max-w-[50px] max-h-[50px] rounded-xl backdrop-blur-md flex items-center justify-center border transition-all active:scale-90 ${flashOn ? 'bg-[#FF6600]/20 border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'bg-black/40 border-white/10'}`}>
+        {/* Bouton Flash (w-14 h-14) */}
+        <button onClick={toggleTorch} className={`w-14 h-14 rounded-xl backdrop-blur-md flex items-center justify-center border transition-all active:scale-90 shrink-0 ${flashOn ? 'bg-[#FF6600]/20 border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'bg-black/40 border-white/10'}`}>
           <span className={`text-xl ${flashOn ? 'text-[#FF6600]' : 'text-white/50 opacity-50 grayscale'}`}>⚡</span>
         </button>
       </div>
@@ -279,7 +276,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       </div>
 
       {/* CONSOLE DE COMMANDE INFERIEURE */}
-        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-[10vh] pb-[max(8vh,env(safe-area-inset-bottom))] px-[4vw] z-20 flex flex-col gap-[3vh]">
+      <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-[10vh] pb-[max(8vh,env(safe-area-inset-bottom))] px-[4vw] z-20 flex flex-col gap-[3vh]">
         <div className="flex gap-[2vw] overflow-x-auto no-scrollbar w-full px-[2vw]">
           {getCustomLocations().map(loc => (
             <button 
@@ -293,25 +290,28 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         </div>
 
         <div className="flex justify-between items-end w-full px-[2vw]">
+          
+          {/* Bouton Import (w-14 h-14, arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
-            <button onClick={() => fileInputRef.current?.click()} className="w-[14vw] h-[14vw] max-w-[60px] max-h-[60px] bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-90 backdrop-blur">
-              <img src="/icon-import.png" className="w-[60%] h-[60%] object-contain" alt="Import" />
+            <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center active:scale-90 backdrop-blur shrink-0">
+              <img src="/icon-import.png" className="w-[50%] h-[50%] object-contain" alt="Import" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 5MO<br/>/ 10S</span>
-            {/* Ajout du support vidéo dans l'input */}
             <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*,video/*" />
           </div>
 
+          {/* Bouton Photo (w-14 h-14, carré arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
-            <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-[18vw] h-[18vw] max-w-[80px] max-h-[80px] bg-black/60 border border-white/10 rounded-3xl flex items-center justify-center active:scale-95 backdrop-blur shadow-[0_5px_20px_rgba(0,0,0,0.5)]">
-              <img src="/icon-photo.png" className="w-[70%] h-[70%] object-contain" alt="Photo" />
+            <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-14 h-14 bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-95 backdrop-blur shadow-[0_5px_20px_rgba(0,0,0,0.5)] shrink-0">
+              <img src="/icon-photo.png" className="w-[60%] h-[60%] object-contain" alt="Photo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 5MO</span>
           </div>
 
+          {/* Bouton Vidéo (w-14 h-14, carré arrondi) */}
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
-            <button onClick={handleVideoRecord} disabled={isScanning || isAnalyzing} className={`w-[18vw] h-[18vw] max-w-[80px] max-h-[80px] bg-black/60 border rounded-3xl flex items-center justify-center backdrop-blur active:scale-95 transition-all ${isScanning ? 'border-[#FF6600] shadow-[0_0_20px_rgba(255,102,0,0.5)] animate-pulse' : 'border-white/10 shadow-[0_5px_20px_rgba(0,0,0,0.5)]'}`}>
-              <img src="/icon-video.png" className="w-[70%] h-[70%] object-contain" alt="Vidéo" />
+            <button onClick={handleVideoRecord} disabled={isScanning || isAnalyzing} className={`w-14 h-14 bg-black/60 border rounded-2xl flex items-center justify-center backdrop-blur active:scale-95 transition-all shrink-0 ${isScanning ? 'border-[#FF6600] shadow-[0_0_20px_rgba(255,102,0,0.5)] animate-pulse' : 'border-white/10 shadow-[0_5px_20px_rgba(0,0,0,0.5)]'}`}>
+              <img src="/icon-video.png" className="w-[60%] h-[60%] object-contain" alt="Vidéo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">
               {isScanning ? `SCAN... ${recordingTime}S` : 'MAX 10S'}
@@ -320,9 +320,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* VUE A : MODAL DE RÉSULTAT (Divulgation progressive) */}
-      {/* ========================================== */}
+      {/* VUE A : MODAL DE RÉSULTAT */}
       {pendingItems && (
         <div className="absolute inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col p-[4vw] animate-in fade-in zoom-in-95">
           <div className="flex items-center justify-between mt-[6vh] mb-[4vh] border-b border-white/10 pb-[2vh]">
@@ -332,14 +330,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           
           <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4">
             {pendingItems.map((item, idx) => {
-              // Gestion dynamique du badge de score
               const score = item.confidence ? Math.round(item.confidence * 100) : 0;
               const scoreColor = score >= 90 ? 'bg-green-500/10 text-green-500 border-green-500/30' : score >= 70 ? 'bg-[#FF6600]/10 text-[#FF6600] border-[#FF6600]/30' : 'bg-red-500/10 text-red-500 border-red-500/30';
 
               return (
                 <div key={idx} className="bg-[#1E1E1E] border border-white/10 rounded-2xl p-4 flex gap-4 items-center shadow-lg">
                   
-                  {/* Miniature Isolée (Gauche) */}
                   <div className="w-16 h-16 rounded-xl bg-black/50 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
                     {item.imageUrl ? (
                       <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.label || 'Outil'} />
@@ -348,24 +344,20 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
                     )}
                   </div>
 
-                  {/* Hiérarchie de la Donnée (Centre) */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <span className="text-gray-400 font-black text-[9px] tracking-widest uppercase mb-1">
                       {item.brandColor || 'Marque Inconnue'}
                     </span>
                     
-                    {/* Nom non tronqué (whitespace-normal) */}
                     <h3 className="text-white font-bold text-sm leading-tight whitespace-normal">
                       {item.label || item.typography || item.morphology || "Outil identifié"}
                     </h3>
 
-                    {/* Nouveau champ TYPE GÉRIQUE pour la recherche vocale */}
                     <span className="text-[#FF6600] text-[10px] font-bold mt-1.5 tracking-wider uppercase">
                       {item.type || item.categorie_id}
                     </span>
                   </div>
 
-                  {/* Validation Technique (Droite) */}
                   <div className="shrink-0 flex flex-col items-end">
                      <span className={`px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${scoreColor}`}>
                        {score}%

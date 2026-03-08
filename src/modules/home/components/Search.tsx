@@ -1,3 +1,6 @@
+// ==========================================
+// 📂 FICHIER : \src\modules\home\components\Search.tsx
+// ==========================================
 import React, { useState, useMemo, useEffect } from 'react';
 import { Mic, MicOff, Search as SearchIcon, MapPin } from 'lucide-react';
 import type { InventoryItem, Location } from '../../../types';
@@ -18,33 +21,27 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
     setLocations(getCustomLocations());
   }, []);
 
-  // --- VOCAL PRO : PARSEUR D'INTENTION LOCAL ---
   const analyzeIntent = (transcript: string) => {
     let cleanedQuery = transcript.toLowerCase();
     let detectedLocation: string | null = null;
 
-    // 1. Détection de la Zone (Location dynamique)
     locations.forEach(loc => {
       const locName = loc.label.toLowerCase();
       if (cleanedQuery.includes(locName)) {
         detectedLocation = loc.label;
-        // On retire le nom de la zone de la recherche texte
         cleanedQuery = cleanedQuery.replace(locName, '').trim();
       }
     });
 
-    // 2. Nettoyage des mots de liaison inutiles pour une recherche propre
     const stopWords = ['dans le', 'dans la', 'dans', 'sur le', 'sur la', 'sur', 'montre-moi', 'cherche', 'trouve', 'les', 'des'];
     stopWords.forEach(word => {
       cleanedQuery = cleanedQuery.replace(new RegExp(`\\b${word}\\b`, 'gi'), '').trim();
     });
 
-    // 3. Application automatique des filtres HUD
     if (detectedLocation) {
       setSelectedLocation(detectedLocation);
     }
 
-    // 4. On injecte l'essence de la recherche (ex: "perceuse bosch") dans l'input
     setQuery(cleanedQuery.replace(/\s+/g, ' ').trim());
   };
 
@@ -57,7 +54,7 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'fr-FR';
-    recognition.continuous = false; // Arrêt auto après la phrase
+    recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onstart = () => setIsListening(true);
@@ -65,20 +62,16 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
     
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      analyzeIntent(transcript); // Injection dans le parseur au lieu de setQuery direct
+      analyzeIntent(transcript);
     };
 
     recognition.start();
   };
 
-  // --- FILTRAGE INTELLIGENT MULTI-CRITÈRES (FULL-TEXT) ---
   const results = useMemo(() => {
     return inventory.filter(tool => {
-      // Découpage de la requête en mots (ex: "bosch perceuse")
       const searchTerms = query.toLowerCase().split(' ').filter(word => word.length > 1);
       
-      // 1. Création d'un index "Full-Text" pour cet outil.
-      // On regroupe TOUTES les informations de l'outil dans une seule grande chaîne de texte (en minuscules)
       const toolIndex = [
         tool.toolName,
         tool.brand,
@@ -88,15 +81,13 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
         tool.notes,
         (tool as any).energy,
         (tool as any).motor,
-        (tool as any).type // Si tu as un champ spécifique 'type' un jour
+        (tool as any).type
       ]
-        .filter(Boolean) // Retire les champs vides ou undefined
-        .join(' ')       // Colle tous les mots ensemble avec un espace
-        .toLowerCase();  // Passe tout en minuscules
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
 
-      // 2. Vérification : Est-ce que CHAQUE mot tapé (ou dicté) se trouve quelque part dans l'index de cet outil ?
       const matchesQuery = query.trim() === '' || searchTerms.every(term => toolIndex.includes(term));
-      
       const matchesLocation = selectedLocation === 'ALL' || tool.location === selectedLocation;
       
       return matchesQuery && matchesLocation;
@@ -106,19 +97,20 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
   return (
     <div className="min-h-screen bg-[#121212] text-white p-[4vh] font-sans pb-[15vh]">
       
-      {/* HEADER & RETOUR */}
+      {/* HEADER & RETOUR INVERSÉS */}
       <div className="flex justify-between items-center mb-[6vh]">
-        <button onClick={onBack} className="flex items-center gap-[2vw] active:scale-90 transition-transform">
-          <img src="/icon-return.png" alt="Retour" className="w-[2.5rem] h-[2.5rem] object-contain" />
-          <span className="text-[#FF6600] font-black uppercase text-[0.7rem] tracking-widest mt-1">Menu</span>
-        </button>
-        
-        <div className="flex flex-col items-end text-right">
-          <h2 className="text-[1.5rem] font-black italic uppercase tracking-tighter leading-none">Retrouver</h2>
+        {/* Titre à gauche, format système standard */}
+        <div className="flex flex-col items-start text-left">
+          <h2 className="text-[1.5rem] font-sans font-black uppercase tracking-widest leading-none">RETROUVER</h2>
         </div>
+
+        {/* Bouton retour à droite, w-14 h-14, sans le mot "Menu" */}
+        <button onClick={onBack} className="w-14 h-14 flex items-center justify-center active:scale-90 transition-transform shrink-0">
+          <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain" />
+        </button>
       </div>
 
-      {/* ZONE DE RECHERCHE TEXTUELLE (Centrée) */}
+      {/* ZONE DE RECHERCHE TEXTUELLE */}
       <div className="relative mb-[4vh]">
         <div className="absolute inset-y-0 left-[4vw] flex items-center pointer-events-none">
           <SearchIcon size={20} className="text-[#FF6600]/50" />
@@ -132,7 +124,7 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
         />
       </div>
 
-      {/* BOUTON MICRO GÉANT (Sous le pouce) */}
+      {/* BOUTON MICRO GÉANT */}
       <div className="flex justify-center mb-[5vh]">
         <button 
           onClick={startListening}

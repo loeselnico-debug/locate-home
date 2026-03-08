@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 07/03/2026 14:07:00
+> 📅 Archive générée le : 08/03/2026 12:32:08
 
 
 // ==========================================
@@ -102,7 +102,7 @@ const App = () => {
       toolName: item.label || item.typography || 'Outil Inconnu',
       brand: item.brandColor || 'Marque N/A',
       category: item.categorie_id || 'main',
-      location: 'Atelier',
+      location: item.location || 'Atelier', // <-- NOUVEAU : Lecture dynamique (avec filet de sécurité)
       condition: item.etat || 'Bon état',
       notes: item.description || '',
       isConsumable: item.isConsumable,
@@ -803,12 +803,16 @@ export const checkMechanicalSafety = (
 // ==========================================
 
 ```tsx
+// ==========================================
+// 📂 FICHIER : \src\core\camera\Scanner.tsx
+// ==========================================
 import React, { useState, useRef, useEffect } from 'react';
 import { get, set } from 'idb-keyval';
 import { geminiService } from '../ai/geminiService';
 import { getCustomLocations } from '../../core/storage/memoryService';
 import { validateLocateObject } from '../ai/decisionEngine';
 import type { ScanResult } from '../ai/decisionEngine';
+import { useUserTier } from '../security/useUserTier'; // <-- NOUVEAU : Cerveau de sécurité
 
 interface ScannerProps {
   onBack: () => void;
@@ -823,8 +827,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   const [pendingItems, setPendingItems] = useState<any[] | null>(null);
   const [recordingTime, setRecordingTime] = useState<number>(0);
   
-  // NOUVEAU : État du consentement légal
   const [hasConsented, setHasConsented] = useState<boolean | null>(null);
+  const { currentTier } = useUserTier(); // <-- NOUVEAU
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -838,14 +842,13 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     } catch (err) { console.error("Accès caméra refusé", err); }
   };
 
-  // Initialisation : Vérification du consentement avant d'allumer la caméra
   useEffect(() => {
     get('locate_ai_consent').then((val) => {
       if (val === true) {
         setHasConsented(true);
         startCamera();
       } else {
-        setHasConsented(false); // Affiche la modale
+        setHasConsented(false);
       }
     });
 
@@ -893,7 +896,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     if (!videoRef.current?.srcObject) return;
     
     const stream = videoRef.current.srcObject as MediaStream;
-    // On force un bitrate bas pour garantir un fichier léger
     const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 1000000 });
     const chunks: Blob[] = [];
 
@@ -917,7 +919,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
     mediaRecorder.start();
 
-    // Coupe-circuit strict et chronomètre visuel
     let timeElapsed = 0;
     const timerInterval = setInterval(() => {
       timeElapsed++;
@@ -933,7 +934,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. Videur : Cas d'une image
     if (file.type.startsWith('image/')) {
       if (file.size > 5 * 1024 * 1024) {
         alert("ERREUR ZÉRO-TRUST : L'image dépasse la limite stricte de 5 Mo.");
@@ -943,13 +943,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       reader.onloadend = () => runAnalysis(reader.result as string, true);
       reader.readAsDataURL(file);
     } 
-    // 2. Videur : Cas d'une vidéo
     else if (file.type.startsWith('video/')) {
       const videoElement = document.createElement('video');
       videoElement.preload = 'metadata';
       videoElement.onloadedmetadata = () => {
         URL.revokeObjectURL(videoElement.src);
-        if (videoElement.duration > 11) { // 1s de tolérance technique
+        if (videoElement.duration > 11) {
           alert("ERREUR ZÉRO-TRUST : La vidéo dépasse la limite stricte de 10 secondes.");
           return;
         }
@@ -976,8 +975,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             _validationStatus: validation.status,
             _validationMessage: validation.message,
             label: validation.status === "CERTIFIED" ? validation.label : item.label,
-            // C'est ICI qu'on sauve l'image en Base64 pour l'inventaire !
-            imageUrl: isImage ? data : undefined 
+            imageUrl: isImage ? data : undefined,
+            location: selectedLocation // <-- NOUVEAU : On injecte la zone cliquée
           };
         }).filter((item: any) => item._validationStatus === "CERTIFIED");
         
@@ -995,9 +994,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
   return (
     <div className="fixed inset-0 z-[100] bg-black text-white overflow-hidden flex flex-col font-sans">
       
-      {/* ========================================== */}
-      {/* SAS LÉGAL - CONSENTEMENT IA OBLIGATOIRE    */}
-      {/* ========================================== */}
+      {/* SAS LÉGAL - CONSENTEMENT IA OBLIGATOIRE */}
       {hasConsented === false && (
         <div className="absolute inset-0 z-[300] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-[6vw] text-center">
           <div className="bg-[#1E1E1E] border border-[#FF6600]/30 rounded-2xl p-[6vw] max-w-sm w-full shadow-[0_0_30px_rgba(255,102,0,0.15)] flex flex-col items-center">
@@ -1038,18 +1035,18 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
 
       {/* AFFICHAGE TÊTE HAUTE (HUD TOP BAR) */}
       <div className="absolute top-[env(safe-area-inset-top,2vh)] left-0 w-full flex justify-between items-center px-[4vw] pt-[2vh] z-20">
-        <button onClick={onBack} className="w-[12vw] h-[12vw] max-w-[50px] max-h-[50px] bg-black/40 border border-white/10 rounded-xl backdrop-blur-md flex items-center justify-center active:scale-90">
-          <img src="/icon-return.png" alt="Retour" className="w-[60%] h-[60%] object-contain opacity-80" />
+        <button onClick={onBack} className="w-14 h-14 bg-black/40 border border-white/10 rounded-xl backdrop-blur-md flex items-center justify-center active:scale-90 shrink-0">
+          <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain opacity-80" />
         </button>
         
         <div className="flex flex-col items-center">
-          <h1 className="text-[4vw] sm:text-xl tracking-widest uppercase flex gap-2">
+          <h1 className="text-[6vw] sm:text-xl tracking-widest uppercase flex gap-2">
             <span className="font-bold text-white">LOCATE</span>
             <span className="font-black text-[#FF6600] drop-shadow-[0_0_10px_rgba(255,102,0,0.8)]">SCAN</span>
           </h1>
         </div>
 
-        <button onClick={toggleTorch} className={`w-[12vw] h-[12vw] max-w-[50px] max-h-[50px] rounded-xl backdrop-blur-md flex items-center justify-center border transition-all active:scale-90 ${flashOn ? 'bg-[#FF6600]/20 border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'bg-black/40 border-white/10'}`}>
+        <button onClick={toggleTorch} className={`w-14 h-14 rounded-xl backdrop-blur-md flex items-center justify-center border transition-all active:scale-90 shrink-0 ${flashOn ? 'bg-[#FF6600]/20 border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'bg-black/40 border-white/10'}`}>
           <span className={`text-xl ${flashOn ? 'text-[#FF6600]' : 'text-white/50 opacity-50 grayscale'}`}>⚡</span>
         </button>
       </div>
@@ -1084,39 +1081,57 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       </div>
 
       {/* CONSOLE DE COMMANDE INFERIEURE */}
-        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-[10vh] pb-[max(8vh,env(safe-area-inset-bottom))] px-[4vw] z-20 flex flex-col gap-[3vh]">
+      <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-[10vh] pb-[max(8vh,env(safe-area-inset-bottom))] px-[4vw] z-20 flex flex-col gap-[3vh]">
+        
+        {/* NOUVEAU : VERROUILLAGE DES ZONES PREMIUM */}
         <div className="flex gap-[2vw] overflow-x-auto no-scrollbar w-full px-[2vw]">
-          {getCustomLocations().map(loc => (
-            <button 
-              key={loc.id} 
-              onClick={() => setSelectedLocation(loc.label)} 
-              className={`whitespace-nowrap px-[4vw] py-[1vh] rounded-lg text-[2.5vw] sm:text-[10px] font-black border transition-all ${selectedLocation === loc.label ? 'bg-black border-[#FF6600] text-[#FF6600] shadow-[0_0_10px_rgba(255,102,0,0.3)]' : 'bg-black/50 border-white/10 text-white/40'}`}
-            >
-              {loc.label.toUpperCase()}
-            </button>
-          ))}
+          {getCustomLocations().map(loc => {
+            const isLocked = currentTier === 'FREE' && (loc.id === 'chantier' || loc.id === 'pret');
+            
+            return (
+              <button 
+                key={loc.id} 
+                onClick={() => {
+                  if (isLocked) {
+                    alert("🔒 La gestion des zones Chantier et Prêt est réservée aux membres PREMIUM.");
+                    return;
+                  }
+                  setSelectedLocation(loc.label);
+                }} 
+                className={`whitespace-nowrap px-[4vw] py-[1vh] rounded-lg text-[2.5vw] sm:text-[10px] font-black border transition-all ${
+                  isLocked 
+                    ? 'bg-black/80 border-red-500/30 text-gray-500 opacity-60' 
+                    : selectedLocation === loc.label 
+                      ? 'bg-black border-[#FF6600] text-[#FF6600] shadow-[0_0_10px_rgba(255,102,0,0.3)]' 
+                      : 'bg-black/50 border-white/10 text-white/40'
+                }`}
+              >
+                {isLocked && <span className="mr-1">🔒</span>}
+                {loc.label.toUpperCase()}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex justify-between items-end w-full px-[2vw]">
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
-            <button onClick={() => fileInputRef.current?.click()} className="w-[14vw] h-[14vw] max-w-[60px] max-h-[60px] bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-90 backdrop-blur">
-              <img src="/icon-import.png" className="w-[60%] h-[60%] object-contain" alt="Import" />
+            <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center active:scale-90 backdrop-blur shrink-0">
+              <img src="/icon-import.png" className="w-[85%] h-[85%] object-contain" alt="Import" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 5MO<br/>/ 10S</span>
-            {/* Ajout du support vidéo dans l'input */}
             <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*,video/*" />
           </div>
 
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
-            <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-[18vw] h-[18vw] max-w-[80px] max-h-[80px] bg-black/60 border border-white/10 rounded-3xl flex items-center justify-center active:scale-95 backdrop-blur shadow-[0_5px_20px_rgba(0,0,0,0.5)]">
-              <img src="/icon-photo.png" className="w-[70%] h-[70%] object-contain" alt="Photo" />
+            <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-14 h-14 bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-95 backdrop-blur shadow-[0_5px_20px_rgba(0,0,0,0.5)] shrink-0">
+              <img src="/icon-photo.png" className="w-[100%] h-[100%] object-contain" alt="Photo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 5MO</span>
           </div>
 
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
-            <button onClick={handleVideoRecord} disabled={isScanning || isAnalyzing} className={`w-[18vw] h-[18vw] max-w-[80px] max-h-[80px] bg-black/60 border rounded-3xl flex items-center justify-center backdrop-blur active:scale-95 transition-all ${isScanning ? 'border-[#FF6600] shadow-[0_0_20px_rgba(255,102,0,0.5)] animate-pulse' : 'border-white/10 shadow-[0_5px_20px_rgba(0,0,0,0.5)]'}`}>
-              <img src="/icon-video.png" className="w-[70%] h-[70%] object-contain" alt="Vidéo" />
+            <button onClick={handleVideoRecord} disabled={isScanning || isAnalyzing} className={`w-14 h-14 bg-black/60 border rounded-2xl flex items-center justify-center backdrop-blur active:scale-95 transition-all shrink-0 ${isScanning ? 'border-[#FF6600] shadow-[0_0_20px_rgba(255,102,0,0.5)] animate-pulse' : 'border-white/10 shadow-[0_5px_20px_rgba(0,0,0,0.5)]'}`}>
+              <img src="/icon-video.png" className="w-[100%] h-[100%] object-contain" alt="Vidéo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">
               {isScanning ? `SCAN... ${recordingTime}S` : 'MAX 10S'}
@@ -1125,9 +1140,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* VUE A : MODAL DE RÉSULTAT (Divulgation progressive) */}
-      {/* ========================================== */}
+      {/* VUE A : MODAL DE RÉSULTAT */}
       {pendingItems && (
         <div className="absolute inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col p-[4vw] animate-in fade-in zoom-in-95">
           <div className="flex items-center justify-between mt-[6vh] mb-[4vh] border-b border-white/10 pb-[2vh]">
@@ -1137,14 +1150,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
           
           <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4">
             {pendingItems.map((item, idx) => {
-              // Gestion dynamique du badge de score
               const score = item.confidence ? Math.round(item.confidence * 100) : 0;
               const scoreColor = score >= 90 ? 'bg-green-500/10 text-green-500 border-green-500/30' : score >= 70 ? 'bg-[#FF6600]/10 text-[#FF6600] border-[#FF6600]/30' : 'bg-red-500/10 text-red-500 border-red-500/30';
 
               return (
                 <div key={idx} className="bg-[#1E1E1E] border border-white/10 rounded-2xl p-4 flex gap-4 items-center shadow-lg">
                   
-                  {/* Miniature Isolée (Gauche) */}
                   <div className="w-16 h-16 rounded-xl bg-black/50 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
                     {item.imageUrl ? (
                       <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.label || 'Outil'} />
@@ -1153,24 +1164,20 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
                     )}
                   </div>
 
-                  {/* Hiérarchie de la Donnée (Centre) */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <span className="text-gray-400 font-black text-[9px] tracking-widest uppercase mb-1">
                       {item.brandColor || 'Marque Inconnue'}
                     </span>
                     
-                    {/* Nom non tronqué (whitespace-normal) */}
                     <h3 className="text-white font-bold text-sm leading-tight whitespace-normal">
                       {item.label || item.typography || item.morphology || "Outil identifié"}
                     </h3>
 
-                    {/* Nouveau champ TYPE GÉRIQUE pour la recherche vocale */}
                     <span className="text-[#FF6600] text-[10px] font-bold mt-1.5 tracking-wider uppercase">
                       {item.type || item.categorie_id}
                     </span>
                   </div>
 
-                  {/* Validation Technique (Droite) */}
                   <div className="shrink-0 flex flex-col items-end">
                      <span className={`px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${scoreColor}`}>
                        {score}%
@@ -1222,7 +1229,7 @@ const dictionary = {
     profile_company: "Nom de l'entreprise (Optionnel)",
     profile_address: "Adresse complète",
   },
-  UK: {
+  EN: {
     settings_title: "Settings",
     settings_subtitle: "Locate Home System Configuration",
     intl_title: "INTERNATIONALIZATION",
@@ -1448,7 +1455,10 @@ export const applyIndustrialHDR = async (base64Str: string): Promise<string> => 
 // ==========================================
 
 ```tsx
-import type { InventoryItem } from '../../types';
+// ==========================================
+// 📂 FICHIER : \src\core\storage\memoryService.ts
+// ==========================================
+import type { InventoryItem, Location } from '../../types';
 
 const STORAGE_KEY = 'locatehome_inventory';
 
@@ -1476,58 +1486,21 @@ export const addTool = (tool: InventoryItem) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 };
 
-/**
- * Optionnel : Alias pour ToolMemory si nécessaire dans ton projet
- */
 export type ToolMemory = InventoryItem;
 
-// --- AJOUTER À LA FIN DU FICHIER ---
-import type { Location } from '../../types'; // Assurez-vous que l'import est présent en haut du fichier
-
-const LOCATIONS_KEY = 'locatehome_custom_locations';
-
-// Zones par défaut au premier lancement de l'application
-const DEFAULT_LOCATIONS: Location[] = [
+// ==========================================
+// 🏗️ NOUVEAU : LES 4 PILIERS MÉTIERS (STATIQUES)
+// ==========================================
+export const DEFAULT_LOCATIONS: Location[] = [
+  { id: 'atelier', label: 'Atelier', iconName: 'Wrench', description: 'Zone principale' },
   { id: 'fourgon', label: 'Fourgon', iconName: 'Truck', description: 'Véhicule d\'intervention' },
-  { id: 'atelier', label: 'Atelier', iconName: 'Wrench', description: 'Zone principale' }
+  { id: 'chantier', label: 'Chantier', iconName: 'HardHat', description: 'Chez le client' },
+  { id: 'pret', label: 'En Prêt', iconName: 'Users', description: 'Matériel prêté' }
 ];
 
 export const getCustomLocations = (): Location[] => {
-  if (typeof window === 'undefined') return DEFAULT_LOCATIONS;
-  const saved = localStorage.getItem(LOCATIONS_KEY);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (error) {
-      console.error("Erreur de lecture des lieux personnalisés :", error);
-    }
-  }
-  // Initialisation si la mémoire est vierge
-  localStorage.setItem(LOCATIONS_KEY, JSON.stringify(DEFAULT_LOCATIONS));
+  // Pour la V1, on by-pass le localStorage et on force ces 4 zones universelles
   return DEFAULT_LOCATIONS;
-};
-
-export const addCustomLocation = (label: string): boolean => {
-  const current = getCustomLocations();
-  if (current.length >= 4) return false; // Bloque strictement à 4 zones
-
-  const newLocation: Location = {
-    id: label.toLowerCase().replace(/\s+/g, '-'),
-    label: label.trim(),
-    iconName: 'MapPin' // Icône générique pour les zones créées
-  };
-
-  const updated = [...current, newLocation];
-  localStorage.setItem(LOCATIONS_KEY, JSON.stringify(updated));
-  return true;
-};
-
-// Fonction utilitaire pour une future vue "Paramètres des zones"
-export const deleteCustomLocation = (id: string): void => {
-  const current = getCustomLocations();
-  if (current.length <= 1) return; // Sécurité : impossible de supprimer la toute dernière zone
-  const updated = current.filter(loc => loc.id !== id);
-  localStorage.setItem(LOCATIONS_KEY, JSON.stringify(updated));
 };
 ```
 
@@ -1539,7 +1512,7 @@ export const deleteCustomLocation = (id: string): void => {
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
-export type Language = 'FR' | 'UK';
+export type Language = 'FR' | 'EN';
 export type UnitSystem = 'METRIC' | 'IMPERIAL';
 
 const SETTINGS_KEY = 'locate_app_settings';
@@ -1900,77 +1873,6 @@ export default function Hub({ onSelectModule }: HubProps) {
     </div>
   );
 }
-```
-
-// ==========================================
-// 📂 FICHIER : \src\core\ui\LocationBar.tsx
-// ==========================================
-
-```tsx
-import React, { useState, useEffect } from 'react';
-import { getCustomLocations, addCustomLocation } from '../storage/memoryService';
-import type { Location } from '../../types';
-
-interface LocationBarProps {
-  selectedLocation: string;
-  setSelectedLocation: (loc: string) => void;
-}
-
-export const LocationBar: React.FC<LocationBarProps> = ({ selectedLocation, setSelectedLocation }) => {
-  const [locations, setLocations] = useState<Location[]>([]);
-
-  useEffect(() => {
-    // Charge les lieux depuis le Zéro-Serveur (IndexedDB/LocalStorage) au montage
-    setLocations(getCustomLocations());
-  }, []);
-
-  const handleAddLocation = () => {
-    if (locations.length >= 4) {
-      alert("Limite système : 4 zones maximum. Pour le détail (bacs/boîtes), utilisez notre système d'étiquettes QR.");
-      return;
-    }
-    
-    // UI native simple pour ne pas alourdir l'application
-    const newLabel = window.prompt("Nom de la nouvelle zone d'intervention (ex: Chantier B) :");
-    
-    if (newLabel && newLabel.trim() !== '') {
-      const success = addCustomLocation(newLabel);
-      if (success) {
-        setLocations(getCustomLocations()); // Rafraîchit l'affichage HUD
-        setSelectedLocation(newLabel.trim()); // Auto-focus sur la nouvelle zone
-      }
-    }
-  };
-
-  return (
-    <div className="flex overflow-x-auto gap-[0.8rem] mb-[3vh] no-scrollbar px-[4vw]">
-      {locations.map((loc) => (
-        <button
-          key={loc.id}
-          onClick={() => setSelectedLocation(loc.label)}
-          className={`px-[1.2rem] py-[0.5rem] rounded-full border text-[0.8rem] whitespace-nowrap transition-all duration-300 ${
-            selectedLocation === loc.label
-              ? "bg-[#FF6600] border-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.3)]"
-              : "bg-transparent border-gray-700 text-gray-400"
-          }`}
-        >
-          {loc.label.toUpperCase()}
-        </button>
-      ))}
-      
-      {/* Rendu conditionnel du bouton d'ajout si limite non atteinte */}
-      {locations.length < 4 && (
-        <button
-          onClick={handleAddLocation}
-          className="w-8 h-8 rounded-full border border-dashed border-gray-500 flex items-center justify-center text-gray-400 hover:text-[#FF6600] hover:border-[#FF6600] transition-colors shrink-0"
-          title="Ajouter une nouvelle zone"
-        >
-          +
-        </button>
-      )}
-    </div>
-  );
-};
 ```
 
 // ==========================================
@@ -2854,6 +2756,9 @@ export default GarageDashboard;
 // ==========================================
 
 ```tsx
+// ==========================================
+// 📂 FICHIER : \src\modules\home\components\HomeMenu.tsx
+// ==========================================
 import React from 'react';
 
 interface HomeMenuProps {
@@ -2863,28 +2768,28 @@ interface HomeMenuProps {
 
 const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
   return (
-    // NOUVEAU : Hauteur fluide et flexibilité interne pour bloquer tout scroll
-    <div className="h-full w-full flex flex-col justify-between px-[5vw] pt-[1vh] pb-[3vh] overflow-hidden">
+    <div className="h-full w-full flex flex-col justify-between px-[5vw] pt-[1vh] pb-[3vh] overflow-hidden font-sans">
       
       {/* ========================================== */}
       {/* STRATE HAUTE (Contrôles du Module)         */}
       {/* ========================================== */}
       <div className="w-full flex justify-between items-center shrink-0">
         
-        {/* NOUVEAU : Badge Néon Orange avec Texte Argent pour les Offres */}
-        <div className="bg-[#121212] px-[4vw] sm:px-5 py-[0.8vh] rounded-full border border-[#FF6600]/50 shadow-[0_0_15px_rgba(255,102,0,0.4),inset_0_0_10px_rgba(255,102,0,0.2)] flex items-center justify-center">
-          <span className="text-[clamp(0.6rem,2vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#ffffff,#c0c0c0,#8a8a8a,#ffffff)] bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+        {/* Badge Néon Orange (Hauteur standardisée h-14) */}
+        <div className="h-14 bg-[#121212] px-[4vw] sm:px-5 rounded-full border border-[#FF6600]/50 shadow-[0_0_15px_rgba(255,102,0,0.4),inset_0_0_10px_rgba(255,102,0,0.2)] flex items-center justify-center">
+          <span className="text-[clamp(0.6rem,4vw,0.7rem)] font-black uppercase tracking-widest bg-[linear-gradient(180deg,#ffffff,#c0c0c0,#8a8a8a,#ffffff)] bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
             {tier}
           </span>
         </div>
 
+        {/* Bouton Paramètres (Format standard w-14 h-14) */}
         <button 
           onClick={() => onNavigate('settings')} 
-          className="opacity-90 hover:opacity-100 transition-opacity active:scale-90 p-1"
+          className="w-14 h-14 flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity active:scale-90 shrink-0"
         >
           <img 
             src="/gear.png" 
-            className="w-[8vw] h-[8vw] max-w-[35px] max-h-[35px] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
+            className="w-[100%] h-[100%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" 
             alt="Paramètres" 
           />
         </button>
@@ -2893,7 +2798,6 @@ const HomeMenu: React.FC<HomeMenuProps> = ({ onNavigate, tier }) => {
       {/* ========================================== */}
       {/* STRATE MÉDIANE (Le Manifeste - "Le Ressort") */}
       {/* ========================================== */}
-      {/* NOUVEAU : Le flex-1 est ici pour pousser le contenu bas vers le fond */}
       <div className="flex-1 flex flex-col justify-center items-center w-full max-w-[85vw] mx-auto min-h-[15vh]">
         <p className="text-center text-white font-black uppercase tracking-wide leading-tight text-[clamp(0.6rem,2.5vw,0.9rem)] drop-shadow-md">
           "L'homme ne parle pas à l'IA pour l'écouter,<br />
@@ -3117,9 +3021,13 @@ export default function InventoryCard({ item }: InventoryCardProps) {
 // ==========================================
 
 ```tsx
+// ==========================================
+// 📂 FICHIER : \src\modules\home\components\Library.tsx
+// ==========================================
 import React, { useState, useEffect } from 'react';
 import { CATEGORIES } from '../views/Dashboard';
 import type { InventoryItem } from '../../../types';
+import { useUserTier } from '../../../core/security/useUserTier';
 
 interface LibraryProps {
   onBack: () => void;
@@ -3132,8 +3040,8 @@ interface LibraryProps {
 
 const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory, onSelectTool, onDelete }) => {
   const [tools, setTools] = useState<InventoryItem[]>([]);
+  const { currentTier } = useUserTier(); // <-- NOUVEAU : On invoque la sécurité
 
-  // Récupération de la catégorie active
   const activeCategoryIndex = CATEGORIES.findIndex(c => c.id === selectedCategoryId);
   const activeCategory = CATEGORIES[activeCategoryIndex];
 
@@ -3141,7 +3049,6 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
   const categoryIcon = activeCategory ? `/${activeCategory.id}.png` : '/icon-photo.png';
   const categoryNumber = activeCategoryIndex !== -1 ? String(activeCategoryIndex + 1).padStart(2, '0') + '.' : '';
 
-  // Filtre Zéro-Bug (Gère les espaces et la casse)
   useEffect(() => {
     const data = inventory || [];
     const safeCategoryId = selectedCategoryId?.trim().toLowerCase();
@@ -3158,7 +3065,7 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
   }, [selectedCategoryId, inventory, activeCategory]);
 
   return (
-    <div className="flex flex-col h-full bg-transparent">
+    <div className="flex flex-col h-full bg-transparent font-sans">
       {/* EN-TÊTE PREMIUM 3D */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         <button className="w-14 h-14 active:scale-90 transition-transform">
@@ -3193,14 +3100,21 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
             {tools.map((tool) => (
               <div
                 key={tool.id}
-                onClick={() => onSelectTool(tool)}
+                onClick={() => {
+                  // <-- NOUVEAU : VERROU PREMIUM POUR L'ÉDITION
+                  if (currentTier === 'FREE') {
+                    alert("🔒 La fiche détaillée et l'édition sont réservées aux membres PREMIUM.");
+                  } else {
+                    onSelectTool(tool);
+                  }
+                }}
                 className="relative bg-[#1E1E1E] rounded-r-xl rounded-l-sm border-l-4 border-[#FF6600] p-4 flex gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] transition-transform"
               >
-                {/* BOUTON SUPPRIMER (Croix discrète) */}
+                {/* BOUTON SUPPRIMER */}
                 <button
                   onClick={(e) => {
-                    e.stopPropagation(); // Empêche l'ouverture de la fiche détail
-                    onDelete(tool.id);   // Déclenche l'alerte de suppression
+                    e.stopPropagation();
+                    onDelete(tool.id);   
                   }}
                   className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-white/30 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-10"
                 >
@@ -3216,9 +3130,9 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                   )}
                 </div>
 
-                {/* Détails Restructurés (Vue C) */}
+                {/* Détails */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
-                  <div className="pr-6"> {/* Padding right pour ne pas chevaucher la croix */}
+                  <div className="pr-6">
                     <span className="text-gray-400 font-black text-[9px] uppercase tracking-widest leading-none block mb-0.5">
                       {tool.brand || 'MARQUE N/A'}
                     </span>
@@ -3227,9 +3141,12 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                     </h3>
                     
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/30 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">
-                        ⚡ {(tool as any).energy || 'N/A'}
-                      </span>
+                      {/* <-- NOUVEAU : L'énergie est un privilège PREMIUM/PRO */}
+                      {currentTier !== 'FREE' && (
+                        <span className="bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/30 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider">
+                          ⚡ {(tool as any).energy || 'N/A'}
+                        </span>
+                      )}
                       <span className="text-[#D3D3D3] text-[9px] font-bold uppercase tracking-widest truncate">
                         📍 {tool.location || 'ZONE NON DÉFINIE'}
                       </span>
@@ -3308,6 +3225,9 @@ export default PdfExportButton;
 // ==========================================
 
 ```tsx
+// ==========================================
+// 📂 FICHIER : \src\modules\home\components\Search.tsx
+// ==========================================
 import React, { useState, useMemo, useEffect } from 'react';
 import { Mic, MicOff, Search as SearchIcon, MapPin } from 'lucide-react';
 import type { InventoryItem, Location } from '../../../types';
@@ -3328,33 +3248,27 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
     setLocations(getCustomLocations());
   }, []);
 
-  // --- VOCAL PRO : PARSEUR D'INTENTION LOCAL ---
   const analyzeIntent = (transcript: string) => {
     let cleanedQuery = transcript.toLowerCase();
     let detectedLocation: string | null = null;
 
-    // 1. Détection de la Zone (Location dynamique)
     locations.forEach(loc => {
       const locName = loc.label.toLowerCase();
       if (cleanedQuery.includes(locName)) {
         detectedLocation = loc.label;
-        // On retire le nom de la zone de la recherche texte
         cleanedQuery = cleanedQuery.replace(locName, '').trim();
       }
     });
 
-    // 2. Nettoyage des mots de liaison inutiles pour une recherche propre
     const stopWords = ['dans le', 'dans la', 'dans', 'sur le', 'sur la', 'sur', 'montre-moi', 'cherche', 'trouve', 'les', 'des'];
     stopWords.forEach(word => {
       cleanedQuery = cleanedQuery.replace(new RegExp(`\\b${word}\\b`, 'gi'), '').trim();
     });
 
-    // 3. Application automatique des filtres HUD
     if (detectedLocation) {
       setSelectedLocation(detectedLocation);
     }
 
-    // 4. On injecte l'essence de la recherche (ex: "perceuse bosch") dans l'input
     setQuery(cleanedQuery.replace(/\s+/g, ' ').trim());
   };
 
@@ -3367,7 +3281,7 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'fr-FR';
-    recognition.continuous = false; // Arrêt auto après la phrase
+    recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onstart = () => setIsListening(true);
@@ -3375,20 +3289,16 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
     
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      analyzeIntent(transcript); // Injection dans le parseur au lieu de setQuery direct
+      analyzeIntent(transcript);
     };
 
     recognition.start();
   };
 
-  // --- FILTRAGE INTELLIGENT MULTI-CRITÈRES (FULL-TEXT) ---
   const results = useMemo(() => {
     return inventory.filter(tool => {
-      // Découpage de la requête en mots (ex: "bosch perceuse")
       const searchTerms = query.toLowerCase().split(' ').filter(word => word.length > 1);
       
-      // 1. Création d'un index "Full-Text" pour cet outil.
-      // On regroupe TOUTES les informations de l'outil dans une seule grande chaîne de texte (en minuscules)
       const toolIndex = [
         tool.toolName,
         tool.brand,
@@ -3398,15 +3308,13 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
         tool.notes,
         (tool as any).energy,
         (tool as any).motor,
-        (tool as any).type // Si tu as un champ spécifique 'type' un jour
+        (tool as any).type
       ]
-        .filter(Boolean) // Retire les champs vides ou undefined
-        .join(' ')       // Colle tous les mots ensemble avec un espace
-        .toLowerCase();  // Passe tout en minuscules
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
 
-      // 2. Vérification : Est-ce que CHAQUE mot tapé (ou dicté) se trouve quelque part dans l'index de cet outil ?
       const matchesQuery = query.trim() === '' || searchTerms.every(term => toolIndex.includes(term));
-      
       const matchesLocation = selectedLocation === 'ALL' || tool.location === selectedLocation;
       
       return matchesQuery && matchesLocation;
@@ -3416,19 +3324,20 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
   return (
     <div className="min-h-screen bg-[#121212] text-white p-[4vh] font-sans pb-[15vh]">
       
-      {/* HEADER & RETOUR */}
+      {/* HEADER & RETOUR INVERSÉS */}
       <div className="flex justify-between items-center mb-[6vh]">
-        <button onClick={onBack} className="flex items-center gap-[2vw] active:scale-90 transition-transform">
-          <img src="/icon-return.png" alt="Retour" className="w-[2.5rem] h-[2.5rem] object-contain" />
-          <span className="text-[#FF6600] font-black uppercase text-[0.7rem] tracking-widest mt-1">Menu</span>
-        </button>
-        
-        <div className="flex flex-col items-end text-right">
-          <h2 className="text-[1.5rem] font-black italic uppercase tracking-tighter leading-none">Retrouver</h2>
+        {/* Titre à gauche, format système standard */}
+        <div className="flex flex-col items-start text-left">
+          <h2 className="text-[1.5rem] font-sans font-black uppercase tracking-widest leading-none">RETROUVER</h2>
         </div>
+
+        {/* Bouton retour à droite, w-14 h-14, sans le mot "Menu" */}
+        <button onClick={onBack} className="w-14 h-14 flex items-center justify-center active:scale-90 transition-transform shrink-0">
+          <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain" />
+        </button>
       </div>
 
-      {/* ZONE DE RECHERCHE TEXTUELLE (Centrée) */}
+      {/* ZONE DE RECHERCHE TEXTUELLE */}
       <div className="relative mb-[4vh]">
         <div className="absolute inset-y-0 left-[4vw] flex items-center pointer-events-none">
           <SearchIcon size={20} className="text-[#FF6600]/50" />
@@ -3442,7 +3351,7 @@ const Search: React.FC<SearchProps> = ({ onBack, inventory }) => {
         />
       </div>
 
-      {/* BOUTON MICRO GÉANT (Sous le pouce) */}
+      {/* BOUTON MICRO GÉANT */}
       <div className="flex justify-center mb-[5vh]">
         <button 
           onClick={startListening}
@@ -4032,7 +3941,7 @@ interface PrivacyPolicyProps {
 const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
   // Connexion au cerveau global pour connaître la langue active
   const { settings } = useAppSettings();
-  const isUK = settings.language === 'UK';
+  const isEN = settings.language === 'EN';
 
   return (
     <div className="flex flex-col h-full bg-[#121212] px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))] overflow-y-auto relative z-[110]">
@@ -4042,11 +3951,11 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
         onClick={onBack}
         className="self-start text-[#FF6600] border border-[#FF6600] bg-[#1E1E1E] px-[4vw] py-[1vh] rounded-md font-black uppercase tracking-widest text-[clamp(0.7rem,3vw,1rem)] mb-[3vh] active:scale-95 transition-transform"
       >
-        ← {isUK ? 'Back' : 'Retour'}
+        ← {isEN ? 'Back' : 'Retour'}
       </button>
 
-      {/* CONTENU ANGLAIS (UK) */}
-      {isUK ? (
+      {/* CONTENU ANGLAIS (EN) */}
+      {isEN ? (
         <div className="space-y-[4vh] pb-[5vh] text-white/70 text-[clamp(0.8rem,2.8vw,0.95rem)] leading-relaxed">
           
           <div className="mb-[4vh] border-b border-white/10 pb-[2vh]">
@@ -4240,6 +4149,9 @@ export default PrivacyPolicy;
 // ==========================================
 
 ```tsx
+// ==========================================
+// 📂 FICHIER : \src\modules\home\views\SettingsPage.tsx
+// ==========================================
 import React, { useState, useEffect } from 'react';
 import { useAppSettings } from '../../../core/storage/useAppSettings';
 import { useUserTier } from '../../../core/security/useUserTier';
@@ -4272,20 +4184,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
     return <PrivacyPolicy onBack={() => setShowPrivacy(false)} />;
   }
 
-  // Sécurisation de l'objet profil au cas où il serait vide lors du premier chargement
-  const profile = settings.userProfile || { fullName: '', company: '', address: '' };
-
-  const handleProfileChange = (field: keyof typeof profile, value: string) => {
-    updateSettings({ 
-      userProfile: { ...profile, [field]: value } 
-    });
-  };
+  const hasAcceptedTerms = settings.acceptedTerms === true;
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto pb-[15vh]">
+    <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto pb-[15vh] font-sans">
       
-      {/* EN-TÊTE AVEC BOUTON RETOUR 3D */}
-      <div className="flex items-center justify-between mb-[4vh] mt-[4vh]">
+      {/* EN-TÊTE AVEC BOUTON RETOUR STANDARD */}
+      <div className="flex items-center justify-between mb-[2vh] mt-[2vh]">
         <div>
           <h1 className="text-[clamp(1.5rem,6vw,2.5rem)] font-black text-[#FF6600] uppercase tracking-wide font-['Rebel']">
             {t('settings_title')}
@@ -4296,11 +4201,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </div>
         
         {onBack && (
-          <button 
-            onClick={onBack}
-            className="w-[clamp(40px,10vw,60px)] h-[clamp(40px,10vw,60px)] bg-[#1A1A1A] rounded-xl flex items-center justify-center border border-[#333] shadow-[0_4px_0_#000] active:shadow-[0_0px_0_#000] active:translate-y-[4px] transition-all shrink-0"
-          >
-            <img src="/icon-return.png" alt="Retour" className="w-[50%] h-[50%] object-contain" />
+          <button onClick={onBack} className="w-14 h-14 active:scale-90 transition-transform shrink-0 flex items-center justify-center">
+            <img src="/icon-return.png" alt="Retour" className="w-full h-full object-contain drop-shadow-lg" />
           </button>
         )}
       </div>
@@ -4328,64 +4230,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
                 FR (CM)
               </button>
               <button 
-                onClick={() => updateSettings({ language: 'UK', unitSystem: 'IMPERIAL' })}
-                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${lang === 'UK' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
+                onClick={() => updateSettings({ language: 'EN', unitSystem: 'IMPERIAL' })}
+                className={`px-[3vw] py-[1vh] rounded-md font-black text-[clamp(0.8rem,3vw,1rem)] transition-all ${lang === 'EN' ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
               >
-                UK (IN)
+                EN (IN)
               </button>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 1.5 (NOUVEAU) : IDENTITÉ ASSURANCE */}
-      <div className="mb-[5vh]">
-        <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
-          <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
-          {t('profile_title')}
-        </h2>
-
-        <div className="bg-[#1A1A1A] rounded-2xl p-[3vh_4vw] border border-[#222] space-y-[2vh]">
-          {/* Champ Nom */}
-          <div>
-            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.9rem)] font-bold mb-[1vh] uppercase tracking-wider">
-              {t('profile_fullname')}
-            </label>
-            <input 
-              type="text" 
-              value={profile.fullName}
-              onChange={(e) => handleProfileChange('fullName', e.target.value)}
-              placeholder="Ex: Nicolas Loesel"
-              className="w-full bg-[#0A0A0A] border border-[#333] rounded-lg text-white p-[1.5vh_3vw] text-[clamp(0.8rem,3vw,1rem)] focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-all placeholder:text-gray-600"
-            />
-          </div>
-
-          {/* Champ Entreprise */}
-          <div>
-            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.9rem)] font-bold mb-[1vh] uppercase tracking-wider">
-              {t('profile_company')}
-            </label>
-            <input 
-              type="text" 
-              value={profile.company}
-              onChange={(e) => handleProfileChange('company', e.target.value)}
-              placeholder="Ex: Locate Systems EI"
-              className="w-full bg-[#0A0A0A] border border-[#333] rounded-lg text-white p-[1.5vh_3vw] text-[clamp(0.8rem,3vw,1rem)] focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-all placeholder:text-gray-600"
-            />
-          </div>
-
-          {/* Champ Adresse */}
-          <div>
-            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.9rem)] font-bold mb-[1vh] uppercase tracking-wider">
-              {t('profile_address')}
-            </label>
-            <input 
-              type="text" 
-              value={profile.address}
-              onChange={(e) => handleProfileChange('address', e.target.value)}
-              placeholder="Ex: 209 rue Jacques Brel, 30730 FONS"
-              className="w-full bg-[#0A0A0A] border border-[#333] rounded-lg text-white p-[1.5vh_3vw] text-[clamp(0.8rem,3vw,1rem)] focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-all placeholder:text-gray-600"
-            />
           </div>
         </div>
       </div>
@@ -4396,8 +4246,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
           <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
           {t('tier_title')}
         </h2>
-        <div className="bg-[#1A1A1A] rounded-2xl p-[2vh_4vw] border border-[#222]">
-          <div className="flex items-center justify-between mb-[2vh]">
+        
+        {!hasAcceptedTerms && (
+          <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest mb-2 animate-pulse flex items-center gap-2">
+            <span className="text-sm">⚠️</span> Veuillez accepter les CGU/CGV ci-dessous pour débloquer les accès.
+          </p>
+        )}
+
+        <div className={`bg-[#1A1A1A] rounded-2xl p-[2vh_4vw] border transition-all duration-300 ${!hasAcceptedTerms ? 'border-red-500/30' : 'border-[#222]'}`}>
+          <div className="flex items-center justify-between mb-[3vh]">
             <p className="text-[clamp(0.75rem,2.8vw,0.9rem)] text-gray-400">
               {t('tier_desc')}
             </p>
@@ -4406,16 +4263,32 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             </span>
           </div>
           
-          <div className="flex bg-[#0A0A0A] rounded-lg p-[4px] justify-between">
-            {(Object.keys(TIERS_CONFIG) as UserTier[]).map((tier) => (
-              <button
-                key={tier}
-                onClick={() => setTier(tier)}
-                className={`flex-1 mx-[1vw] py-[1.5vh] rounded-md font-black text-[clamp(0.7rem,2.5vw,0.9rem)] transition-all ${currentTier === tier ? 'bg-[#FF6600] text-white shadow-[0_0_15px_rgba(255,102,0,0.4)]' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                {tier}
-              </button>
-            ))}
+          {/* <-- NOUVEAU : Injection du terme (Devis) pour le tier PRO */}
+          <div className="flex gap-[2vw] justify-between">
+            {(Object.keys(TIERS_CONFIG) as UserTier[]).map((tier) => {
+              const displayLabel = tier === 'PRO' ? 'PRO (Devis)' : tier;
+              
+              return (
+                <button
+                  key={tier}
+                  onClick={() => setTier(tier)}
+                  disabled={!hasAcceptedTerms}
+                  className={`flex-1 py-[1.5vh] rounded-2xl font-black text-[clamp(0.7rem,2vw,0.9rem)] uppercase tracking-widest transition-all border ${
+                    !hasAcceptedTerms 
+                      ? 'bg-[#121212] text-gray-700 border-white/5 cursor-not-allowed opacity-50'
+                      : currentTier === tier 
+                        ? 'bg-[#121212] text-white border-[#FF6600]/80 shadow-[0_0_15px_rgba(255,102,0,0.3),inset_0_0_10px_rgba(255,102,0,0.1)]' 
+                        : 'bg-[#0A0A0A] text-gray-600 border-white/5 hover:text-gray-400'
+                  }`}
+                >
+                  {!hasAcceptedTerms ? (
+                    <span className="flex justify-center items-center gap-2">🔒 {displayLabel}</span>
+                  ) : (
+                    displayLabel
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -4443,12 +4316,31 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* SECTION 4 : LÉGAL (CGU / CGV / Confidentialité) */}
+      {/* SECTION 4 : SUPPORT & ASSISTANCE */}
+      <div className="mb-[5vh]">
+        <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
+          <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
+          SUPPORT & ASSISTANCE
+        </h2>
+        <div className="bg-[#1A1A1A] rounded-2xl p-[3vh_4vw] border border-[#222] flex flex-col items-center text-center">
+          <p className="text-gray-400 text-[clamp(0.8rem,3vw,0.95rem)] mb-[2.5vh] leading-relaxed">
+            Une question, un bug ou une suggestion ? Notre équipe est à votre écoute pour améliorer l'expérience Locate.
+          </p>
+          <a 
+            href="mailto:contact@locate-systems.com"
+            className="w-full bg-[#121212] text-white border border-white/10 py-[1.8vh] rounded-xl font-black uppercase tracking-widest text-[clamp(0.8rem,3vw,1rem)] shadow-inner hover:border-[#FF6600]/50 hover:text-[#FF6600] transition-colors flex justify-center items-center gap-3 active:scale-95"
+          >
+            <span className="text-xl">✉️</span> Contacter le support
+          </a>
+        </div>
+      </div>
+
+      {/* SECTION 5 : LÉGAL (CGU / CGV / Confidentialité) */}
       <div className="mt-auto">
-        <div className="flex items-start gap-[3vw] bg-[#1A1A1A] p-[2vh_4vw] rounded-xl border border-[#333]">
+        <div className={`flex items-start gap-[3vw] bg-[#1A1A1A] p-[2vh_4vw] rounded-xl border transition-colors ${hasAcceptedTerms ? 'border-[#333]' : 'border-red-500/50 shadow-[0_0_15px_rgba(220,38,38,0.2)]'}`}>
           <input
             type="checkbox"
-            checked={settings.acceptedTerms || false}
+            checked={hasAcceptedTerms}
             onChange={(e) => updateSettings({ acceptedTerms: e.target.checked })}
             className="mt-[0.5vh] shrink-0 w-[clamp(20px,5vw,24px)] h-[clamp(20px,5vw,24px)] accent-[#FF6600] cursor-pointer"
           />
@@ -4470,15 +4362,18 @@ export default SettingsPage;
 // ==========================================
 
 ```tsx
+// ==========================================
+// 📂 FICHIER : \src\modules\home\views\ValidationSas.tsx
+// ==========================================
 import React, { useState } from 'react';
+import { useUserTier } from '../../../core/security/useUserTier';
 
-// 1. Définition stricte du format renvoyé par l'IA Gemini
 export interface AIScanResult {
   typography?: string;
   brandColor?: string;
   categorie_id?: string;
-  type?: string; // Notre nouvel ajout de la session précédente
-  morphology?: string; // Pour l'effet Waouh
+  type?: string; 
+  morphology?: string; 
   confidence?: number;
   etat?: string;
   description?: string;
@@ -4486,6 +4381,7 @@ export interface AIScanResult {
   isConsumable?: boolean;
   consumableLevel?: number;
   imageUrl?: string;
+  location?: string; // <-- NOUVEAU : On autorise le transit de la zone
 }
 
 interface ValidationSasProps {
@@ -4496,9 +4392,8 @@ interface ValidationSasProps {
 
 const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateAll, onRejectAll }) => {
   const [itemsToValidate, setItemsToValidate] = useState<AIScanResult[]>(pendingItems);
-  
-  // État pour gérer les cases à cocher (par défaut, tout est coché)
   const [selectedItems, setSelectedItems] = useState<boolean[]>(pendingItems.map(() => true));
+  const { currentTier } = useUserTier();
 
   const handleRemoveItem = (indexToRemove: number) => {
     setItemsToValidate(prev => prev.filter((_, i) => i !== indexToRemove));
@@ -4512,7 +4407,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
   };
 
   const handleFinalValidation = () => {
-    // On ne garde que les items qui ont leur case cochée
     const itemsToKeep = itemsToValidate.filter((_, index) => selectedItems[index]);
     if (itemsToKeep.length > 0) {
       onValidateAll(itemsToKeep);
@@ -4523,7 +4417,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
 
   if (itemsToValidate.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full px-[5vw] text-center gap-[2vh]">
+      <div className="flex flex-col items-center justify-center h-full px-[5vw] text-center gap-[2vh] font-sans">
         <h2 className="text-[#FF6600] font-black uppercase tracking-widest text-[clamp(1rem,4vw,1.5rem)]">Scan Vide</h2>
         <p className="text-white/70 text-[clamp(0.8rem,2.5vw,1rem)]">Aucun outil détecté ou validé.</p>
         <button onClick={onRejectAll} className="mt-[4vh] bg-[#333333] text-white px-[6vw] py-[1.5vh] rounded-md font-bold uppercase tracking-wide">
@@ -4534,9 +4428,8 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#121212] px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))]">
+    <div className="flex flex-col h-full bg-[#121212] px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))] font-sans">
       
-      {/* HEADER DU SAS */}
       <div className="flex flex-col mb-[3vh]">
         <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.2rem,5vw,1.8rem)]">
           SAS DE VALIDATION <span className="text-[#FF6600]">(SCAN)</span>
@@ -4546,7 +4439,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
         </p>
       </div>
 
-      {/* LISTE DES OUTILS DÉTECTÉS */}
       <div className="flex-1 overflow-y-auto space-y-[3vh] pr-[1vw] no-scrollbar">
         {itemsToValidate.map((item, index) => {
           const score = item.confidence ? Math.round(item.confidence * 100) : 0;
@@ -4558,25 +4450,19 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
               key={index} 
               className={`bg-[#1E1E1E] border rounded-xl flex flex-col overflow-hidden transition-all duration-300 ${isSelected ? 'border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.15)]' : 'border-white/5 opacity-50 grayscale-[50%]'}`}
             >
-              
-              {/* BLOC SUPÉRIEUR : PHOTO + INFOS */}
               <div className="flex p-[3vw] gap-[3vw]">
-                
-                {/* Photo détourée (Gauche) */}
                 <div className="w-[22vw] h-[22vw] max-w-[90px] max-h-[90px] bg-[#0a0a0a] border border-white/10 rounded-lg flex items-center justify-center p-2 shrink-0 relative">
                   {item.imageUrl ? (
                     <img 
                       src={item.imageUrl} 
                       alt={item.label} 
-                      // Le drop-shadow crée l'effet détouré "waouh" si l'image s'y prête
-                      className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]" 
+                      className={`w-full h-full object-contain ${currentTier !== 'FREE' ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]' : ''}`}
                     />
                   ) : (
                     <span className="text-2xl opacity-30">📷</span>
                   )}
                 </div>
 
-                {/* Infos (Centre / Droite) */}
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-2">
@@ -4590,35 +4476,34 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                         {item.type || item.categorie_id}
                       </span>
                     </div>
-                    <div className="flex flex-col items-end shrink-0">
-                      <span className={`font-black text-[clamp(1.1rem,4vw,1.4rem)] leading-none ${scoreColor}`}>
-                        {score}%
-                      </span>
-                      <span className="text-white/40 text-[8px] uppercase tracking-widest mt-1">
-                        IA CONF.
-                      </span>
-                    </div>
+                    {currentTier !== 'FREE' && (
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className={`font-black text-[clamp(1.1rem,4vw,1.4rem)] leading-none ${scoreColor}`}>
+                          {score}%
+                        </span>
+                        <span className="text-white/40 text-[8px] uppercase tracking-widest mt-1">
+                          IA CONF.
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* L'EFFET "WAOUH" : Terminal IA */}
-                  <div className="mt-auto pt-2">
-                    <div className="bg-black/60 border border-white/5 rounded p-2 font-mono text-[9px] text-gray-400 leading-snug h-[4.5em] overflow-hidden relative">
-                      <span className="text-[#FF6600] animate-pulse"> {">"} </span>
-                      <span className="text-white/80">SCAN_STRUCT : </span> 
-                      {item.morphology ? `${item.morphology}. ` : ''}
-                      <span className="italic opacity-80">{item.description}</span>
-                      {/* Fondu vers le bas si le texte est trop long */}
-                      <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-black/60 to-transparent"></div>
+                  {currentTier !== 'FREE' && (
+                    <div className="mt-auto pt-2">
+                      <div className="bg-black/60 border border-white/5 rounded p-2 font-mono text-[9px] text-gray-400 leading-snug h-[4.5em] overflow-hidden relative">
+                        <span className="text-[#FF6600] animate-pulse"> {">"} </span>
+                        <span className="text-white/80">SCAN_STRUCT : </span> 
+                        {item.morphology ? `${item.morphology}. ` : ''}
+                        <span className="italic opacity-80">{item.description}</span>
+                        <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-black/60 to-transparent"></div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                 </div>
               </div>
 
-              {/* BLOC INFÉRIEUR : LIGNE D'ACTIONS */}
               <div className="flex border-t border-white/10 bg-[#121212]">
-                
-                {/* 1. Case à cocher (Valider) */}
                 <button 
                   onClick={() => toggleSelection(index)}
                   className={`flex-1 py-3 flex items-center justify-center gap-2 transition-colors ${isSelected ? 'text-[#FF6600] bg-[#FF6600]/10' : 'text-gray-500 hover:text-white'}`}
@@ -4631,16 +4516,14 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                   </span>
                 </button>
 
-                {/* 2. Bouton Éditer (Prépare le terrain pour D) */}
                 <button 
-                  onClick={() => alert("L'édition détaillée sera disponible dans la fiche outil après validation.")}
+                  onClick={() => alert(currentTier === 'FREE' ? "L'édition détaillée est réservée aux membres PREMIUM." : "L'édition détaillée sera disponible dans la fiche outil après validation.")}
                   className="flex-1 py-3 border-l border-white/10 flex items-center justify-center gap-2 text-white/60 hover:text-white hover:bg-white/5 transition-colors"
                 >
-                  <span className="text-sm">✎</span>
+                  <span className="text-sm">{currentTier === 'FREE' ? '🔒' : '✎'}</span>
                   <span className="text-[10px] font-black uppercase tracking-widest">Éditer</span>
                 </button>
 
-                {/* 3. Bouton Supprimer (Croix) */}
                 <button 
                   onClick={() => handleRemoveItem(index)}
                   className="w-[15%] py-3 border-l border-white/10 flex items-center justify-center text-white/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
@@ -4648,14 +4531,12 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                 >
                   <span className="text-lg font-black leading-none">×</span>
                 </button>
-
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* THUMB ZONE : ACTIONS GLOBALES */}
       <div className="mt-auto pt-[2vh] flex justify-between gap-[3vw] shrink-0">
         <button 
           onClick={onRejectAll}

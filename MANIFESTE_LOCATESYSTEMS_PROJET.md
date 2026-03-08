@@ -51,7 +51,7 @@
 
 **🏠 M2 : [HOME] (Le Bricoleur / Le Technicien)**
 * **Fonction :** Dédié aux bricoleurs lambdas, aux bricoleurs experts et créateurs “DIY”, au professionnel et à la génération de rapports d'inventaire d’outillage électroportatif et outillages à main pour assurances. Vision internationale conversion cm/inch, multilingue FR/UK, adaptation des normes exclusives de sécurités au travail des pays d’utilisation.
-* **Outil Maître :** Module "Retrouver" (01B) - Recherche vocale mains libres.
+* **Outil Maître :** Module "Retrouver" - Recherche vocale mains libres.
 
 **📦 M3 : [ASSET] (L'inventaire supérieur)**
 * **Fonction :** Réalisation et traçabilité des inventaires dépassant 1000 références. Focus sur la rigueur de l’inventaire (de plus de 1000 références) et de l'industrie pour la gestion des stocks (Maintenance prédictive).
@@ -74,7 +74,7 @@
 **A. Branding & Logotypage**
 * **Structure Universelle :** LOCATE [COULEUR MODULE] + NOM DU MODULE [BLANC].
 * **Signature :** Mention discrète "by Systems" transversale.
-* **Modèle Économique :** Système de Tiers globalisé : FREE (Limité) | PREMIUM (Illimité + PDF) | PRO (Flotte B2B).
+* **Modèle Économique :** Système de Tiers globalisé : FREE (Limité) | PREMIUM (Illimité + PDF) | PRO (Sur devis interconnectivité).
 
 **B. Adaptabilité Liquide (Scaling)**
 * **Responsivité absolue :** Interdiction stricte du Pixel (px). Utilisation de `rem` pour la typographie, `vh/vw` et `%` pour la structure. Gestion native du `100dvh` pour iOS/Android.
@@ -132,7 +132,7 @@ Verrouillage effectif pour anticiper les lancements mondiaux (jusqu'en 2030) :
 
 **🧠 Cerveau, Architecture & Métier**
 
-* **[X] Moteur IA & Expertise :** Refonte de `geminiService.ts`. Unification totale sur Gemini 2.0 Flash. Injection stricte de la Bible Métier (`expertiseRules.ts`) dans le System Prompt. Format JSON verrouillé (score_confiance, nom, marque, isConsumable, consumableLevel) pour interdire les hallucinations.
+* **[X] Moteur IA & Expertise :** Refonte de `geminiService.ts`. Unification totale sur Gemini 2.5 Flash. Injection stricte de la Bible Métier (`expertiseRules.ts`) dans le System Prompt. Format JSON verrouillé (score_confiance, nom, marque, isConsumable, consumableLevel) pour interdire les hallucinations.
 * **[X] Schéma Data & Types :** Interface `InventoryItem` verrouillée. Fichier `types.ts` à jour avec les catégories métiers et les jauges de consommables.
 * **[X] Zéro-Trust & Validation (Sas 01 C1) :** Interface HUD intermédiaire créée (`ValidationSas.tsx`). L'IA soumet un brouillon, l'opérateur valide/rejette visuellement. Mapping typographique strict.
 * **[X] Stockage Robuste & Zones Dynamiques :** Unification totale sur IndexedDB (`idb-keyval`). Abandon du module complexe "Ranger" au profit d'un système de 4 zones d'intervention dynamiques paramétrables en local (`memoryService.ts`).
@@ -148,3 +148,51 @@ Verrouillage effectif pour anticiper les lancements mondiaux (jusqu'en 2030) :
 * **[X] UI Minimalisme Dynamique (Boutique) :** Intégration de la jauge visuelle de consommables dans `ToolDetail.tsx` et création de la `StoreModal.tsx` connectée (préparation Revolut Pay).
 
 ---
+# [cite_start]🏢 LOCATE SYSTEMS : SOLUTIONS ENTREPRISES [cite: 1, 2]
+### [cite_start]L’Intelligence Visuelle au Service de la Maintenance Industrielle [cite: 3]
+
+---
+
+## [cite_start]💎 L'OFFRE PRO : LA PERFORMANCE SUR-MESURE [cite: 4]
+[cite_start]**Plus qu’un inventaire, un écosystème de gestion d’actifs sécurisé. [cite: 5]**
+
+### [cite_start]🎨 1. Personnalisation & Identité Visuelle (White Label) [cite: 6]
+* [cite_start]**Valorisation de marque** : Valorisez votre image de marque auprès de vos collaborateurs et de vos clients. [cite: 7]
+* [cite_start]**Intégration Logo** : Votre logo d’entreprise est présent sur l'interface utilisateur et sur chaque document généré. [cite: 8]
+* [cite_start]**Rapports Certifiés** : Les exports PDF (assurances, audits, inventaires) sont édités sous votre en-tête officielle. [cite: 9]
+* [cite_start]**Interface Industrielle** : Design "Neon Glassmorphism" avec typographie industrielle pour une lisibilité optimale en atelier. [cite: 10]
+
+### [cite_start]🛡️ 2. "Safety First" : Priorité à la Sécurité [cite: 11]
+* [cite_start]**Sécurité Intégrée** : Intégrez la sécurité au travail directement dans vos outils de gestion. [cite: 12]
+* [cite_start]**Contrôle de Conformité** : Détection automatique de l'état des équipements et alertes sur les dispositifs de sécurité manquants ou endommagés. [cite: 13]
+* [cite_start]**Gestion des VGP** : Suivi des Vérifications Générales Périodiques avec notifications automatiques pour ne jamais rater une échéance réglementaire. [cite: 14]
+* [cite_start]**Protocoles de fin de poste** : Check-lists visuelles assistées par l'IA pour garantir que les machines sont sécurisées avant chaque passation. [cite: 15]
+
+### [cite_start]🔗 3. Interconnexion des Modules : Fluidité Totale [cite: 16]
+Maximisez la rentabilité en faisant communiquer vos environnements. [cite_start]L'offre PRO débloque le transfert de données entre vos pôles d'activité : [cite: 17]
+* [cite_start]**Flux ASSET ↔ GARAGE** : Transférez vos actifs lourds du stock vers l'atelier mécanique pour un suivi de réparation immédiat sans ressaisie. [cite: 18]
+* [cite_start]**Flux HOME ↔ ASSET** : Gérez la dotation d'outillage portatif de vos techniciens itinérants avec une synchronisation en temps réel. [cite: 19]
+* [cite_start]**Base de Données Unifiée** : Une vision consolidée de votre parc matériel, peu importe sa localisation ou son usage. [cite: 20]
+
+---
+
+## [cite_start]📊 COMPARATIF DES SERVICES [cite: 21]
+
+| Caractéristiques | FREE | PREMIUM | HOME | PRO (Entreprise & Artisan) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Nombre d'outils**             |Jusqu'à 15 |      Illimité             | Illimité |
+| **Stockage local (Zéro-Trust)** | ✅        | ✅                       | ✅ + Cloud Sécurisé |
+| **Support Multi-zones**         | ❌        | ❌                       | ✅ Inclus |
+| **Interconnexion Modules**      | ❌        | ❌                       | ✅ Inclus |
+| **"Safety First" Entreprise**   | ❌        | ❌                       | ✅ Inclus |
+| **Tarif Mensuel**               | **0 €** | **2,99 €/mois**  **30€/an** | **SUR DEVIS** |
+[cite_start][cite: 22]
+
+---
+
+## [cite_start]💼 POURQUOI CHOISIR L'OFFRE PRO ? [cite: 23]
+[cite_start]Le passage au mode PRO transforme Locate Systems en un véritable levier de productivité pour votre entreprise. [cite: 24] [cite_start]En centralisant la gestion, la sécurité et l'image de marque, vous réduisez les coûts opérationnels et renforcez la sécurité de vos équipes sur le terrain. [cite: 25]
+
+[cite_start]**CONTACTEZ-NOUS POUR UNE ÉTUDE PERSONNALISÉE :** [cite: 26]
+[cite_start]Locate Systems – Service Relation Publique & Grands Comptes [cite: 27]
+[cite_start]Email : **contact@locate-systems.com** [cite: 28]

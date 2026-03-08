@@ -70,7 +70,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
                 <span className="font-black text-white">4.1. FREE Tier:</span> Strictly limited to a maximum of 15 tools. No certified PDF reports. Free, no time limit.
               </div>
               <div className="bg-[#1E1E1E] p-3 rounded border border-[#FF6600]/30">
-                <span className="font-black text-[#FF6600]">4.2. PREMIUM Tier:</span> Unlimited inventory. Access to Insurance module for PDF reports. Monthly/Annual subscription.
+                <span className="font-black text-[#FF6600]">4.2. PREMIUM Tier:</span> Unlimited inventory. Access to Insurance module for PDF reports. Monthly subscription at €2.99 incl. VAT or annual at €30.00 incl. VAT.
               </div>
               <div className="bg-[#1E1E1E] p-3 rounded border border-white/5">
                 <span className="font-black text-white">4.3. PRO Tier:</span> Exclusive tool for professionals. Advanced multi-zone management. Billable to companies.
@@ -161,7 +161,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
                 <span className="font-black text-white">4.1. Niveau FREE :</span> Limité à 15 outils maximum. Pas de rapport PDF. Gratuit.
               </div>
               <div className="bg-[#1E1E1E] p-3 rounded border border-[#FF6600]/30">
-                <span className="font-black text-[#FF6600]">4.2. Niveau PREMIUM :</span> Inventaire illimité. Accès Module Assurance (PDF). Abonnement mensuel/annuel.
+                <span className="font-black text-[#FF6600]">4.2. Niveau PREMIUM :</span> Inventaire illimité. Accès Module Assurance (PDF). Abonnement mensuel à 2,99 € TTC ou annuel à 30,00 € TTC.
               </div>
               <div className="bg-[#1E1E1E] p-3 rounded border border-white/5">
                 <span className="font-black text-white">4.3. Niveau PRO :</span> Outil professionnel. Gestion multi-zones. Facturable aux entreprises (TVA).

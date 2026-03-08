@@ -1,6 +1,3 @@
-// ==========================================
-// 📂 FICHIER : \src\modules\home\views\SettingsPage.tsx
-// ==========================================
 import React, { useState, useEffect } from 'react';
 import { useAppSettings } from '../../../core/storage/useAppSettings';
 import { useUserTier } from '../../../core/security/useUserTier';
@@ -9,7 +6,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import PrivacyPolicy from './PrivacyPolicy';
 
 interface SettingsPageProps {
-  onBack?: () => void; 
+  onBack?: () => void;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
@@ -29,11 +26,44 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
     }
   }, []);
 
+  const hasAcceptedTerms = settings.acceptedTerms === true;
+
+  // ==========================================
+  // NOUVEAU : GESTIONNAIRE D'ABONNEMENT STRIPE
+  // ==========================================
+  const handleTierSelection = (tier: UserTier) => {
+    if (!hasAcceptedTerms) return;
+
+    if (tier === 'FREE') {
+      setTier('FREE');
+    } else if (tier === 'PRO') {
+      alert("L'offre PRO est destinée aux entreprises avec facturation centralisée. Veuillez nous contacter pour un devis.");
+    } else if (tier === 'PREMIUM') {
+      // Choix de la formule
+      const isAnnual = window.confirm(
+        "LOCATE PREMIUM - Choix de la formule\n\n" +
+        "▶ Cliquez sur [OK] pour l'abonnement ANNUEL (30,00 € TTC)\n" +
+        "▶ Cliquez sur [Annuler] pour l'abonnement MENSUEL (2,99 € TTC)"
+      );
+
+      // Tes liens de paiement officiels
+      const stripeMensuelUrl = "https://buy.stripe.com/7sY6oG9eEa4X8sF2gU77O00";
+      const stripeAnnuelUrl = "https://buy.stripe.com/dRm14m4Yob91eR34p277O01";
+      
+      // On cible le bon lien selon le choix
+      const targetUrl = isAnnual ? stripeAnnuelUrl : stripeMensuelUrl;
+
+      // Ouverture de Stripe dans un nouvel onglet
+      window.open(targetUrl, '_blank');
+      
+      // Déblocage local immédiat pour te permettre de tester le mode Premium
+      setTier('PREMIUM');
+    }
+  };
+
   if (showPrivacy) {
     return <PrivacyPolicy onBack={() => setShowPrivacy(false)} />;
   }
-
-  const hasAcceptedTerms = settings.acceptedTerms === true;
 
   return (
     <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto pb-[15vh] font-sans">
@@ -112,7 +142,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             </span>
           </div>
           
-          {/* <-- NOUVEAU : Injection du terme (Devis) pour le tier PRO */}
           <div className="flex gap-[2vw] justify-between">
             {(Object.keys(TIERS_CONFIG) as UserTier[]).map((tier) => {
               const displayLabel = tier === 'PRO' ? 'PRO (Devis)' : tier;
@@ -120,7 +149,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               return (
                 <button
                   key={tier}
-                  onClick={() => setTier(tier)}
+                  onClick={() => handleTierSelection(tier)}
                   disabled={!hasAcceptedTerms}
                   className={`flex-1 py-[1.5vh] rounded-2xl font-black text-[clamp(0.7rem,2vw,0.9rem)] uppercase tracking-widest transition-all border ${
                     !hasAcceptedTerms 

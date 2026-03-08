@@ -39,7 +39,7 @@
 ## 🛠️ 2. FONDATIONS ET MODULE MAÎTRE
 
 **🛡️ M1 : TRONC COMMUN (CORE)**
-* **Cerveau :** Gemini 2.0 Flash (Migration prévue vers 2.5 Flash).
+* **Cerveau :** Gemini 2.5 Flash.
 * **Vision :** Étalon 12 frames / 20 secondes.
 * **Zéro-Trust :** Filtrage morphologique strict (Focus outil/donnée uniquement).
 * **Universalité :** CM/Inch, FR/UK, adaptation aux normes locales.
@@ -57,7 +57,7 @@
 
 **A. Branding & Logotypage**
 * **Structure :** LOCATE (#FF6600) HOME (#FFFFFF).
-* **Signature :** Bandeau oblique orange sous le "E" de HOME avec texte "by Systems" (+15% de taille).
+* **Signature :** "by Systems" (+15% de taille).
 * **Tiers :** Badges Néon FREE (15 outils max) | PREMIUM | PRO.
 
 **B. Adaptabilité Liquide (Scaling)**
@@ -160,3 +160,52 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 * **Design :** Interdiction de modifier le design sans preuve de bénéfice et validation explicite.
 * **Manifeste :** Vérifier MANIFESTE_LOCATEHOME_PROJET.md avant chaque envoi. Ne jamais supprimer d'acquis.
 * **Suivi :** Synthèse toutes les 10 interactions, changement de fil toutes les 30.
+
+# [cite_start]🏠 LOCATE HOME : LE GOOGLE SEARCH DE LA MAISON [cite: 29, 30]
+### [cite_start]L’Intelligence Visuelle au Service du Bricolage et de l’Habitation [cite: 31]
+
+---
+
+## [cite_start]💎 L'ÉCOSYSTÈME HOME : LA MAISON SOUS CONTRÔLE [cite: 32]
+[cite_start]**Plus qu’un simple inventaire, un assistant intelligent pour sécuriser et retrouver chaque outil de votre quotidien. [cite: 33]**
+
+### [cite_start]🔍 1. Recherche Intelligente & "Vocal Pro" [cite: 34]
+[cite_start]Optimisez votre temps sur le terrain ou lors de vos travaux domestiques grâce à une indexation visuelle sans précédent. [cite: 35]
+* [cite_start]**Module "Retrouver"** : Une recherche vocale mains libres pour localiser instantanément un outil dans votre atelier ou votre fourgon. [cite: 36]
+* [cite_start]**PAVP V5.0** : Une reconnaissance IA de haute précision capable de distinguer les nuances techniques (batteries 12V vs 18V, types de mandrins). [cite: 37]
+* [cite_start]**Design Immersif** : Interface "Orange Néon" optimisée pour une lisibilité maximale, même en conditions de chantier. [cite: 38]
+
+### [cite_start]🛡️ 2. "Insurance Ready" : La Protection Certifiée [cite: 39]
+[cite_start]Transformez votre inventaire en un actif sécurisé et reconnu par les tiers. [cite: 40]
+* [cite_start]**Rapports PDF Assurance** : Génération en un clic d'un certificat d'inventaire complet incluant photos, prix, numéros de série et état. [cite: 41]
+* [cite_start]**Suivi de Maintenance** : Alertes sur l'état d'usure des consommables pour garantir la sécurité de l'utilisateur lors de chaque utilisation. [cite: 42]
+* [cite_start]**Sas de Validation** : Un contrôle humain systématique (Zéro-Trust) sur chaque donnée suggérée par l'IA pour garantir une exactitude juridique à 100%. [cite: 43]
+
+### [cite_start]🔐 3. Confidentialité Totale : "Local-First" [cite: 44]
+[cite_start]Parce que l'intimité de votre foyer et la valeur de votre matériel sont privées. [cite: 45]
+* [cite_start]**Zéro-Serveur** : Toutes vos données d'inventaire sont stockées exclusivement sur votre appareil (IndexedDB). [cite: 46]
+* [cite_start]**Traitement Éphémère** : Les flux vidéos sont analysés en temps réel et immédiatement détruits après traitement par l'IA Gemini 2.5 Flash. [cite: 47]
+* [cite_start]**Souveraineté Numérique** : Vous êtes le seul propriétaire de votre base de données, sans aucune dépendance au cloud pour la consultation. [cite: 48]
+
+---
+
+## [cite_start]📊 COMPARATIF DES SERVICES LOCATE HOME [cite: 49]
+
+| Caractéristiques | FREE | PREMIUM | PRO (Entreprise/Artisan) |
+| :--- | :---: | :---: | :---: |
+| **Nombre d'outils** | Jusqu'à 15 | Illimité | Illimité |
+| **Stockage Local (Zéro-Trust)** | ✅ | ✅ | ✅ + Cloud Sécurisé |
+| **PDF Assurance Certifié** | ❌ | ✅ Inclus | ✅ + En-tête Entreprise |
+| **Recherche "Vocal Pro"** | ❌ | ✅ Inclus | ✅ Inclus |
+| **Interconnexion Modules** | ❌ | ❌ | ✅ (Vers ASSET/GARAGE) |
+| **Tarif Mensuel** | **0 €** | **2,99 €/mois** **30€/an** | **SUR DEVIS** |
+[cite_start][cite: 50]
+
+---
+
+## [cite_start]💼 POURQUOI CHOISIR LOCATE HOME ? [cite: 51]
+[cite_start]Le passage au mode PREMIUM ou PRO transforme la gestion de votre matériel en un levier de sécurité et de productivité. [cite: 52] [cite_start]En centralisant vos données localement, vous protégez votre patrimoine tout en simplifiant vos démarches administratives auprès des assurances. [cite: 53]
+
+[cite_start]**CONTACTEZ-NOUS POUR PLUS D'INFORMATIONS :** [cite: 54]
+[cite_start]Locate Systems – Division Home [cite: 55]
+[cite_start]Email : **contact@locate-systems.com** [cite: 56]

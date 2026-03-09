@@ -1,6 +1,6 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.4 - Correction Bidi & Gemini 2.5)
- * Architecture : WebSocket Multimodal (Gemini 2.5 Flash)
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.5 - Parser Bidi Blindé)
+ * Architecture : WebSocket Multimodal (Gemini 2.0 Flash Exp)
  * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
@@ -47,22 +47,20 @@ class LiveService {
 
       PROTOCOLE DE COMMUNICATION OBLIGATOIRE :
       - Zéro phrase de courtoisie. Va à l'essentiel.
-      - Format exigé : "Étape [X] : [Action]. Dis 'Fait' quand c'est terminé."
-      - Isolement du doute : Aucune extrapolation. Si la vidéo est floue, dis : "Visuel non conforme. Nettoie la lentille."
-      - Droit de veto absolu : Si une condition de sécurité manque (levage sans chandelle, tension haute sans EPI), bloque le diagnostic immédiatement.
+      - Si tu ne sais pas, dis "Données insuffisantes".
+      - Droit de veto absolu : Si une condition de sécurité manque, bloque le diagnostic immédiatement.
 
       FORMAT DE RÉPONSE EXIGÉ :
-      Tu dois répondre UNIQUEMENT avec un objet JSON valide, sans markdown, avec cette structure exacte :
+      Tu dois répondre UNIQUEMENT avec un objet JSON valide, sans markdown (pas de balises \`\`\`json), avec cette structure exacte :
       {
-        "hypothesis": "Ton diagnostic ou instruction courte",
+        "hypothesis": "Ton diagnostic, ta réponse ou ton instruction courte",
         "confidence": 0.95,
         "nextStep": "Action suivante attendue",
-        "safetyAlert": "ALERTE SI DANGER (sinon omettre)"
+        "safetyAlert": "ALERTE SI DANGER (sinon omettre la propriété)"
       }
     `;
 
     try {
-      // CORRECTION 1 : L'URL exige "BidiGenerateContent" avec un 'd' minuscule !
       const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
       this.socket = new WebSocket(wsUrl);
 
@@ -71,8 +69,8 @@ class LiveService {
         
         const setupMessage = {
           setup: {
-            // CORRECTION 2 : Alignement sur le modèle 2.5 Flash comme demandé
-            model: "models/gemini-2.5-flash",
+            // RETOUR AU MODÈLE TEMPS RÉEL (Obligatoire pour l'API Bidi)
+            model: "models/gemini-2.0-flash-exp",
             systemInstruction: {
               parts: [{ text: systemInstruction }]
             }
@@ -86,23 +84,36 @@ class LiveService {
         try {
           if (typeof event.data === 'string') {
             const response = JSON.parse(event.data);
+            
+            // Interception des erreurs de l'API Google
+            if (response.error) {
+              console.error("🔴 ERREUR API GOOGLE :", response.error);
+              return;
+            }
+
             const textChunk = response.serverContent?.modelTurn?.parts?.[0]?.text;
             
             if (textChunk) {
               this.messageBuffer += textChunk;
+              
+              // DEBUG : Affichage dans la console F12 pour voir ce que l'IA dit réellement
+              console.log("🤖 [DEBUG IA] Buffer actuel :", this.messageBuffer);
 
-              const startIndex = this.messageBuffer.indexOf('{');
-              const endIndex = this.messageBuffer.lastIndexOf('}');
-
-              if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-                const possibleJson = this.messageBuffer.substring(startIndex, endIndex + 1);
-                
+              // PARSER ROBUSTE : On cherche tout ce qui ressemble à du JSON
+              const match = this.messageBuffer.match(/\{[\s\S]*\}/);
+              
+              if (match) {
                 try {
-                  const parsedData = JSON.parse(possibleJson) as LiveDiagnostic;
+                  const parsedData = JSON.parse(match[0]) as LiveDiagnostic;
+                  
+                  // Vérification de sécurité avant envoi au HUD
+                  if (!parsedData.hypothesis) parsedData.hypothesis = "Analyse en cours...";
+                  if (!parsedData.confidence) parsedData.confidence = 0.8;
+                  
                   onMessage(parsedData);
-                  this.messageBuffer = "";
+                  this.messageBuffer = ""; // Succès du parsing, on vide le buffer !
                 } catch (e) {
-                  // En attente de la suite du JSON...
+                  // Le JSON n'est pas encore terminé, l'IA est en train d'écrire la suite. On attend.
                 }
               }
             }
@@ -114,14 +125,13 @@ class LiveService {
 
     } catch (error) {
       console.error("Erreur de connexion Live :", error);
-      throw new Error("Connexion impossible. Passage en mode Edge (Asynchrone).");
+      throw new Error("Connexion impossible. Passage en mode Edge.");
     }
   }
 
   sendVideoFrame(canvas: HTMLCanvasElement) {
     if (this.socket?.readyState === WebSocket.OPEN) {
       const base64Data = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-      
       const message = {
         realtimeInput: {
           mediaChunks: [{
@@ -134,7 +144,6 @@ class LiveService {
     }
   }
 
-// NOUVEAU : Fonction pour poser une question ou donner un ordre à l'IA
   sendPrompt(text: string) {
     if (this.socket?.readyState === WebSocket.OPEN) {
       const message = {
@@ -149,7 +158,7 @@ class LiveService {
       this.socket.send(JSON.stringify(message));
     }
   }
-  
+
   terminate() {
     if (this.frameInterval) {
       window.clearInterval(this.frameInterval);
@@ -160,7 +169,7 @@ class LiveService {
       this.socket = null;
     }
     this.messageBuffer = "";
-    console.log("🔒 [ZÉRO-TRACE] Session terminée. Buffer vidéo et texte détruits.");
+    console.log("🔒 [ZÉRO-TRACE] Session terminée. Buffer détruit.");
   }
 }
 

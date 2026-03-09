@@ -134,6 +134,22 @@ class LiveService {
     }
   }
 
+// NOUVEAU : Fonction pour poser une question ou donner un ordre à l'IA
+  sendPrompt(text: string) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      const message = {
+        clientContent: {
+          turns: [{
+            role: "user",
+            parts: [{ text: text }]
+          }],
+          turnComplete: true
+        }
+      };
+      this.socket.send(JSON.stringify(message));
+    }
+  }
+  
   terminate() {
     if (this.frameInterval) {
       window.clearInterval(this.frameInterval);

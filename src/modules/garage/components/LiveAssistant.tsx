@@ -14,10 +14,9 @@ interface LiveAssistantProps {
 const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const { currentTier } = useUserTier();
 
-  // NOUVEAUX ÉTATS : Séparation de la session IA et du flux vidéo
   const [isLive, setIsLive] = useState(false);
-  const [isVideoActive, setIsVideoActive] = useState(false); // La caméra est OFF par défaut
-  const [isPTTActive, setIsPTTActive] = useState(false); // État visuel du micro
+  const [isVideoActive, setIsVideoActive] = useState(false);
+  const [isPTTActive, setIsPTTActive] = useState(false);
 
   const [showSafety, setShowSafety] = useState(true);
   const [sessionClosed, setSessionClosed] = useState(false);
@@ -37,6 +36,9 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<Date | null>(null);
+  
+  // NOUVEAU : Référence pour la reconnaissance vocale
+  const recognitionRef = useRef<any>(null);
 
   const [checks, setChecks] = useState(
     mode === 'maintenance'
@@ -55,7 +57,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
   const allValidated = checks.every(c => c.validated);
 
-  // --- LOGIQUE DE REFROIDISSEMENT (TIER FREE) ---
   const getCooldownStatus = () => {
     const stored = localStorage.getItem('m5_free_usage');
     if (!stored) return { allowed: true, count: 0, waitMin: 0 };
@@ -77,6 +78,28 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     localStorage.setItem('m5_free_usage', JSON.stringify({ count: count + 1, lastUsed: Date.now() }));
   };
 
+  // NOUVEAU : Initialisation du micro à l'ouverture du composant
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.lang = 'fr-FR';
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setDiagnosticText(`🎙️ Vous : "${transcript}"`);
+        // On envoie le texte au tunnel IA !
+        liveService.sendPrompt(transcript);
+      };
+      
+      recognitionRef.current.onerror = () => {
+        setIsPTTActive(false);
+      };
+    }
+  }, []);
+
   useEffect(() => {
     let timer: number;
     if (isLive && currentTier === 'FREE' && freeTimeLeft !== null) {
@@ -90,7 +113,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     return () => clearInterval(timer);
   }, [isLive, freeTimeLeft, currentTier]);
 
-  // --- GESTION DE LA CAMÉRA (VISION BIONIQUE À LA DEMANDE) ---
   const captureAndSendFrame = () => {
     if (videoRef.current && canvasRef.current && isVideoActive) {
       const canvas = canvasRef.current;
@@ -106,7 +128,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
   const toggleVisionBionique = async () => {
     if (isVideoActive) {
-      // DÉSACTIVATION DE LA CAMÉRA
       const stream = videoRef.current?.srcObject as MediaStream;
       stream?.getTracks().forEach(t => t.stop());
       if (videoRef.current) videoRef.current.srcObject = null;
@@ -117,12 +138,17 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       setIsVideoActive(false);
       setDiagnosticText("Vision Bionique désactivée. Passage en mode Radio (Audio).");
     } else {
-      // ACTIVATION DE LA CAMÉRA
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         if (videoRef.current) videoRef.current.srcObject = stream;
         setIsVideoActive(true);
+        
+        // On force l'IA à analyser dès que la caméra s'allume
         setDiagnosticText("Vision Bionique activée. Analyse visuelle en cours...");
+        setTimeout(() => {
+          liveService.sendPrompt("Je viens d'activer la caméra. Analyse l'image et donne-moi un premier diagnostic visuel.");
+        }, 1000); // Laisse 1s à la caméra pour s'ajuster
+
         frameIntervalRef.current = window.setInterval(captureAndSendFrame, 1600);
       } catch (err) { 
         setDiagnosticText("Erreur : Accès caméra refusé ou impossible."); 
@@ -130,7 +156,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     }
   };
 
-  // --- DÉMARRAGE ET ARRÊT DE LA SESSION ---
   const startLiveSession = async () => {
     if (allValidated) {
       if (currentTier === 'FREE') {
@@ -144,7 +169,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       setShowSafety(false);
       
       try {
-        // ON OUVRE LE TUNNEL MAIS ON N'ALLUME PAS LA CAMÉRA
         setIsLive(true);
         startTimeRef.current = new Date();
         await liveService.connect(mode, (data) => {
@@ -176,7 +200,20 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     setSessionClosed(true);
   };
 
-  // --- ÉCRAN DE CLÔTURE (PDF) ---
+  // NOUVEAU : Gestionnaires du bouton PTT (Microphone)
+  const handlePTTDown = () => {
+    if (!isLive) return;
+    setIsPTTActive(true);
+    setDiagnosticText("Écoute en cours...");
+    try { recognitionRef.current?.start(); } catch(e) {}
+  };
+  
+  const handlePTTUp = () => {
+    if (!isLive) return;
+    setIsPTTActive(false);
+    try { recognitionRef.current?.stop(); } catch(e) {}
+  };
+
   if (sessionClosed && finalReport) {
     return (
       <div className="fixed inset-0 bg-[#050505] z-50 flex flex-col p-6 overflow-y-auto">
@@ -202,27 +239,29 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     );
   }
 
-  // COULEURS DYNAMIQUES SELON LE MÉTIER
-  const themeColor = mode === 'maintenance' ? '#00E5FF' : '#DC2626'; // Cyan (Indus) vs Rouge (Méca)
+  const themeColor = mode === 'maintenance' ? '#00E5FF' : '#DC2626'; 
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden select-none">
       
-      {/* ZONE D'AFFICHAGE PRINCIPALE (RADIO OU VISION) */}
       <div className="relative flex-1 bg-[#050505] overflow-hidden">
-        
-        {/* Canvas caché pour l'extraction d'images */}
         <canvas ref={canvasRef} className="hidden" />
 
-        {isVideoActive ? (
-          // MODE VISION BIONIQUE : Flux vidéo en fond
-          <>
-            <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-70" />
-            {/* Ligne de scan scanner effet */}
-            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:5vw_5vw]"></div>
-          </>
-        ) : (
-          // MODE RADIO TACTIQUE : Interface Radar/Ondes
+        {/* CORRECTION BUG ÉCRAN NOIR : La balise video reste dans le DOM, on cache juste avec CSS */}
+        <video 
+          ref={videoRef} 
+          autoPlay 
+          playsInline 
+          className={`absolute inset-0 w-full h-full object-cover opacity-70 ${isVideoActive ? 'block' : 'hidden'}`} 
+        />
+        
+        {/* Filtre visuel de scan sur la vidéo */}
+        {isVideoActive && (
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:5vw_5vw]"></div>
+        )}
+
+        {/* MODE RADIO TACTIQUE (Affiché quand la vidéo est OFF) */}
+        {!isVideoActive && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]">
             {isLive ? (
               <div className="flex flex-col items-center justify-center">
@@ -241,7 +280,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
           </div>
         )}
         
-        {/* HUD SUPÉRIEUR */}
         <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-30">
           <div className="bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10">
             <h1 className="text-white font-black text-[12px] uppercase tracking-[0.3em]">LOCATE {mode.toUpperCase()}</h1>
@@ -252,7 +290,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
             )}
           </div>
           
-          {/* Indicateur de Mode */}
           {isLive && (
              <div className={`px-3 py-1.5 rounded-full border backdrop-blur-md flex items-center gap-2 ${isVideoActive ? `bg-[${themeColor}]/20 border-[${themeColor}] text-[${themeColor}]` : 'bg-white/10 border-white/20 text-gray-300'}`}>
                {isVideoActive ? <Camera size={12} /> : <Mic size={12} />}
@@ -261,7 +298,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
           )}
         </div>
 
-        {/* MODALE SAFETY GATES (Bloquante au démarrage) */}
         {showSafety && (
           <div className="absolute inset-0 z-50 bg-[#050505]/95 backdrop-blur-2xl p-8 flex flex-col justify-center">
             <div className="max-w-md mx-auto w-full space-y-6">
@@ -288,20 +324,16 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         )}
       </div>
 
-      {/* CONSOLE IA INFÉRIEURE : COMMANDES DE TERRAIN */}
       <div className="h-[30vh] bg-[#050505] border-t border-white/5 p-6 flex flex-col items-center justify-between z-40 relative">
         
-        {/* TERMINAL DE TEXTE IA */}
         <div className="w-full bg-black/60 rounded-xl border border-white/10 p-4 min-h-[80px] flex items-center shadow-inner">
           <p className={`font-mono text-[10px] uppercase tracking-wider leading-relaxed ${currentDiagnostic.safetyAlert ? 'text-red-500 font-bold animate-pulse' : 'text-[#FF6600]'}`}>
             {">"} {diagnosticText}
           </p>
         </div>
 
-        {/* BARRE D'ACTIONS TACTIQUES */}
         <div className="flex items-center justify-between w-full mt-4 px-2">
             
-           {/* BOUTON 1 : TOGGLE VISION BIONIQUE */}
            <button 
              onClick={toggleVisionBionique}
              disabled={!isLive}
@@ -315,12 +347,13 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
               </span>
            </button>
 
-           {/* BOUTON CENTRAL : PTT (PUSH TO TALK) */}
+           {/* BOUTON PTT AVEC ÉVÉNEMENTS TACTILES ET SOURIS */}
            <div className="relative">
               <button 
-                onPointerDown={() => isLive && setIsPTTActive(true)}
-                onPointerUp={() => isLive && setIsPTTActive(false)}
-                onPointerLeave={() => isLive && setIsPTTActive(false)}
+                onPointerDown={handlePTTDown}
+                onPointerUp={handlePTTUp}
+                onPointerLeave={handlePTTUp}
+                onContextMenu={(e) => e.preventDefault()} 
                 disabled={!isLive}
                 className={`w-24 h-24 rounded-full flex flex-col items-center justify-center border-b-[6px] transition-all shadow-2xl select-none ${
                   !isLive 
@@ -335,7 +368,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
               </button>
            </div>
 
-           {/* BOUTON 3 : CLÔTURE DE L'INTERVENTION */}
            <button 
              onClick={() => closeAndGenerateReport()} 
              className="flex flex-col items-center gap-2 active:scale-90 transition-all group"

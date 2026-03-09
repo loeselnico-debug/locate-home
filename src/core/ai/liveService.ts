@@ -1,6 +1,6 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.3 - Parser Bidi JSON Strict)
- * Architecture : WebSocket Multimodal (Gemini 2.0 Flash)
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.4 - Correction Bidi & Gemini 2.5)
+ * Architecture : WebSocket Multimodal (Gemini 2.5 Flash)
  * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
@@ -17,7 +17,7 @@ export interface LiveDiagnostic {
 class LiveService {
   private socket: WebSocket | null = null;
   private frameInterval: number | null = null;
-  private messageBuffer: string = ""; // Buffer pour accumuler les morceaux de texte de l'IA
+  private messageBuffer: string = "";
 
   async connect(mode: 'maintenance' | 'mecanique', onMessage: (data: LiveDiagnostic) => void) {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
@@ -38,7 +38,6 @@ class LiveService {
       rulesContext = JSON.stringify(MAINTENANCE_M5_RULES, null, 2);
     }
 
-    // INSTRUCTION STRICTE : On force un format de sortie JSON pour le parsing
     const systemInstruction = `
       Tu es l'${role} du système LOCATE. 
       Mode actif : ${mode.toUpperCase()}.
@@ -63,7 +62,8 @@ class LiveService {
     `;
 
     try {
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BiDiGenerateContent?key=${apiKey}`;
+      // CORRECTION 1 : L'URL exige "BidiGenerateContent" avec un 'd' minuscule !
+      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
@@ -71,30 +71,26 @@ class LiveService {
         
         const setupMessage = {
           setup: {
-            model: "models/gemini-2.0-flash",
+            // CORRECTION 2 : Alignement sur le modèle 2.5 Flash comme demandé
+            model: "models/gemini-2.5-flash",
             systemInstruction: {
               parts: [{ text: systemInstruction }]
             }
           }
         };
         this.socket?.send(JSON.stringify(setupMessage));
-        this.messageBuffer = ""; // Réinitialisation du buffer
+        this.messageBuffer = "";
       };
 
       this.socket.onmessage = (event) => {
         try {
-          // Si le serveur renvoie un Blob, on doit le lire (cas rare mais possible)
-          // Dans la majorité des cas Bidi, c'est du texte formaté en JSON.
           if (typeof event.data === 'string') {
             const response = JSON.parse(event.data);
-            
-            // On extrait le texte généré par l'IA
             const textChunk = response.serverContent?.modelTurn?.parts?.[0]?.text;
             
             if (textChunk) {
               this.messageBuffer += textChunk;
 
-              // L'IA streame sa réponse. On cherche un bloc JSON complet.
               const startIndex = this.messageBuffer.indexOf('{');
               const endIndex = this.messageBuffer.lastIndexOf('}');
 
@@ -104,10 +100,9 @@ class LiveService {
                 try {
                   const parsedData = JSON.parse(possibleJson) as LiveDiagnostic;
                   onMessage(parsedData);
-                  // Succès du parsing, on vide le buffer pour la prochaine trame
                   this.messageBuffer = "";
                 } catch (e) {
-                  // Le JSON n'est pas encore complet, on attend le prochain bout de texte
+                  // En attente de la suite du JSON...
                 }
               }
             }

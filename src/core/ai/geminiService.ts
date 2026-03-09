@@ -7,7 +7,15 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGL
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
 // --- PROMPT SYSTEME DYNAMIQUE ---
-const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string, module: 'HOME' | 'KITCHEN' = 'HOME') => `
+const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string, module: 'HOME' | 'KITCHEN' = 'HOME') => {
+  const brandInstruction = module === 'HOME' ? 'Marque exacte SEULE (ex: Makita, DeWalt). AUCUNE COULEUR.' : 'Marque ou Origine';
+  const typeInstruction = module === 'HOME' ? 'Nom générique usuel (ex: perceuse, tondeuse, marteau)' : 'Famille de produit';
+  const morphInstruction = module === 'HOME' ? 'Type d outil détaillé' : 'Type de denree ou objet';
+  const zoomInstruction = module === 'HOME' ? 'Detail technique' : 'Etat de fraicheur ou detail HACCP';
+  const typoInstruction = module === 'HOME' ? 'Modele exact (Si non lisible, écris: Non lisible)' : 'DLC DDM ou SKU';
+  const consumableInstruction = module === 'KITCHEN' ? 'true' : 'true si vis, clou, joint, mastic, foret, colle. false sinon.';
+
+  return `
 Tu es l Expert Vision ${module === 'HOME' ? 'Industrielle' : 'Culinaire HACCP'} du système LOCATE. 
 Localisation de l analyse : ${userLocation}.
 Ton rôle est d analyser les images/vidéos en appliquant STRICTEMENT le protocole d expertise fourni.
@@ -19,26 +27,29 @@ CATÉGORIES AUTORISÉES (Utilise uniquement ces ID) :
 ${categoriesContext}
 
 RÈGLE ABSOLUE : Tu dois retourner UNIQUEMENT un tableau JSON valide. Pas de texte avant, pas de markdown.
+Tu dois détecter TOUS les objets pertinents dans l image et fournir leurs coordonnées spatiales pour le détourage néon.
+
 Chaque objet détecté doit suivre cette structure EXACTE :
 [
   {
-    "brand": "${module === 'HOME' ? 'Marque exacte SEULE (ex: Makita, DeWalt). AUCUNE COULEUR.' : 'Marque ou Origine'}",
-    "type": "${module === 'HOME' ? 'Nom générique usuel (ex: perceuse, tondeuse, marteau, mallette)' : 'Famille de produit'}",
-    "morphology": "${module === 'HOME' ? 'Type d outil détaillé' : 'Type de denree ou objet'}",
-    "zoomDetail": "${module === 'HOME' ? 'Detail technique' : 'Etat de fraicheur ou detail HACCP'}",
-    "typography": "${module === 'HOME' ? 'Modele exact (Si non lisible, écris: Non lisible)' : 'DLC DDM ou SKU'}",
+    "box_2d": [0, 0, 1000, 1000],
+    "brand": "${brandInstruction}",
+    "type": "${typeInstruction}",
+    "morphology": "${morphInstruction}",
+    "zoomDetail": "${zoomInstruction}",
+    "typography": "${typoInstruction}",
     "confidence": 0.95,
     "categorie_id": "ID exact de la categorie",
     "etat": "Bon etat / Usage / Neuf / Perime",
     "description": "Justification metier courte",
-    "isConsumable": ${module === 'KITCHEN' ? true : 'true si c\'est une vis, clou, joint, mastic, foret, colle. false sinon.'},
+    "isConsumable": "${consumableInstruction}",
     "consumableLevel": 100
   }
 ]
 `;
+};
 
 export const geminiService = {
-  // AJOUT DU PARAMETRE MODULE ICI
   analyzeVideoBurst: async (base64Images: string[], userLocation: string = "Atelier", module: 'HOME' | 'KITCHEN' = 'HOME'): Promise<any[]> => {
     if (!apiKey) return [];
     try {
@@ -48,7 +59,6 @@ export const geminiService = {
       });
 
       const categoriesContext = CATEGORIES.map(cat => `- ID: "${cat.id}" | Label: ${cat.label}`).join('\n');
-      // SELECTION UNIQUE DES REGLES
       const rulesContext = JSON.stringify(module === 'KITCHEN' ? KITCHEN_M4_RULES : INDUSTRIAL_RULES, null, 2);
 
       const prompt = getSystemPrompt(userLocation, rulesContext, categoriesContext, module);
@@ -65,7 +75,6 @@ export const geminiService = {
     }
   },
 
-  // AJOUT DU PARAMETRE MODULE ICI AUSSI
   analyzeVideo: async (videoBase64: string, userLocation: string = "Atelier", module: 'HOME' | 'KITCHEN' = 'HOME'): Promise<any[]> => {
     if (!apiKey) return [];
     try {

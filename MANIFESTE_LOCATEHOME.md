@@ -117,7 +117,13 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 - [x] Sécurisation du Hub : verrouillage visuel (cadenas) et logique des modules inactifs selon le grade de l'utilisateur.
 - [x] Création d'une "Backdoor Admin" dans les paramètres pour forcer le mode PRO en développement.
 - [x] Configuration du `manifest.json` avec l'icône générique Locate Systems pour une installation PWA unifiée.
-
+### ACQUIS V26 : RÉUSSITE CRASH-TEST TERRAIN & EXPÉRIENCE UTILISATEUR
+- [x] Validation du moteur IA (Gemini 1.5 Pro) : Capacité de détection massive (>14 objets en rafale vidéo de 15s).
+- [x] Implémentation du Quick Edit (Correction IA rapide) dans le Sas de Validation (Marque, Modèle, Énergie).
+- [x] Séparation stricte de la Marque et de la Couleur dans le Prompt Système (Fini "Makita/Bleu").
+- [x] Création de la Fiche Consommable (Quincaillerie) : Jauge visuelle de remplissage (0-100%) et masquage des données inutiles (Moteur/Statut).
+- [x] Implémentation des miniatures vidéo intelligentes (Capture centrale de la séquence).
+- [x] **Intégration du "Néon Orange Contour" (Bounding Boxes IA) pour l'isolation visuelle des outils en mode Photo/Import.**
 ---
 
 ## 🚀 ROADMAP V4 - OPTIMISATION UX/UI MOBILE

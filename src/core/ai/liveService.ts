@@ -69,8 +69,8 @@ class LiveService {
         
         const setupMessage = {
           setup: {
-            // RETOUR AU MODÈLE TEMPS RÉEL (Obligatoire pour l'API Bidi)
-            model: "models/gemini-2.0-flash-exp",
+            // MIGRATION VERS LE MODÈLE STABLE (En accord avec la documentation Google 2026)
+            model: "models/gemini-2.5-flash",
             systemInstruction: {
               parts: [{ text: systemInstruction }]
             }

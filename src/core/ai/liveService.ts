@@ -1,6 +1,6 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V2.0 - Asynchrone Edge Mode)
- * Architecture : REST Multimodal (Gemini 2.5 Flash) - Fallback activé
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V2.1 - JSON Schema Forcé)
+ * Architecture : REST Multimodal (Gemini 2.5 Flash)
  * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
@@ -41,22 +41,19 @@ class LiveService {
 
       PROTOCOLE DE COMMUNICATION :
       - Zéro phrase de courtoisie. Va à l'essentiel.
-      - Droit de veto absolu si une condition de sécurité manque.
+      - Droit de veto absolu si une condition de sécurité manque (LOTO, VAT, etc.). Pose des questions pour valider ces étapes si le technicien ne l'a pas fait.
+      - Ton objectif est de guider pas à pas.
     `;
 
-    // Simulation de l'ouverture du tunnel pour l'interface utilisateur
     setTimeout(() => {
       console.log(`🔗 [EDGE MODE] Tunnel Asynchrone établi en mode : ${mode.toUpperCase()}`);
     }, 500);
   }
 
-  // Cette fonction est appelée par l'intervalle de la caméra. 
-  // On ne l'envoie plus dans le vide, on la stocke en mémoire vive.
   sendVideoFrame(canvas: HTMLCanvasElement) {
     this.latestFrame = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
   }
 
-  // Déclenché quand tu relâches le bouton PTT
   async sendPrompt(text: string) {
     if (!this.onMessageCallback) return;
 
@@ -65,7 +62,6 @@ class LiveService {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`;
       
-      // Construction du payload (Texte + Image si la Vision Bionique est activée)
       const parts: any[] = [{ text: text }];
       
       if (this.latestFrame) {
@@ -73,7 +69,6 @@ class LiveService {
         parts.push({
           inlineData: { mimeType: "image/jpeg", data: this.latestFrame }
         });
-        // On purge l'image après utilisation pour le Zéro-Trace
         this.latestFrame = null; 
       }
 
@@ -84,8 +79,30 @@ class LiveService {
           systemInstruction: { parts: [{ text: this.systemInstruction }] },
           contents: [{ role: "user", parts: parts }],
           generationConfig: { 
-            // LE VERROU MAGIQUE : Force la sortie en JSON pur, sans markdown !
-            responseMimeType: "application/json" 
+            responseMimeType: "application/json",
+            // L'ARME ABSOLUE : ON FORCE L'IA À UTILISER EXACTEMENT CES VARIABLES
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                hypothesis: { 
+                  type: "STRING", 
+                  description: "Ta réponse verbale, ton diagnostic ou ta question directe au technicien." 
+                },
+                confidence: { 
+                  type: "NUMBER", 
+                  description: "Ton niveau de certitude technique sous forme de nombre (ex: 0.95)." 
+                },
+                nextStep: { 
+                  type: "STRING", 
+                  description: "L'action physique que le technicien doit accomplir ensuite." 
+                },
+                safetyAlert: { 
+                  type: "STRING", 
+                  description: "Une alerte de danger immédiat. Laisse vide s'il n'y a pas de danger." 
+                }
+              },
+              required: ["hypothesis", "confidence", "nextStep"]
+            }
           }
         })
       });
@@ -96,12 +113,20 @@ class LiveService {
         throw new Error(data.error.message);
       }
 
-      // Extraction et parsing automatique garanti par le responseMimeType
       const textResponse = data.candidates[0].content.parts[0].text;
       console.log("✅ [EDGE MODE] Réponse brute de l'IA :", textResponse);
       
-      const parsedData = JSON.parse(textResponse) as LiveDiagnostic;
-      this.onMessageCallback(parsedData);
+      const parsedData = JSON.parse(textResponse);
+      
+      // FILET DE SÉCURITÉ : Au cas où l'IA trébuche, on ne fait pas crasher l'UI
+      const finalData: LiveDiagnostic = {
+        hypothesis: parsedData.hypothesis || "Action confirmée.",
+        confidence: parsedData.confidence !== undefined ? parsedData.confidence : 0.99,
+        nextStep: parsedData.nextStep || "-",
+        safetyAlert: parsedData.safetyAlert || undefined
+      };
+
+      this.onMessageCallback(finalData);
 
     } catch (error) {
       console.error("💥 [EDGE MODE] Erreur de transmission :", error);

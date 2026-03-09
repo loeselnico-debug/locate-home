@@ -123,7 +123,7 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 - [x] Séparation stricte de la Marque et de la Couleur dans le Prompt Système (Fini "Makita/Bleu").
 - [x] Création de la Fiche Consommable (Quincaillerie) : Jauge visuelle de remplissage (0-100%) et masquage des données inutiles (Moteur/Statut).
 - [x] Implémentation des miniatures vidéo intelligentes (Capture centrale de la séquence).
-- [x] **Intégration du "Néon Orange Contour" (Bounding Boxes IA) pour l'isolation visuelle des outils en mode Photo/Import.**
+- [ ] **Intégration du "Néon Orange Contour" (Bounding Boxes IA) pour l'isolation visuelle des outils en mode Photo/Import.**
 ---
 
 ## 🚀 ROADMAP V4 - OPTIMISATION UX/UI MOBILE

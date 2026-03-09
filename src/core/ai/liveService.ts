@@ -1,6 +1,6 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.7 - Force Text Modality)
- * Architecture : WebSocket Multimodal (Gemini 2.0 Flash Exp)
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.8 - Modèle Stable 2.5 Flash)
+ * Architecture : WebSocket Multimodal
  * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
@@ -69,12 +69,8 @@ class LiveService {
         
         const setupMessage = {
           setup: {
-            // LE SEUL MODÈLE 100% COMPATIBLE AVEC LE TUNNEL BIDI
-            model: "models/gemini-2.0-flash-exp",
-            // LE SECRET EST ICI : ON FORCE L'IA À RÉPONDRE EN TEXTE ET NON EN VOCAL
-            generationConfig: {
-              responseModalities: ["TEXT"]
-            },
+            // LE MODÈLE STABLE (Celui qui avait ouvert la porte avec succès)
+            model: "models/gemini-2.5-flash",
             systemInstruction: {
               parts: [{ text: systemInstruction }]
             }
@@ -97,9 +93,8 @@ class LiveService {
           if (typeof event.data === 'string') {
             const response = JSON.parse(event.data);
             
-            // Console allégée pour ne pas polluer l'écran, on ne loggue que les éléments utiles
             if (response.setupComplete) {
-              console.log("✅ [SONAR BIDI] Setup validé ! L'IA est prête et configurée en mode TEXTE.");
+              console.log("✅ [SONAR BIDI] Setup validé ! L'IA est prête et nous écoute.");
               return;
             }
 
@@ -112,8 +107,6 @@ class LiveService {
             
             if (textChunk) {
               this.messageBuffer += textChunk;
-              
-              // Affichage de ce que l'IA est en train d'écrire en temps réel
               console.log("🤖 [IA DIT] :", textChunk);
               
               const match = this.messageBuffer.match(/\{[\s\S]*\}/);
@@ -130,7 +123,6 @@ class LiveService {
                 }
               }
             } else if (response.serverContent) {
-               // Si l'IA envoie quand même de l'audio ou autre chose, on le voit !
                console.warn("⚠️ [SONAR] Contenu non-texte reçu :", response.serverContent);
             }
           }

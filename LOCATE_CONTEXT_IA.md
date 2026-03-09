@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 08/03/2026 12:32:08
+> 📅 Archive générée le : 09/03/2026 01:30:13
 
 
 // ==========================================
@@ -12,7 +12,7 @@ import { get, set } from 'idb-keyval';
 import type { InventoryItem } from './types';
 import { useUserTier } from './core/security/useUserTier';
 
-// NOUVEAUX IMPORTS SUPABASE & AUTH
+// IMPORTS SUPABASE & AUTH
 import AuthShield from './core/ui/AuthShield';
 import { supabase } from './core/security/supabaseClient';
 
@@ -30,14 +30,19 @@ import type { AIScanResult } from './modules/home/views/ValidationSas';
 import GarageDashboard from './modules/garage/views/GarageDashboard';
 import KitchenDashboard from './modules/kitchen/views/KitchenDashboard';
 
-
 type ViewState = 'hub' | 'home' | 'garage' | 'kitchen' | 'inventory' | 'scanner' | 'search' | 'settings' | 'category_detail' | 'validation' | 'tool_detail';
+
 const App = () => {
-  // ÉTATS D'AUTHENTIFICATION (NOUVEAU)
+  // ÉTATS D'AUTHENTIFICATION
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
-  const [view, setView] = useState<ViewState>('hub');
+  // ROUTAGE INTELLIGENT : Hub pour l'Admin (PRO), Accueil direct pour les utilisateurs standards
+  const [view, setView] = useState<ViewState>(() => {
+    const savedTier = localStorage.getItem('locate_user_tier');
+    return (savedTier === 'FREE' || savedTier === 'PREMIUM') ? 'home' : 'hub';
+  });
+
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -45,8 +50,23 @@ const App = () => {
   const [pendingItems, setPendingItems] = useState<AIScanResult[]>([]);
   const { currentTier } = useUserTier();
 
-  // VERIFICATION DE LA SESSION SUPABASE (NOUVEAU)
+  // VERIFICATION DE LA SESSION SUPABASE ET INTERCEPTION STRIPE
   useEffect(() => {
+    // ---> NOUVEAU : INTERCEPTION DU RETOUR STRIPE <---
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      // 1. On nettoie l'URL pour cacher le paramètre (esthétique & sécurité)
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // 2. On met à jour l'utilisateur dans Supabase définitivement
+      supabase.auth.updateUser({ data: { tier: 'PREMIUM' } }).then(() => {
+        localStorage.setItem('locate_user_tier', 'PREMIUM');
+        alert("✅ Paiement validé ! Bienvenue dans l'univers LOCATE PREMIUM.");
+        window.location.reload();
+      });
+    }
+    // --------------------------------------------------
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
       setIsAuthChecking(false);
@@ -102,7 +122,7 @@ const App = () => {
       toolName: item.label || item.typography || 'Outil Inconnu',
       brand: item.brandColor || 'Marque N/A',
       category: item.categorie_id || 'main',
-      location: item.location || 'Atelier', // <-- NOUVEAU : Lecture dynamique (avec filet de sécurité)
+      location: item.location || 'Atelier',
       condition: item.etat || 'Bon état',
       notes: item.description || '',
       isConsumable: item.isConsumable,
@@ -127,11 +147,7 @@ const App = () => {
   };
   const currentModule = getActiveModule();
 
-  // ==========================================
   // 🛡️ BOUCLIERS D'AUTHENTIFICATION
-  // La logique est bien placée AVANT le rendu HTML
-  // ==========================================
-  
   if (isAuthChecking) {
     return (
       <div className="w-screen h-[100dvh] bg-[#050505] flex items-center justify-center">
@@ -144,9 +160,7 @@ const App = () => {
     return <AuthShield onSuccess={() => setIsAuthenticated(true)} />;
   }
 
-  // ==========================================
   // 🖥️ AFFICHAGE NORMAL DE L'APP
-  // ==========================================
   return (
     <main className="w-screen min-h-[100dvh] bg-[#121212] text-white font-sans pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden relative">
 
@@ -158,10 +172,9 @@ const App = () => {
 
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
         
-        {/* CORRECTION DU ROUTAGE HUB */}
-        {view === 'hub' && <Hub onSelectModule={(m: string) => setView(m as ViewState)} />}
+        {/* CORRECTION DU ROUTAGE HUB AVEC INJECTION DU TIER */}
+        {view === 'hub' && <Hub onSelectModule={(m: string) => setView(m as ViewState)} userTier={currentTier} />}
         
-        {/* ROUTES DES MODULES PRINCIPAUX */}
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
         {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}
         {view === 'kitchen' && <KitchenDashboard onBack={() => setView('hub')} />}
@@ -923,7 +936,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     const timerInterval = setInterval(() => {
       timeElapsed++;
       setRecordingTime(timeElapsed);
-      if (timeElapsed >= 10) {
+      if (timeElapsed >= 15) {
         clearInterval(timerInterval);
         if (mediaRecorder.state === "recording") mediaRecorder.stop();
       }
@@ -935,8 +948,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     if (!file) return;
 
     if (file.type.startsWith('image/')) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("ERREUR ZÉRO-TRUST : L'image dépasse la limite stricte de 5 Mo.");
+      if (file.size > 7 * 1024 * 1024) {
+        alert("ERREUR ZÉRO-TRUST : L'image dépasse la limite stricte de 7 Mo.");
         return;
       }
       const reader = new FileReader();
@@ -948,8 +961,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       videoElement.preload = 'metadata';
       videoElement.onloadedmetadata = () => {
         URL.revokeObjectURL(videoElement.src);
-        if (videoElement.duration > 11) {
-          alert("ERREUR ZÉRO-TRUST : La vidéo dépasse la limite stricte de 10 secondes.");
+        if (videoElement.duration > 15) {
+          alert("ERREUR ZÉRO-TRUST : La vidéo dépasse la limite stricte de 15 secondes.");
           return;
         }
         const reader = new FileReader();
@@ -1118,7 +1131,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center active:scale-90 backdrop-blur shrink-0">
               <img src="/icon-import.png" className="w-[85%] h-[85%] object-contain" alt="Import" />
             </button>
-            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 5MO<br/>/ 10S</span>
+            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 7MO<br/>/ 15S</span>
             <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*,video/*" />
           </div>
 
@@ -1126,7 +1139,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-14 h-14 bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-95 backdrop-blur shadow-[0_5px_20px_rgba(0,0,0,0.5)] shrink-0">
               <img src="/icon-photo.png" className="w-[100%] h-[100%] object-contain" alt="Photo" />
             </button>
-            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 5MO</span>
+            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 7MO</span>
           </div>
 
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
@@ -1134,7 +1147,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
               <img src="/icon-video.png" className="w-[100%] h-[100%] object-contain" alt="Vidéo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">
-              {isScanning ? `SCAN... ${recordingTime}S` : 'MAX 10S'}
+              {isScanning ? `SCAN... ${recordingTime}S` : 'MAX 15S'}
             </span>
           </div>
         </div>
@@ -1390,37 +1403,64 @@ export const TIERS_CONFIG: Record<UserTier, TierConfig> = {
 ```tsx
 import { useState, useEffect } from 'react';
 import { type UserTier, TIERS_CONFIG, type TierConfig } from './tiers';
+import { supabase } from './supabaseClient'; // NOUVEAU : Connexion à la base
 
 const TIER_STORAGE_KEY = 'locate_user_tier';
 
-// Par défaut, on démarre en PRO pour honorer la promesse Beta
-const DEFAULT_TIER: UserTier = 'PRO';
+// NOUVEAU : On passe le défaut à FREE (logique pour vendre le Premium)
+const DEFAULT_TIER: UserTier = 'FREE';
 
 export const useUserTier = () => {
   const [currentTier, setCurrentTier] = useState<UserTier>(DEFAULT_TIER);
-  // On stocke aussi la configuration complète associée au statut
   const [tierConfig, setTierConfig] = useState<TierConfig>(TIERS_CONFIG[DEFAULT_TIER]);
 
   useEffect(() => {
-    // Chargement initial
-    const savedTier = localStorage.getItem(TIER_STORAGE_KEY) as UserTier;
-    if (savedTier && ['FREE', 'PREMIUM', 'PRO'].includes(savedTier)) {
-      setCurrentTier(savedTier);
-      setTierConfig(TIERS_CONFIG[savedTier]);
-    }
+    const fetchTierInfo = async () => {
+      // 1. Lecture ultra-rapide du stockage local
+      const savedTier = localStorage.getItem(TIER_STORAGE_KEY) as UserTier;
+      if (savedTier && ['FREE', 'PREMIUM', 'PRO'].includes(savedTier)) {
+        setCurrentTier(savedTier);
+        setTierConfig(TIERS_CONFIG[savedTier]);
+      }
+
+      // 2. Vérification silencieuse et sécurisée auprès de Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.user_metadata?.tier) {
+        const realTier = session.user.user_metadata.tier as UserTier;
+        
+        // Si Supabase dit autre chose que le local, on écrase le local (La BDD a toujours raison)
+        if (['FREE', 'PREMIUM', 'PRO'].includes(realTier) && realTier !== savedTier) {
+          setCurrentTier(realTier);
+          setTierConfig(TIERS_CONFIG[realTier]);
+          localStorage.setItem(TIER_STORAGE_KEY, realTier);
+        }
+      }
+    };
+
+    fetchTierInfo();
   }, []);
 
-  const setTier = (tier: UserTier) => {
+  const setTier = async (tier: UserTier) => {
+    // 1. Mise à jour visuelle immédiate
     localStorage.setItem(TIER_STORAGE_KEY, tier);
     setCurrentTier(tier);
     setTierConfig(TIERS_CONFIG[tier]);
-    // Force un reload pour que toute l'app prenne en compte le changement (utile pour le dev)
+    
+    // 2. Synchronisation sécurisée dans Supabase (métadonnées)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.auth.updateUser({
+        data: { tier: tier }
+      });
+    }
+    
+    // 3. Rechargement pour appliquer les droits partout
     window.location.reload();
   };
 
   return { 
     currentTier, 
-    tierConfig, // L'interface HUD pourra lire tierConfig.canExportPdf directement
+    tierConfig, 
     setTier 
   };
 };
@@ -1730,18 +1770,20 @@ import { useState } from 'react';
 
 interface HubProps {
   onSelectModule: (module: 'home' | 'asset' | 'kitchen' | 'garage' | 'care') => void;
+  userTier: string; // <-- NOUVEAU : Récupération du grade
 }
 
-export default function Hub({ onSelectModule }: HubProps) {
+export default function Hub({ onSelectModule, userTier }: HubProps) {
+  const isPro = userTier === 'PRO'; // Seul le PRO débloque tout
   // État pour suivre le module survolé/actif (Gère la couleur du noyau et des flux)
   const [hoveredModule, setHoveredModule] = useState<string>('home');
 
   const modules = [
-    { id: 'home', name: 'HOME', color: '#FF6600', iconName: 'home', active: true },
-    { id: 'asset', name: 'ASSET', color: '#007BFF', iconName: 'asset', active: false },
-    { id: 'garage', name: 'GARAGE', color: '#DC3545', iconName: 'garage', active: true },
-    { id: 'kitchen', name: 'KITCHEN', color: '#28A745', iconName: 'kitchen', active: false },
-    { id: 'care', name: 'CARE', color: '#E0E0E0', iconName: 'care', active: false }
+    { id: 'home', name: 'HOME', color: '#FF6600', iconName: 'home', active: true }, // Toujours actif (le bridage Free/Premium se fait dedans)
+    { id: 'asset', name: 'ASSET', color: '#007BFF', iconName: 'asset', active: isPro },
+    { id: 'garage', name: 'GARAGE', color: '#DC3545', iconName: 'garage', active: isPro },
+    { id: 'kitchen', name: 'KITCHEN', color: '#28A745', iconName: 'kitchen', active: isPro },
+    { id: 'care', name: 'CARE', color: '#E0E0E0', iconName: 'care', active: isPro }
   ];
 
   // Couleur dynamique du noyau central selon le module survolé
@@ -1854,6 +1896,9 @@ export default function Hub({ onSelectModule }: HubProps) {
                   boxShadow: isHovered ? `0 0 20px ${mod.color}80, inset 0 2px 10px rgba(255,255,255,0.1)` : '0 4px 6px rgba(0,0,0,0.3)'
                 }}
               >
+                {/* NOUVEAU : Affichage du cadenas si inactif */}
+                {!mod.active && <div className="absolute -top-2 -right-2 text-lg z-20 drop-shadow-lg">🔒</div>}
+
                 {/* Icône étendue à 95% de la base */}
                 <img
                   src={`/${mod.iconName}.png`}
@@ -3802,6 +3847,7 @@ export default ToolDetail;
 import React, { Suspense, lazy } from 'react';
 import { useUserTier } from '../../../core/security/useUserTier';
 import type { InventoryItem } from '../../../types';
+import { useAppSettings } from '../../../core/storage/useAppSettings';
 
 // Import différé (Lazy Loading) pour éviter le crash au Runtime
 const PdfExportButton = lazy(() => import('../components/PdfExportButton'));
@@ -3828,11 +3874,15 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBack, onDelete }) => {
   const { currentTier } = useUserTier();
+  const { settings } = useAppSettings(); // NOUVEAU : Récupération du cerveau local
   const canExportPdf = currentTier === 'PREMIUM' || currentTier === 'PRO';
 
-  const dummyUserInfo = {
-    name: 'Utilisateur Premium',
-    address: 'Atelier Principal / Fourgon'
+  // Formatage dynamique pour le PDF
+  const userInfo = {
+    name: settings.userProfile?.fullName || 'Utilisateur Premium',
+    address: settings.userProfile?.company 
+      ? `${settings.userProfile.company} - ${settings.userProfile.address || ''}`
+      : (settings.userProfile?.address || 'Adresse non renseignée')
   };
  
   const handleReturn = () => {
@@ -3850,7 +3900,7 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
         <div className="flex gap-4">
           {canExportPdf ? (
             <Suspense fallback={<div className="w-14 h-14 opacity-50 animate-pulse bg-gray-300 rounded-full" />}>
-              <PdfExportButton inventory={inventory} userInfo={dummyUserInfo} />
+              <PdfExportButton inventory={inventory} userInfo={userInfo} />
             </Suspense>
           ) : (
             <button
@@ -4003,7 +4053,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
                 <span className="font-black text-white">4.1. FREE Tier:</span> Strictly limited to a maximum of 15 tools. No certified PDF reports. Free, no time limit.
               </div>
               <div className="bg-[#1E1E1E] p-3 rounded border border-[#FF6600]/30">
-                <span className="font-black text-[#FF6600]">4.2. PREMIUM Tier:</span> Unlimited inventory. Access to Insurance module for PDF reports. Monthly/Annual subscription.
+                <span className="font-black text-[#FF6600]">4.2. PREMIUM Tier:</span> Unlimited inventory. Access to Insurance module for PDF reports. Monthly subscription at €2.99 incl. VAT or annual at €30.00 incl. VAT.
               </div>
               <div className="bg-[#1E1E1E] p-3 rounded border border-white/5">
                 <span className="font-black text-white">4.3. PRO Tier:</span> Exclusive tool for professionals. Advanced multi-zone management. Billable to companies.
@@ -4094,7 +4144,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
                 <span className="font-black text-white">4.1. Niveau FREE :</span> Limité à 15 outils maximum. Pas de rapport PDF. Gratuit.
               </div>
               <div className="bg-[#1E1E1E] p-3 rounded border border-[#FF6600]/30">
-                <span className="font-black text-[#FF6600]">4.2. Niveau PREMIUM :</span> Inventaire illimité. Accès Module Assurance (PDF). Abonnement mensuel/annuel.
+                <span className="font-black text-[#FF6600]">4.2. Niveau PREMIUM :</span> Inventaire illimité. Accès Module Assurance (PDF). Abonnement mensuel à 2,99 € TTC ou annuel à 30,00 € TTC.
               </div>
               <div className="bg-[#1E1E1E] p-3 rounded border border-white/5">
                 <span className="font-black text-white">4.3. Niveau PRO :</span> Outil professionnel. Gestion multi-zones. Facturable aux entreprises (TVA).
@@ -4149,9 +4199,6 @@ export default PrivacyPolicy;
 // ==========================================
 
 ```tsx
-// ==========================================
-// 📂 FICHIER : \src\modules\home\views\SettingsPage.tsx
-// ==========================================
 import React, { useState, useEffect } from 'react';
 import { useAppSettings } from '../../../core/storage/useAppSettings';
 import { useUserTier } from '../../../core/security/useUserTier';
@@ -4160,7 +4207,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import PrivacyPolicy from './PrivacyPolicy';
 
 interface SettingsPageProps {
-  onBack?: () => void; 
+  onBack?: () => void;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
@@ -4180,11 +4227,44 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
     }
   }, []);
 
+  const hasAcceptedTerms = settings.acceptedTerms === true;
+
+  // ==========================================
+  // NOUVEAU : GESTIONNAIRE D'ABONNEMENT STRIPE
+  // ==========================================
+  const handleTierSelection = (tier: UserTier) => {
+    if (!hasAcceptedTerms) return;
+
+    if (tier === 'FREE') {
+      setTier('FREE');
+    } else if (tier === 'PRO') {
+      alert("L'offre PRO est destinée aux entreprises avec facturation centralisée. Veuillez nous contacter pour un devis.");
+    } else if (tier === 'PREMIUM') {
+      // Choix de la formule
+      const isAnnual = window.confirm(
+        "LOCATE PREMIUM - Choix de la formule\n\n" +
+        "▶ Cliquez sur [OK] pour l'abonnement ANNUEL (30,00 € TTC)\n" +
+        "▶ Cliquez sur [Annuler] pour l'abonnement MENSUEL (2,99 € TTC)"
+      );
+
+      // Tes liens de paiement officiels
+      const stripeMensuelUrl = "https://buy.stripe.com/7sY6oG9eEa4X8sF2gU77O00";
+      const stripeAnnuelUrl = "https://buy.stripe.com/dRm14m4Yob91eR34p277O01";
+      
+      // On cible le bon lien selon le choix
+      const targetUrl = isAnnual ? stripeAnnuelUrl : stripeMensuelUrl;
+
+      // Ouverture de Stripe dans un nouvel onglet
+      window.open(targetUrl, '_blank');
+      
+      // Déblocage local immédiat pour te permettre de tester le mode Premium
+      setTier('PREMIUM');
+    }
+  };
+
   if (showPrivacy) {
     return <PrivacyPolicy onBack={() => setShowPrivacy(false)} />;
   }
-
-  const hasAcceptedTerms = settings.acceptedTerms === true;
 
   return (
     <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto pb-[15vh] font-sans">
@@ -4263,7 +4343,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             </span>
           </div>
           
-          {/* <-- NOUVEAU : Injection du terme (Devis) pour le tier PRO */}
           <div className="flex gap-[2vw] justify-between">
             {(Object.keys(TIERS_CONFIG) as UserTier[]).map((tier) => {
               const displayLabel = tier === 'PRO' ? 'PRO (Devis)' : tier;
@@ -4271,7 +4350,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               return (
                 <button
                   key={tier}
-                  onClick={() => setTier(tier)}
+                  onClick={() => handleTierSelection(tier)}
                   disabled={!hasAcceptedTerms}
                   className={`flex-1 py-[1.5vh] rounded-2xl font-black text-[clamp(0.7rem,2vw,0.9rem)] uppercase tracking-widest transition-all border ${
                     !hasAcceptedTerms 
@@ -4289,6 +4368,52 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
                 </button>
               );
             })}
+          </div>
+        </div>
+      </div>
+
+{/* SECTION 2.5 : PROFIL ASSURANCE & RAPPORTS */}
+      <div className="mb-[5vh]">
+        <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
+          <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
+          {t('profile_title')}
+        </h2>
+
+        <div className="bg-[#1A1A1A] rounded-2xl p-[3vh_4vw] border border-[#222] flex flex-col gap-[2.5vh]">
+          {/* Champ Nom */}
+          <div>
+            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.8rem)] uppercase tracking-wider mb-[1vh]">{t('profile_fullname')}</label>
+            <input 
+              type="text" 
+              value={settings.userProfile?.fullName || ''} 
+              onChange={(e) => updateSettings({ userProfile: { ...(settings.userProfile || { fullName: '', company: '', address: '' }), fullName: e.target.value } })}
+              placeholder="Ex: Jean Dupont"
+              className="w-full bg-[#0A0A0A] border border-[#333] text-white rounded-lg p-[1.5vh_3vw] focus:border-[#FF6600] outline-none transition-colors text-[clamp(0.8rem,3vw,1rem)]"
+            />
+          </div>
+
+          {/* Champ Entreprise */}
+          <div>
+            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.8rem)] uppercase tracking-wider mb-[1vh]">{t('profile_company')}</label>
+            <input 
+              type="text" 
+              value={settings.userProfile?.company || ''} 
+              onChange={(e) => updateSettings({ userProfile: { ...(settings.userProfile || { fullName: '', company: '', address: '' }), company: e.target.value } })}
+              placeholder="Ex: Locate Services"
+              className="w-full bg-[#0A0A0A] border border-[#333] text-white rounded-lg p-[1.5vh_3vw] focus:border-[#FF6600] outline-none transition-colors text-[clamp(0.8rem,3vw,1rem)]"
+            />
+          </div>
+
+          {/* Champ Adresse */}
+          <div>
+            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.8rem)] uppercase tracking-wider mb-[1vh]">{t('profile_address')}</label>
+            <input 
+              type="text" 
+              value={settings.userProfile?.address || ''} 
+              onChange={(e) => updateSettings({ userProfile: { ...(settings.userProfile || { fullName: '', company: '', address: '' }), address: e.target.value } })}
+              placeholder="Ex: 123 avenue de l'Industrie, 75000 Paris"
+              className="w-full bg-[#0A0A0A] border border-[#333] text-white rounded-lg p-[1.5vh_3vw] focus:border-[#FF6600] outline-none transition-colors text-[clamp(0.8rem,3vw,1rem)]"
+            />
           </div>
         </div>
       </div>

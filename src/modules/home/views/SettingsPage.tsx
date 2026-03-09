@@ -6,7 +6,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import PrivacyPolicy from './PrivacyPolicy';
 
 interface SettingsPageProps {
-  onBack?: () => void;
+  onBack?: () => void; 
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
@@ -28,35 +28,32 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
 
   const hasAcceptedTerms = settings.acceptedTerms === true;
 
-  // ==========================================
-  // NOUVEAU : GESTIONNAIRE D'ABONNEMENT STRIPE
-  // ==========================================
+  // GESTIONNAIRE D'ABONNEMENT ET BACKDOOR ADMIN
   const handleTierSelection = (tier: UserTier) => {
     if (!hasAcceptedTerms) return;
 
     if (tier === 'FREE') {
       setTier('FREE');
     } else if (tier === 'PRO') {
-      alert("L'offre PRO est destinée aux entreprises avec facturation centralisée. Veuillez nous contacter pour un devis.");
+      // BACKDOOR ADMIN : Permet de forcer l'accès au Hub
+      const forceAdmin = window.confirm(
+        "BACKDOOR ADMIN 🛠️\n\nForcer l'activation du grade PRO pour accéder au Hub ?\n\n(En production, cela renverra vers un devis)."
+      );
+      if (forceAdmin) {
+        setTier('PRO');
+      }
     } else if (tier === 'PREMIUM') {
-      // Choix de la formule
       const isAnnual = window.confirm(
         "LOCATE PREMIUM - Choix de la formule\n\n" +
         "▶ Cliquez sur [OK] pour l'abonnement ANNUEL (30,00 € TTC)\n" +
         "▶ Cliquez sur [Annuler] pour l'abonnement MENSUEL (2,99 € TTC)"
       );
 
-      // Tes liens de paiement officiels
       const stripeMensuelUrl = "https://buy.stripe.com/7sY6oG9eEa4X8sF2gU77O00";
       const stripeAnnuelUrl = "https://buy.stripe.com/dRm14m4Yob91eR34p277O01";
-      
-      // On cible le bon lien selon le choix
       const targetUrl = isAnnual ? stripeAnnuelUrl : stripeMensuelUrl;
 
-      // Ouverture de Stripe dans un nouvel onglet
       window.open(targetUrl, '_blank');
-      
-      // Déblocage local immédiat pour te permettre de tester le mode Premium
       setTier('PREMIUM');
     }
   };
@@ -68,7 +65,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
   return (
     <div className="w-full h-full flex flex-col bg-[#121212] text-white p-[3vh_5vw] overflow-y-auto pb-[15vh] font-sans">
       
-      {/* EN-TÊTE AVEC BOUTON RETOUR STANDARD */}
       <div className="flex items-center justify-between mb-[2vh] mt-[2vh]">
         <div>
           <h1 className="text-[clamp(1.5rem,6vw,2.5rem)] font-black text-[#FF6600] uppercase tracking-wide font-['Rebel']">
@@ -171,7 +167,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </div>
       </div>
 
-{/* SECTION 2.5 : PROFIL ASSURANCE & RAPPORTS */}
+      {/* SECTION 2.5 : PROFIL ASSURANCE & RAPPORTS */}
       <div className="mb-[5vh]">
         <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
           <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
@@ -179,7 +175,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </h2>
 
         <div className="bg-[#1A1A1A] rounded-2xl p-[3vh_4vw] border border-[#222] flex flex-col gap-[2.5vh]">
-          {/* Champ Nom */}
           <div>
             <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.8rem)] uppercase tracking-wider mb-[1vh]">{t('profile_fullname')}</label>
             <input 
@@ -190,8 +185,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               className="w-full bg-[#0A0A0A] border border-[#333] text-white rounded-lg p-[1.5vh_3vw] focus:border-[#FF6600] outline-none transition-colors text-[clamp(0.8rem,3vw,1rem)]"
             />
           </div>
-
-          {/* Champ Entreprise */}
           <div>
             <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.8rem)] uppercase tracking-wider mb-[1vh]">{t('profile_company')}</label>
             <input 
@@ -202,8 +195,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               className="w-full bg-[#0A0A0A] border border-[#333] text-white rounded-lg p-[1.5vh_3vw] focus:border-[#FF6600] outline-none transition-colors text-[clamp(0.8rem,3vw,1rem)]"
             />
           </div>
-
-          {/* Champ Adresse */}
           <div>
             <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.8rem)] uppercase tracking-wider mb-[1vh]">{t('profile_address')}</label>
             <input 

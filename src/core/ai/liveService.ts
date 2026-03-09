@@ -69,8 +69,8 @@ class LiveService {
         
         const setupMessage = {
           setup: {
-            // LE MODÈLE SPÉCIFIQUE AU WEBSOCKET (Issu de la doc Google "Live API models")
-            model: "models/gemini-2.5-flash-native-audio-preview-12-2025",
+            // LE BON MODÈLE : Stable, Multimodal (Texte + Image), compatible Bidi
+            model: "models/gemini-2.0-flash",
             systemInstruction: {
               parts: [{ text: systemInstruction }]
             }

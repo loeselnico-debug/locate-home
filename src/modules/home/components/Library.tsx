@@ -131,9 +131,15 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                   </div>
 
                   <div className="flex items-center justify-between mt-3 border-t border-white/5 pt-2">
-                    <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
-                      {tool.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
-                    </span>
+                    {!(tool.category === 'quinc' || tool.isConsumable) ? (
+                      <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
+                        {tool.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest">
+                        Niveau : {tool.consumableLevel || 0}%
+                      </span>
+                    )}
                     <span className="text-[#B0BEC5] text-[8px] italic opacity-60">
                       {tool.date}
                     </span>

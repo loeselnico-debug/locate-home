@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 09/03/2026 01:54:46
+> 📅 Archive générée le : 09/03/2026 21:57:50
 
 
 // ==========================================
@@ -120,7 +120,7 @@ const App = () => {
       id: crypto.randomUUID(),
       date: new Date().toLocaleString(),
       toolName: item.label || item.typography || 'Outil Inconnu',
-      brand: item.brandColor || 'Marque N/A',
+      brand: item.brand || item.brandColor || 'Marque N/A', // On garde brandColor en secours pour les anciens scans en cache
       category: item.categorie_id || 'main',
       location: item.location || 'Atelier',
       condition: item.etat || 'Bon état',
@@ -542,8 +542,16 @@ import { KITCHEN_M4_RULES } from './expertisemetier/kitchen';
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
-// --- PROMPT SYSTEME DYNAMIQUE ---
-const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string, module: 'HOME' | 'KITCHEN' = 'HOME') => `
+// --- PROMPT SYSTEME DYNAMIQUE (VERSION V26 SANS CONTOUR NÉON) ---
+const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string, module: 'HOME' | 'KITCHEN' = 'HOME') => {
+  const brandInstruction = module === 'HOME' ? 'Marque exacte SEULE (ex: Makita, DeWalt, Bosch). AUCUNE COULEUR.' : 'Marque ou Origine';
+  const typeInstruction = module === 'HOME' ? 'Nom générique usuel (ex: perceuse, tondeuse, mallette, tournevis)' : 'Famille de produit';
+  const morphInstruction = module === 'HOME' ? 'Type d outil détaillé' : 'Type de denree ou objet';
+  const zoomInstruction = module === 'HOME' ? 'Detail technique précis' : 'Etat de fraicheur ou detail HACCP';
+  const typoInstruction = module === 'HOME' ? 'Modele exact (Si non lisible, écris: Non lisible)' : 'DLC DDM ou SKU';
+  const consumableInstruction = module === 'KITCHEN' ? 'true' : 'true si vis, clou, joint, foret, colle. false sinon.';
+
+  return `
 Tu es l Expert Vision ${module === 'HOME' ? 'Industrielle' : 'Culinaire HACCP'} du système LOCATE. 
 Localisation de l analyse : ${userLocation}.
 Ton rôle est d analyser les images/vidéos en appliquant STRICTEMENT le protocole d expertise fourni.
@@ -555,26 +563,27 @@ CATÉGORIES AUTORISÉES (Utilise uniquement ces ID) :
 ${categoriesContext}
 
 RÈGLE ABSOLUE : Tu dois retourner UNIQUEMENT un tableau JSON valide. Pas de texte avant, pas de markdown.
+
 Chaque objet détecté doit suivre cette structure EXACTE :
 [
   {
-    "brandColor": "${module === 'HOME' ? 'Marque/Couleur' : 'Marque ou Origine'}",
-    "type": "${module === 'HOME' ? 'Nom générique usuel (ex: perceuse, tondeuse, marteau, mallette)' : 'Famille de produit'}",
-    "morphology": "${module === 'HOME' ? 'Type d outil détaillé' : 'Type de denree ou objet'}",
-    "zoomDetail": "${module === 'HOME' ? 'Detail technique' : 'Etat de fraicheur ou detail HACCP'}",
-    "typography": "${module === 'HOME' ? 'Modele exact' : 'DLC DDM ou SKU'}",
+    "brand": "${brandInstruction}",
+    "type": "${typeInstruction}",
+    "morphology": "${morphInstruction}",
+    "zoomDetail": "${zoomInstruction}",
+    "typography": "${typoInstruction}",
     "confidence": 0.95,
     "categorie_id": "ID exact de la categorie",
     "etat": "Bon etat / Usage / Neuf / Perime",
-    "description": "Justification metier",
-    "isConsumable": ${module === 'KITCHEN' ? true : false},
+    "description": "Justification metier courte",
+    "isConsumable": "${consumableInstruction}",
     "consumableLevel": 100
   }
 ]
 `;
+};
 
 export const geminiService = {
-  // AJOUT DU PARAMETRE MODULE ICI
   analyzeVideoBurst: async (base64Images: string[], userLocation: string = "Atelier", module: 'HOME' | 'KITCHEN' = 'HOME'): Promise<any[]> => {
     if (!apiKey) return [];
     try {
@@ -584,7 +593,6 @@ export const geminiService = {
       });
 
       const categoriesContext = CATEGORIES.map(cat => `- ID: "${cat.id}" | Label: ${cat.label}`).join('\n');
-      // SELECTION UNIQUE DES REGLES
       const rulesContext = JSON.stringify(module === 'KITCHEN' ? KITCHEN_M4_RULES : INDUSTRIAL_RULES, null, 2);
 
       const prompt = getSystemPrompt(userLocation, rulesContext, categoriesContext, module);
@@ -601,7 +609,6 @@ export const geminiService = {
     }
   },
 
-  // AJOUT DU PARAMETRE MODULE ICI AUSSI
   analyzeVideo: async (videoBase64: string, userLocation: string = "Atelier", module: 'HOME' | 'KITCHEN' = 'HOME'): Promise<any[]> => {
     if (!apiKey) return [];
     try {
@@ -3199,9 +3206,15 @@ const Library: React.FC<LibraryProps> = ({ onBack, selectedCategoryId, inventory
                   </div>
 
                   <div className="flex items-center justify-between mt-3 border-t border-white/5 pt-2">
-                    <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
-                      {tool.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
-                    </span>
+                    {!(tool.category === 'quinc' || tool.isConsumable) ? (
+                      <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${tool.safetyStatus ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
+                        {tool.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest">
+                        Niveau : {tool.consumableLevel || 0}%
+                      </span>
+                    )}
                     <span className="text-[#B0BEC5] text-[8px] italic opacity-60">
                       {tool.date}
                     </span>
@@ -3620,20 +3633,18 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
     setEditedTool((prev: any) => ({ ...prev, [field]: value }));
   };
 
-  // ==========================================
-  // LOGIQUE ANTI-REDONDANCE POUR LA MARQUE
-  // ==========================================
   const brandName = tool.brand || 'Marque N/A';
   const cleanToolName = tool.toolName.toLowerCase().startsWith(brandName.toLowerCase())
     ? tool.toolName.substring(brandName.length).trim()
     : tool.toolName;
 
+  // DÉTECTION DES CONSOMMABLES (Quincaillerie)
+  const isConsumableType = tool.category === 'quinc' || tool.isConsumable;
+
   return (
     <div className="flex flex-col h-full bg-transparent">
 
-      {/* ========================================== */}
-      {/* EN-TÊTE DYNAMIQUE */}
-      {/* ========================================== */}
+      {/* EN-TÊTE */}
       <div className="flex justify-between items-center px-[4vw] py-4 shrink-0">
         {isEditing ? (
           <button onClick={handleSave} className="h-14 px-4 min-w-[3.5rem] bg-[#FF6600] rounded-xl flex items-center justify-center shadow-[0_4px_15px_rgba(255,102,0,0.4)] active:scale-95 transition-transform">
@@ -3650,18 +3661,15 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
         </button>
       </div>
 
-      {/* ========================================== */}
-      {/* CORPS DE LA FICHE (SCROLLABLE) */}
-      {/* ========================================== */}
       <div className="flex-1 overflow-y-auto px-[4vw] pb-[12vh] no-scrollbar">
 
         {isEditing ? (
           /* ========================================== */
-          /* MODE ÉDITION (PANNEAU DE CONTRÔLE DENSE) */
+          /* MODE ÉDITION                               */
           /* ========================================== */
           <div className="bg-[#1E1E1E] rounded-xl border border-[#FF6600]/50 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col gap-4 mb-6">
             
-            {/* BLOC 1 : IDENTITÉ (Avec Miniature) */}
+            {/* BLOC 1 : IDENTITÉ */}
             <div className="flex gap-4 items-start">
               <div className="w-[20vw] h-[20vw] max-w-[80px] max-h-[80px] bg-black rounded-lg border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-inner mt-1">
                 {tool.imageUrl ? (
@@ -3673,39 +3681,60 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               <div className="flex-1 flex flex-col gap-3">
                 <div>
                   <label className="text-[9px] text-[#FF6600] font-black uppercase tracking-widest ml-1">Marque</label>
-                  <input type="text" value={editedTool.brand || ''} onChange={(e) => handleChange('brand', e.target.value)} placeholder="Ex: Makita" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] font-bold outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all" />
+                  <input type="text" value={editedTool.brand || ''} onChange={(e) => handleChange('brand', e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] font-bold outline-none focus:border-[#FF6600]" />
                 </div>
                 <div>
                   <label className="text-[9px] text-[#FF6600] font-black uppercase tracking-widest ml-1">Modèle / Réf</label>
-                  <input type="text" value={editedTool.toolName || ''} onChange={(e) => handleChange('toolName', e.target.value)} placeholder="Ex: DDF482" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] font-bold outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all" />
+                  <input type="text" value={editedTool.toolName || ''} onChange={(e) => handleChange('toolName', e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] font-bold outline-none focus:border-[#FF6600]" />
                 </div>
               </div>
             </div>
 
-            {/* BLOC 2 : SPÉCIFICATIONS TECHNIQUES (Grille) */}
+            {/* BLOC 2 : SPÉCIFICATIONS TECHNIQUES */}
             <h4 className="text-white/40 text-[9px] font-black uppercase tracking-widest border-b border-white/10 pb-1 mt-2">
-              Spécifications Matérielles
+              {isConsumableType ? "Gestion des Stocks" : "Spécifications Matérielles"}
             </h4>
             
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Énergie</label>
-                <input type="text" value={editedTool.energy || ''} onChange={(e) => handleChange('energy', e.target.value)} placeholder="Ex: 18V" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
-              </div>
-              <div>
-                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Moteur</label>
-                <input type="text" value={editedTool.motor || ''} onChange={(e) => handleChange('motor', e.target.value)} placeholder="Ex: Brushless" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
-              </div>
+              {/* NOUVEAU : JAUGE POUR LES CONSOMMABLES */}
+              {isConsumableType ? (
+                <div className="col-span-2">
+                  <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1 mb-1 block">Niveau de remplissage (%)</label>
+                  <div className="flex items-center gap-3 bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5">
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="100" 
+                      step="5"
+                      value={editedTool.consumableLevel || 0} 
+                      onChange={(e) => handleChange('consumableLevel', parseInt(e.target.value))} 
+                      className="flex-1 accent-[#FF6600]" 
+                    />
+                    <span className="text-[#FF6600] font-black text-xs w-10 text-right">{editedTool.consumableLevel || 0}%</span>
+                  </div>
+                </div>
+              ) : (
+                /* ÉNERGIE / MOTEUR UNIQUEMENT POUR MACHINES */
+                <>
+                  <div>
+                    <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Énergie</label>
+                    <input type="text" value={editedTool.energy || ''} onChange={(e) => handleChange('energy', e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Moteur</label>
+                    <input type="text" value={editedTool.motor || ''} onChange={(e) => handleChange('motor', e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+                  </div>
+                </>
+              )}
+
               <div className="col-span-2">
-                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Numéro de Série (S/N)</label>
-                <input type="text" value={editedTool.serialNumber || ''} onChange={(e) => handleChange('serialNumber', e.target.value)} placeholder="Ex: ABC123456789" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-[#FF6600] font-mono text-[13px] outline-none focus:border-[#FF6600]" />
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Numéro de Série / Lot</label>
+                <input type="text" value={editedTool.serialNumber || ''} onChange={(e) => handleChange('serialNumber', e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-[#FF6600] font-mono text-[13px] outline-none focus:border-[#FF6600]" />
               </div>
             </div>
 
             {/* BLOC 3 : LOGISTIQUE ET ÉTAT */}
-            <h4 className="text-white/40 text-[9px] font-black uppercase tracking-widest border-b border-white/10 pb-1 mt-2">
-              Logistique & Audit
-            </h4>
+            <h4 className="text-white/40 text-[9px] font-black uppercase tracking-widest border-b border-white/10 pb-1 mt-2">Logistique & Audit</h4>
             
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -3714,19 +3743,18 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               </div>
               <div>
                 <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">État</label>
-                <input type="text" value={editedTool.condition || ''} onChange={(e) => handleChange('condition', e.target.value)} placeholder="Ex: Bon état" className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+                <input type="text" value={editedTool.condition || ''} onChange={(e) => handleChange('condition', e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
               </div>
               <div className="col-span-2">
                 <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Zone de stockage</label>
-                <input type="text" value={editedTool.location || ''} onChange={(e) => handleChange('location', e.target.value)} placeholder="Ex: Atelier, Fourgon..." className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
+                <input type="text" value={editedTool.location || ''} onChange={(e) => handleChange('location', e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600]" />
               </div>
               <div className="col-span-2">
-                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Observations (Notes)</label>
-                <textarea rows={2} value={editedTool.notes || ''} onChange={(e) => handleChange('notes', e.target.value)} placeholder="Détails, défauts, révisions..." className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600] resize-none"></textarea>
+                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest ml-1">Observations</label>
+                <textarea rows={2} value={editedTool.notes || ''} onChange={(e) => handleChange('notes', e.target.value)} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-2.5 text-white text-[13px] outline-none focus:border-[#FF6600] resize-none"></textarea>
               </div>
             </div>
 
-            {/* ZONE DE DANGER (Suppression) */}
             {onDelete && (
               <div className="mt-4 pt-4 border-t border-red-500/20">
                 <button onClick={onDelete} className="w-full bg-red-500/10 text-red-500 border border-red-500/30 py-3.5 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-colors active:scale-95 flex justify-center items-center gap-2">
@@ -3739,17 +3767,21 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
         ) : (
 
           /* ========================================== */
-          /* MODE LECTURE (RAPPORT DÉTAILLÉ) */
+          /* MODE LECTURE (RAPPORT DÉTAILLÉ)            */
           /* ========================================== */
           <div className="flex flex-col gap-5">
             
-            {/* 1. PHOTO AJUSTÉE & ISOLÉE */}
+            {/* 1. PHOTO AJUSTÉE */}
             <div className="w-full bg-[#0a0a0a] rounded-2xl border border-white/10 overflow-hidden relative shadow-[0_10px_20px_rgba(0,0,0,0.6)]">
-              <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-lg shadow-lg backdrop-blur-md border z-10 ${tool.safetyStatus ? 'bg-red-500/90 border-red-300 text-white' : 'bg-[#2EA043]/90 border-green-300 text-white'}`}>
-                <span className="font-black text-[9px] uppercase tracking-widest drop-shadow-md">
-                  {tool.safetyStatus ? '⚠️ ALERTE' :  '✓ OPÉRATIONNEL' }
-                </span>
-              </div>
+              {/* BADGE UNIQUEMENT POUR MACHINES NON-CONSOMMABLES */}
+              {!isConsumableType && (
+                <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-lg shadow-lg backdrop-blur-md border z-10 ${tool.safetyStatus ? 'bg-red-500/90 border-red-300 text-white' : 'bg-[#2EA043]/90 border-green-300 text-white'}`}>
+                  <span className="font-black text-[9px] uppercase tracking-widest drop-shadow-md">
+                    {tool.safetyStatus ? '⚠️ ALERTE' :  '✓ OPÉRATIONNEL' }
+                  </span>
+                </div>
+              )}
+              
               <div className="h-[28vh] w-full flex items-center justify-center p-4">
                 {tool.imageUrl ? (
                   <img src={tool.imageUrl} className="w-full h-full object-contain drop-shadow-2xl" alt={tool.toolName} />
@@ -3762,7 +3794,7 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               </div>
             </div>
 
-            {/* 2. GAUCHE ICONE / DROITE INFOS (Marque, Type, Energie, Lieux) */}
+            {/* 2. GAUCHE ICONE / DROITE INFOS */}
             <div className="flex items-center gap-4 bg-[#1E1E1E] p-4 rounded-xl border border-white/10 shadow-inner">
               <div className="w-16 h-16 bg-[#D3D3D3] rounded-xl flex items-center justify-center border border-gray-300 shadow-md shrink-0">
                 <img src={categoryIcon} className="w-10 h-10 object-contain drop-shadow-md" alt="Catégorie" />
@@ -3773,9 +3805,11 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
                   {cleanToolName}
                 </h1>
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                  <span className="bg-[#FF6600]/20 text-[#FF6600] border border-[#FF6600]/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">
-                    ⚡ {(tool as any).energy || 'N/A'}
-                  </span>
+                  {!isConsumableType && (tool as any).energy && (
+                    <span className="bg-[#FF6600]/20 text-[#FF6600] border border-[#FF6600]/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">
+                      ⚡ {(tool as any).energy}
+                    </span>
+                  )}
                   <span className="text-[#D3D3D3] text-[10px] font-bold uppercase tracking-widest truncate">
                     📍 {tool.location || 'Zone inconnue'}
                   </span>
@@ -3783,22 +3817,41 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               </div>
             </div>
 
-            {/* 3. SPÉCIFICATIONS TECHNIQUES EXHAUSTIVES */}
+            {/* 3. SPÉCIFICATIONS TECHNIQUES */}
             <div className="bg-[#1E1E1E] rounded-xl border-t-4 border-[#FF6600] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex flex-col gap-3">
               <h3 className="text-white text-[11px] font-black tracking-[0.2em] uppercase mb-1 flex items-center gap-2">
                 <span className="w-2 h-2 bg-[#FF6600] rounded-full shadow-[0_0_8px_#FF6600]"></span>
-                Spécifications Techniques
+                {isConsumableType ? "Données Logistiques" : "Spécifications Techniques"}
               </h3>
 
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
-                  <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1">Type de Moteur</span>
-                  <span className="text-white font-bold text-xs uppercase tracking-wider">{(tool as any).motor || 'Non spécifié'}</span>
-                </div>
-                <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
-                  <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1">État Matériel</span>
-                  <span className="text-white font-bold text-xs tracking-wider capitalize">{tool.condition || 'Usagé'}</span>
-                </div>
+                {/* NOUVEAU : AFFICHAGE DE LA JAUGE */}
+                {isConsumableType ? (
+                  <div className="bg-[#121212] rounded-lg p-3 border border-white/5 col-span-2">
+                    <div className="flex justify-between items-end mb-2">
+                      <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">Niveau de Stock</span>
+                      <span className="text-[#FF6600] font-black text-sm">{tool.consumableLevel || 0}%</span>
+                    </div>
+                    <div className="w-full bg-black rounded-full h-2.5 overflow-hidden border border-white/10">
+                      <div 
+                        className="h-full transition-all duration-500 bg-gradient-to-r from-orange-600 to-[#FF6600]" 
+                        style={{ width: `${tool.consumableLevel || 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
+                      <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1">Type de Moteur</span>
+                      <span className="text-white font-bold text-xs uppercase tracking-wider">{(tool as any).motor || 'Non spécifié'}</span>
+                    </div>
+                    <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex flex-col justify-center">
+                      <span className="text-gray-500 text-[8px] font-black uppercase tracking-widest mb-1">État Matériel</span>
+                      <span className="text-white font-bold text-xs tracking-wider capitalize">{tool.condition || 'Usagé'}</span>
+                    </div>
+                  </>
+                )}
+
                 <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex justify-between items-center col-span-2">
                   <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">Valeur estimée</span>
                   <span className="text-white font-bold text-sm tracking-wider bg-white/5 px-3 py-1 rounded">{tool.price ? `${tool.price} €` : 'N/A'}</span>
@@ -3806,7 +3859,7 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
               </div>
 
               <div className="bg-[#121212] rounded-lg p-3 border border-white/5 flex justify-between items-center mt-1">
-                <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">S/N (Numéro de série)</span>
+                <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest">Lot / Réf</span>
                 <span className="text-[#FF6600] font-mono font-black text-[11px] tracking-widest bg-[#FF6600]/10 px-2 py-1 rounded border border-[#FF6600]/20">
                   {tool.serialNumber || 'NON RENSEIGNÉ'}
                 </span>
@@ -3819,7 +3872,6 @@ const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBack, onUpdate, onDelet
                 </div>
               )}
               
-              {/* ENREGISTRÉ LE... (TOUT EN BAS) */}
               <div className="text-center mt-4 pt-3 border-t border-white/5">
                 <span className="text-gray-600 text-[9px] font-black uppercase tracking-widest">
                   Fiche enregistrée le : {tool.date}
@@ -4478,13 +4530,11 @@ export default SettingsPage;
 // ==========================================
 
 ```tsx
-// ==========================================
-// 📂 FICHIER : \src\modules\home\views\ValidationSas.tsx
-// ==========================================
 import React, { useState } from 'react';
 import { useUserTier } from '../../../core/security/useUserTier';
 
 export interface AIScanResult {
+  brand?: string;
   typography?: string;
   brandColor?: string;
   categorie_id?: string;
@@ -4497,7 +4547,11 @@ export interface AIScanResult {
   isConsumable?: boolean;
   consumableLevel?: number;
   imageUrl?: string;
-  location?: string; // <-- NOUVEAU : On autorise le transit de la zone
+  location?: string;
+  energy?: string; 
+  safetyStatus?: boolean;
+  // NOUVEAU : Champ pour stocker les coordonnées du contour
+  box_2d?: number[]; 
 }
 
 interface ValidationSasProps {
@@ -4511,6 +4565,9 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
   const [selectedItems, setSelectedItems] = useState<boolean[]>(pendingItems.map(() => true));
   const { currentTier } = useUserTier();
 
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<Partial<AIScanResult>>({});
+
   const handleRemoveItem = (indexToRemove: number) => {
     setItemsToValidate(prev => prev.filter((_, i) => i !== indexToRemove));
     setSelectedItems(prev => prev.filter((_, i) => i !== indexToRemove));
@@ -4520,6 +4577,20 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
     const newSelection = [...selectedItems];
     newSelection[index] = !newSelection[index];
     setSelectedItems(newSelection);
+  };
+
+  const openEditModal = (index: number) => {
+    setEditingIndex(index);
+    setEditForm({ ...itemsToValidate[index] });
+  };
+
+  const saveEdit = () => {
+    if (editingIndex !== null) {
+      const updatedItems = [...itemsToValidate];
+      updatedItems[editingIndex] = { ...updatedItems[editingIndex], ...editForm };
+      setItemsToValidate(updatedItems);
+      setEditingIndex(null);
+    }
   };
 
   const handleFinalValidation = () => {
@@ -4544,7 +4615,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#121212] px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))] font-sans">
+    <div className="flex flex-col h-full bg-[#121212] px-[5vw] pt-[2vh] pb-[calc(2vh+env(safe-area-inset-bottom))] font-sans relative">
       
       <div className="flex flex-col mb-[3vh]">
         <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.2rem,5vw,1.8rem)]">
@@ -4560,6 +4631,20 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
           const score = item.confidence ? Math.round(item.confidence * 100) : 0;
           const scoreColor = score >= 90 ? 'text-green-500' : score >= 70 ? 'text-[#FF6600]' : 'text-red-500';
           const isSelected = selectedItems[index];
+          const isConsumableType = item.categorie_id === 'quinc' || item.isConsumable;
+
+          // CALCUL DES COORDONNÉES DU CONTOUR NÉON
+          let neonOverlayStyle = {};
+          if (item.box_2d && item.box_2d.length === 4) {
+            // Gemini renvoie [ymin, xmin, ymax, xmax] normalisé entre 0 et 1000
+            const [ymin, xmin, ymax, xmax] = item.box_2d;
+            neonOverlayStyle = {
+              top: `${ymin / 10}%`,
+              left: `${xmin / 10}%`,
+              height: `${(ymax - ymin) / 10}%`,
+              width: `${(xmax - xmin) / 10}%`,
+            };
+          }
 
           return (
             <div 
@@ -4567,30 +4652,55 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
               className={`bg-[#1E1E1E] border rounded-xl flex flex-col overflow-hidden transition-all duration-300 ${isSelected ? 'border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.15)]' : 'border-white/5 opacity-50 grayscale-[50%]'}`}
             >
               <div className="flex p-[3vw] gap-[3vw]">
-                <div className="w-[22vw] h-[22vw] max-w-[90px] max-h-[90px] bg-[#0a0a0a] border border-white/10 rounded-lg flex items-center justify-center p-2 shrink-0 relative">
+                {/* ZONE DE LA MINIATURE AVEC CONTOUR NÉON */}
+                <div className="w-[22vw] h-[22vw] max-w-[90px] max-h-[90px] bg-[#0a0a0a] border border-white/10 rounded-lg shrink-0 relative overflow-hidden p-1 shadow-inner">
                   {item.imageUrl ? (
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.label} 
-                      className={`w-full h-full object-contain ${currentTier !== 'FREE' ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]' : ''}`}
-                    />
+                    <>
+                      <img 
+                        src={item.imageUrl} 
+                        alt={item.label} 
+                        className="w-full h-full object-contain"
+                      />
+                      
+                      {/* LE CONTOUR ORANGE NÉON (SUPERPOSÉ) */}
+                      {item.box_2d && (
+                        <div 
+                          className="absolute border-2 border-[#FF6600] rounded-[2px] shadow-[0_0_10px_#FF6600,inset_0_0_5px_#FF6600] pointer-events-none"
+                          style={neonOverlayStyle}
+                        />
+                      )}
+                    </>
                   ) : (
-                    <span className="text-2xl opacity-30">📷</span>
+                    <div className="flex items-center justify-center w-full h-full">
+                      <span className="text-2xl opacity-30">📷</span>
+                    </div>
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-2">
-                      <span className="text-gray-400 font-black text-[9px] uppercase tracking-widest leading-none">
-                        {item.brandColor || 'Marque N/A'}
+                      <span className="text-gray-400 font-black text-[9px] uppercase tracking-widest leading-none block mb-1">
+                        {item.brand || item.brandColor || 'Marque N/A'}
                       </span>
-                      <h3 className="text-white font-bold text-[clamp(0.9rem,3.5vw,1.1rem)] leading-tight whitespace-normal mt-0.5">
+                      <h3 className="text-white font-bold text-[clamp(0.9rem,3.5vw,1.1rem)] leading-tight whitespace-normal">
                         {item.label || item.typography || 'Outil Inconnu'}
                       </h3>
-                      <span className="text-[#FF6600] text-[10px] font-bold tracking-wider uppercase">
-                        {item.type || item.categorie_id}
-                      </span>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-[#FF6600] text-[10px] font-bold tracking-wider uppercase">
+                          {item.type || item.categorie_id}
+                        </span>
+                        {item.energy && (
+                          <span className="bg-[#FF6600]/20 text-[#FF6600] px-1.5 py-0.5 rounded text-[8px] font-black uppercase">
+                            ⚡ {item.energy}
+                          </span>
+                        )}
+                        {item.safetyStatus !== undefined && !isConsumableType && (
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${item.safetyStatus ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
+                            {item.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {currentTier !== 'FREE' && (
                       <div className="flex flex-col items-end shrink-0">
@@ -4603,19 +4713,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                       </div>
                     )}
                   </div>
-
-                  {currentTier !== 'FREE' && (
-                    <div className="mt-auto pt-2">
-                      <div className="bg-black/60 border border-white/5 rounded p-2 font-mono text-[9px] text-gray-400 leading-snug h-[4.5em] overflow-hidden relative">
-                        <span className="text-[#FF6600] animate-pulse"> {">"} </span>
-                        <span className="text-white/80">SCAN_STRUCT : </span> 
-                        {item.morphology ? `${item.morphology}. ` : ''}
-                        <span className="italic opacity-80">{item.description}</span>
-                        <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-black/60 to-transparent"></div>
-                      </div>
-                    </div>
-                  )}
-
                 </div>
               </div>
 
@@ -4633,7 +4730,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                 </button>
 
                 <button 
-                  onClick={() => alert(currentTier === 'FREE' ? "L'édition détaillée est réservée aux membres PREMIUM." : "L'édition détaillée sera disponible dans la fiche outil après validation.")}
+                  onClick={() => currentTier === 'FREE' ? alert("L'édition détaillée est réservée aux membres PREMIUM.") : openEditModal(index)}
                   className="flex-1 py-3 border-l border-white/10 flex items-center justify-center gap-2 text-white/60 hover:text-white hover:bg-white/5 transition-colors"
                 >
                   <span className="text-sm">{currentTier === 'FREE' ? '🔒' : '✎'}</span>
@@ -4658,7 +4755,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
           onClick={onRejectAll}
           className="flex-1 bg-[#333333] active:bg-[#444] text-white py-[2vh] rounded-xl font-black uppercase tracking-widest text-[clamp(0.8rem,3vw,1rem)] transition-colors border border-white/5"
         >
-          Tout Rejeter
+          Rejeter
         </button>
         <button 
           onClick={handleFinalValidation}
@@ -4668,6 +4765,73 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
         </button>
       </div>
 
+      {/* ========================================== */}
+      {/* MODALE D'ÉDITION RAPIDE (QUICK EDIT)       */}
+      {/* ========================================== */}
+      {editingIndex !== null && (
+        <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col justify-end">
+          <div className="bg-[#1E1E1E] rounded-t-3xl border-t border-[#FF6600]/50 p-[5vw] flex flex-col gap-[2.5vh] animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.8)] pb-[max(5vh,env(safe-area-inset-bottom))] relative overflow-hidden">
+            
+            {/* RAPPEL DE LA MINIATURE AVEC SON CONTOUR NÉON DANS LA MODALE */}
+            <div className="absolute top-4 right-5 w-[15vw] h-[15vw] max-w-[60px] max-h-[60px] bg-black rounded-lg border border-white/10 p-1 overflow-hidden shadow-inner">
+               {editForm.imageUrl && (
+                    <>
+                      <img src={editForm.imageUrl} alt="Miniature" className="w-full h-full object-contain" />
+                      {editForm.box_2d && (
+                        <div 
+                          className="absolute border-[1.5px] border-[#FF6600] rounded-[1px] shadow-[0_0_6px_#FF6600,inset_0_0_3px_#FF6600] pointer-events-none"
+                          style={{
+                              top: `${editForm.box_2d[0] / 10}%`,
+                              left: `${editForm.box_2d[1] / 10}%`,
+                              height: `${(editForm.box_2d[2] - editForm.box_2d[0]) / 10}%`,
+                              width: `${(editForm.box_2d[3] - editForm.box_2d[1]) / 10}%`,
+                          }}
+                        />
+                      )}
+                    </>
+               )}
+            </div>
+
+            <div className="flex justify-between items-center border-b border-white/10 pb-3 pr-16">
+              <h3 className="text-white font-black uppercase tracking-widest text-[1.2rem]">Correction IA</h3>
+              <button onClick={() => setEditingIndex(null)} className="text-white/50 text-2xl font-light active:scale-90 absolute top-4 right-4 z-20">×</button>
+            </div>
+
+            {/* Champ 1 : Marque */}
+            <div>
+              <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-1 block">Marque</label>
+              <input type="text" value={editForm.brand || editForm.brandColor || ''} onChange={(e) => setEditForm({...editForm, brand: e.target.value})} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-[#FF6600]" placeholder="Ex: DeWalt, Makita..."/>
+            </div>
+
+            {/* Champ 2 : Genre / Modèle */}
+            <div>
+              <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-1 block">Genre / Modèle</label>
+              <input type="text" value={editForm.label || editForm.typography || ''} onChange={(e) => setEditForm({...editForm, label: e.target.value})} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-[#FF6600]" placeholder="Ex: Visseuse à choc, Scie circulaire..."/>
+            </div>
+
+            {/* Champ 3 : Énergie */}
+            <div>
+              <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-1 block">Énergie (Batterie / Secteur)</label>
+              <input type="text" value={editForm.energy || ''} onChange={(e) => setEditForm({...editForm, energy: e.target.value})} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-[#FF6600]" placeholder="Ex: 18V, Filaire 220V, Thermique..."/>
+            </div>
+
+            {/* Champ 4 : Statut Opérationnel (Masqué si Quincaillerie) */}
+            {!(editForm.categorie_id === 'quinc' || editForm.isConsumable) && (
+              <div className="mt-2">
+                <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-2 block">Statut Machine</label>
+                <div className="flex bg-[#0a0a0a] rounded-lg p-1 border border-white/10">
+                  <button onClick={() => setEditForm({...editForm, safetyStatus: false})} className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${!editForm.safetyStatus ? 'bg-green-500 text-black shadow-md' : 'text-gray-500'}`}>✓ Opérationnel</button>
+                  <button onClick={() => setEditForm({...editForm, safetyStatus: true})} className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${editForm.safetyStatus ? 'bg-red-500 text-white shadow-md' : 'text-gray-500'}`}>⚠️ En Panne</button>
+                </div>
+              </div>
+            )}
+
+            <button onClick={saveEdit} className="w-full bg-[#FF6600] text-black py-4 rounded-xl font-black uppercase tracking-widest mt-4 active:scale-95 transition-transform">
+              Appliquer la correction
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

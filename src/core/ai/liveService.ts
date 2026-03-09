@@ -1,10 +1,9 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.2 - Architecture Cloisonnée)
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.3 - Parser Bidi JSON Strict)
  * Architecture : WebSocket Multimodal (Gemini 2.0 Flash)
  * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
-// IMPORT STRICTEMENT SÉPARÉ DES BIBLES MÉTIERS
 import { GARAGE_M5_RULES } from './expertisemetier/mecanique';
 import { MAINTENANCE_M5_RULES } from './expertisemetier/maintenance';
 
@@ -18,9 +17,9 @@ export interface LiveDiagnostic {
 class LiveService {
   private socket: WebSocket | null = null;
   private frameInterval: number | null = null;
+  private messageBuffer: string = ""; // Buffer pour accumuler les morceaux de texte de l'IA
 
   async connect(mode: 'maintenance' | 'mecanique', onMessage: (data: LiveDiagnostic) => void) {
-    // 1. Récupération de la clé API
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
     
     if (!apiKey) {
@@ -28,7 +27,6 @@ class LiveService {
       throw new Error("Impossible d'établir le tunnel sécurisé.");
     }
 
-    // 2. AIGUILLAGE DU CERVEAU (ZÉRO CROSS-CONTAMINATION)
     let role = "";
     let rulesContext = "";
 
@@ -40,7 +38,7 @@ class LiveService {
       rulesContext = JSON.stringify(MAINTENANCE_M5_RULES, null, 2);
     }
 
-    // Injection de la directive militaire "Zéro-Fioriture"
+    // INSTRUCTION STRICTE : On force un format de sortie JSON pour le parsing
     const systemInstruction = `
       Tu es l'${role} du système LOCATE. 
       Mode actif : ${mode.toUpperCase()}.
@@ -53,17 +51,24 @@ class LiveService {
       - Format exigé : "Étape [X] : [Action]. Dis 'Fait' quand c'est terminé."
       - Isolement du doute : Aucune extrapolation. Si la vidéo est floue, dis : "Visuel non conforme. Nettoie la lentille."
       - Droit de veto absolu : Si une condition de sécurité manque (levage sans chandelle, tension haute sans EPI), bloque le diagnostic immédiatement.
+
+      FORMAT DE RÉPONSE EXIGÉ :
+      Tu dois répondre UNIQUEMENT avec un objet JSON valide, sans markdown, avec cette structure exacte :
+      {
+        "hypothesis": "Ton diagnostic ou instruction courte",
+        "confidence": 0.95,
+        "nextStep": "Action suivante attendue",
+        "safetyAlert": "ALERTE SI DANGER (sinon omettre)"
+      }
     `;
 
     try {
-      // 3. Établissement du tunnel WebSocket
       const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BiDiGenerateContent?key=${apiKey}`;
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
         console.log(`🔗 Tunnel Live LOCATE établi en mode : ${mode.toUpperCase()}`);
         
-        // 4. Envoi du Setup Message avec le Manifeste Métier spécifique au mode
         const setupMessage = {
           setup: {
             model: "models/gemini-2.0-flash",
@@ -73,22 +78,40 @@ class LiveService {
           }
         };
         this.socket?.send(JSON.stringify(setupMessage));
+        this.messageBuffer = ""; // Réinitialisation du buffer
       };
 
       this.socket.onmessage = (event) => {
         try {
-          const response = JSON.parse(event.data);
-          
-          // Log brut pour surveiller les retours de l'API Bidi
-          console.log("Trame IA reçue :", response);
+          // Si le serveur renvoie un Blob, on doit le lire (cas rare mais possible)
+          // Dans la majorité des cas Bidi, c'est du texte formaté en JSON.
+          if (typeof event.data === 'string') {
+            const response = JSON.parse(event.data);
+            
+            // On extrait le texte généré par l'IA
+            const textChunk = response.serverContent?.modelTurn?.parts?.[0]?.text;
+            
+            if (textChunk) {
+              this.messageBuffer += textChunk;
 
-          // En attendant le vrai parsing complexe des 'serverContent' de Gemini Bidi, 
-          // on garde ce stub fonctionnel pour que l'UI ne crashe pas.
-          onMessage({
-            hypothesis: `Analyse du flux visuel ${mode.toUpperCase()} en cours...`,
-            confidence: 0.90,
-            nextStep: "Attente de données capteurs ou visuelles."
-          });
+              // L'IA streame sa réponse. On cherche un bloc JSON complet.
+              const startIndex = this.messageBuffer.indexOf('{');
+              const endIndex = this.messageBuffer.lastIndexOf('}');
+
+              if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+                const possibleJson = this.messageBuffer.substring(startIndex, endIndex + 1);
+                
+                try {
+                  const parsedData = JSON.parse(possibleJson) as LiveDiagnostic;
+                  onMessage(parsedData);
+                  // Succès du parsing, on vide le buffer pour la prochaine trame
+                  this.messageBuffer = "";
+                } catch (e) {
+                  // Le JSON n'est pas encore complet, on attend le prochain bout de texte
+                }
+              }
+            }
+          }
         } catch (error) {
           console.error("Erreur de lecture de la trame IA :", error);
         }
@@ -125,7 +148,8 @@ class LiveService {
       this.socket.close();
       this.socket = null;
     }
-    console.log("🔒 [ZÉRO-TRACE] Session terminée. Buffer vidéo détruit.");
+    this.messageBuffer = "";
+    console.log("🔒 [ZÉRO-TRACE] Session terminée. Buffer vidéo et texte détruits.");
   }
 }
 

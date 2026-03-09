@@ -1,6 +1,6 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.8 - Modèle Stable 2.5 Flash)
- * Architecture : WebSocket Multimodal
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V2.0 - Asynchrone Edge Mode)
+ * Architecture : REST Multimodal (Gemini 2.5 Flash) - Fallback activé
  * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
@@ -15,169 +15,109 @@ export interface LiveDiagnostic {
 }
 
 class LiveService {
-  private socket: WebSocket | null = null;
-  private frameInterval: number | null = null;
-  private messageBuffer: string = "";
+  private apiKey: string = "";
+  private systemInstruction: string = "";
+  private latestFrame: string | null = null;
+  private onMessageCallback: ((data: LiveDiagnostic) => void) | null = null;
 
   async connect(mode: 'maintenance' | 'mecanique', onMessage: (data: LiveDiagnostic) => void) {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
+    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY || "";
     
-    if (!apiKey) {
+    if (!this.apiKey) {
       console.error("Clé d'API manquante. Vérifiez le fichier .env.");
       throw new Error("Impossible d'établir le tunnel sécurisé.");
     }
 
-    let role = "";
-    let rulesContext = "";
+    this.onMessageCallback = onMessage;
 
-    if (mode === 'mecanique') {
-      role = "Expert Mécanique Auto & Poids Lourds (OBD2, J1939, UTAC, Thermique)";
-      rulesContext = JSON.stringify(GARAGE_M5_RULES, null, 2);
-    } else if (mode === 'maintenance') {
-      role = "Expert Maintenance Industrielle (AFNOR, OSA/CBM, LOTO)";
-      rulesContext = JSON.stringify(MAINTENANCE_M5_RULES, null, 2);
-    }
+    let role = mode === 'mecanique' ? "Expert Mécanique Auto & Poids Lourds" : "Expert Maintenance Industrielle";
+    let rulesContext = mode === 'mecanique' ? JSON.stringify(GARAGE_M5_RULES) : JSON.stringify(MAINTENANCE_M5_RULES);
 
-    const systemInstruction = `
-      Tu es l'${role} du système LOCATE. 
-      Mode actif : ${mode.toUpperCase()}.
+    this.systemInstruction = `
+      Tu es l'${role} du système LOCATE. Mode actif : ${mode.toUpperCase()}.
       
-      VOICI TA BIBLE MÉTIER STRICTE À APPLIQUER ABSOLUMENT :
+      VOICI TA BIBLE MÉTIER STRICTE :
       ${rulesContext}
 
-      PROTOCOLE DE COMMUNICATION OBLIGATOIRE :
+      PROTOCOLE DE COMMUNICATION :
       - Zéro phrase de courtoisie. Va à l'essentiel.
-      - Si tu ne sais pas, dis "Données insuffisantes".
-      - Droit de veto absolu : Si une condition de sécurité manque, bloque le diagnostic immédiatement.
-
-      FORMAT DE RÉPONSE EXIGÉ :
-      Tu dois répondre UNIQUEMENT avec un objet JSON valide, sans markdown, avec cette structure exacte :
-      {
-        "hypothesis": "Ton diagnostic, ta réponse ou ton instruction courte",
-        "confidence": 0.95,
-        "nextStep": "Action suivante attendue",
-        "safetyAlert": "ALERTE SI DANGER (sinon omettre la propriété)"
-      }
+      - Droit de veto absolu si une condition de sécurité manque.
     `;
 
+    // Simulation de l'ouverture du tunnel pour l'interface utilisateur
+    setTimeout(() => {
+      console.log(`🔗 [EDGE MODE] Tunnel Asynchrone établi en mode : ${mode.toUpperCase()}`);
+    }, 500);
+  }
+
+  // Cette fonction est appelée par l'intervalle de la caméra. 
+  // On ne l'envoie plus dans le vide, on la stocke en mémoire vive.
+  sendVideoFrame(canvas: HTMLCanvasElement) {
+    this.latestFrame = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
+  }
+
+  // Déclenché quand tu relâches le bouton PTT
+  async sendPrompt(text: string) {
+    if (!this.onMessageCallback) return;
+
+    console.log(`🚀 [EDGE MODE] Transmission en cours... Texte : "${text}"`);
+
     try {
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
-      this.socket = new WebSocket(wsUrl);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`;
+      
+      // Construction du payload (Texte + Image si la Vision Bionique est activée)
+      const parts: any[] = [{ text: text }];
+      
+      if (this.latestFrame) {
+        console.log("📸 [EDGE MODE] Image bionique jointe à la transmission.");
+        parts.push({
+          inlineData: { mimeType: "image/jpeg", data: this.latestFrame }
+        });
+        // On purge l'image après utilisation pour le Zéro-Trace
+        this.latestFrame = null; 
+      }
 
-      this.socket.onopen = () => {
-        console.log(`🔗 Tunnel Live LOCATE établi en mode : ${mode.toUpperCase()}`);
-        
-        const setupMessage = {
-          setup: {
-            // LE MODÈLE STABLE (Celui qui avait ouvert la porte avec succès)
-            model: "models/gemini-2.5-flash",
-            systemInstruction: {
-              parts: [{ text: systemInstruction }]
-            }
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: this.systemInstruction }] },
+          contents: [{ role: "user", parts: parts }],
+          generationConfig: { 
+            // LE VERROU MAGIQUE : Force la sortie en JSON pur, sans markdown !
+            responseMimeType: "application/json" 
           }
-        };
-        this.socket?.send(JSON.stringify(setupMessage));
-        this.messageBuffer = "";
-      };
+        })
+      });
 
-      this.socket.onclose = (event) => {
-        console.error(`🚪 [SONAR] Le serveur Google a coupé la connexion. Code: ${event.code}, Raison: ${event.reason}`);
-      };
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
 
-      this.socket.onerror = (error) => {
-        console.error("💥 [SONAR] Erreur critique sur le WebSocket :", error);
-      };
-
-      this.socket.onmessage = (event) => {
-        try {
-          if (typeof event.data === 'string') {
-            const response = JSON.parse(event.data);
-            
-            if (response.setupComplete) {
-              console.log("✅ [SONAR BIDI] Setup validé ! L'IA est prête et nous écoute.");
-              return;
-            }
-
-            if (response.error) {
-              console.error("🔴 [SONAR BIDI] ERREUR GOOGLE :", response.error);
-              return;
-            }
-
-            const textChunk = response.serverContent?.modelTurn?.parts?.[0]?.text;
-            
-            if (textChunk) {
-              this.messageBuffer += textChunk;
-              console.log("🤖 [IA DIT] :", textChunk);
-              
-              const match = this.messageBuffer.match(/\{[\s\S]*\}/);
-              if (match) {
-                try {
-                  const parsedData = JSON.parse(match[0]) as LiveDiagnostic;
-                  if (!parsedData.hypothesis) parsedData.hypothesis = "Analyse terminée.";
-                  if (!parsedData.confidence) parsedData.confidence = 0.9;
-                  
-                  onMessage(parsedData);
-                  this.messageBuffer = ""; 
-                } catch (e) {
-                  // Le JSON se construit, on patiente
-                }
-              }
-            } else if (response.serverContent) {
-               console.warn("⚠️ [SONAR] Contenu non-texte reçu :", response.serverContent);
-            }
-          }
-        } catch (error) {
-          console.error("Erreur de lecture de la trame IA :", error);
-        }
-      };
+      // Extraction et parsing automatique garanti par le responseMimeType
+      const textResponse = data.candidates[0].content.parts[0].text;
+      console.log("✅ [EDGE MODE] Réponse brute de l'IA :", textResponse);
+      
+      const parsedData = JSON.parse(textResponse) as LiveDiagnostic;
+      this.onMessageCallback(parsedData);
 
     } catch (error) {
-      console.error("Erreur de connexion Live :", error);
-      throw new Error("Connexion impossible.");
-    }
-  }
-
-  sendVideoFrame(canvas: HTMLCanvasElement) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      const base64Data = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-      const message = {
-        realtimeInput: {
-          mediaChunks: [{
-            mimeType: "image/jpeg",
-            data: base64Data
-          }]
-        }
-      };
-      this.socket.send(JSON.stringify(message));
-    }
-  }
-
-  sendPrompt(text: string) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      const message = {
-        clientContent: {
-          turns: [{
-            role: "user",
-            parts: [{ text: text }]
-          }],
-          turnComplete: true
-        }
-      };
-      this.socket.send(JSON.stringify(message));
+      console.error("💥 [EDGE MODE] Erreur de transmission :", error);
+      this.onMessageCallback({
+        hypothesis: "Erreur de transmission réseau. Répétez.",
+        confidence: 0,
+        nextStep: "Vérifier la connexion.",
+        safetyAlert: "COMMUNICATION PERDUE"
+      });
     }
   }
 
   terminate() {
-    if (this.frameInterval) {
-      window.clearInterval(this.frameInterval);
-      this.frameInterval = null;
-    }
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
-    }
-    this.messageBuffer = "";
-    console.log("🔒 [ZÉRO-TRACE] Session terminée. Buffer détruit.");
+    this.latestFrame = null;
+    this.onMessageCallback = null;
+    console.log("🔒 [ZÉRO-TRACE] Session terminée. Buffer mémoire purgé.");
   }
 }
 

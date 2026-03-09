@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { useUserTier } from '../../../core/security/useUserTier';
 import type { InventoryItem } from '../../../types';
+import { useAppSettings } from '../../../core/storage/useAppSettings';
 
 // Import différé (Lazy Loading) pour éviter le crash au Runtime
 const PdfExportButton = lazy(() => import('../components/PdfExportButton'));
@@ -27,11 +28,15 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBack, onDelete }) => {
   const { currentTier } = useUserTier();
+  const { settings } = useAppSettings(); // NOUVEAU : Récupération du cerveau local
   const canExportPdf = currentTier === 'PREMIUM' || currentTier === 'PRO';
 
-  const dummyUserInfo = {
-    name: 'Utilisateur Premium',
-    address: 'Atelier Principal / Fourgon'
+  // Formatage dynamique pour le PDF
+  const userInfo = {
+    name: settings.userProfile?.fullName || 'Utilisateur Premium',
+    address: settings.userProfile?.company 
+      ? `${settings.userProfile.company} - ${settings.userProfile.address || ''}`
+      : (settings.userProfile?.address || 'Adresse non renseignée')
   };
  
   const handleReturn = () => {
@@ -49,7 +54,7 @@ const Dashboard: React.FC<DashboardProps> = ({ inventory, onSelectCategory, onBa
         <div className="flex gap-4">
           {canExportPdf ? (
             <Suspense fallback={<div className="w-14 h-14 opacity-50 animate-pulse bg-gray-300 rounded-full" />}>
-              <PdfExportButton inventory={inventory} userInfo={dummyUserInfo} />
+              <PdfExportButton inventory={inventory} userInfo={userInfo} />
             </Suspense>
           ) : (
             <button

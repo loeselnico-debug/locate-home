@@ -2,18 +2,20 @@ import { useState } from 'react';
 
 interface HubProps {
   onSelectModule: (module: 'home' | 'asset' | 'kitchen' | 'garage' | 'care') => void;
+  userTier: string; // <-- NOUVEAU : Récupération du grade
 }
 
-export default function Hub({ onSelectModule }: HubProps) {
+export default function Hub({ onSelectModule, userTier }: HubProps) {
+  const isPro = userTier === 'PRO'; // Seul le PRO débloque tout
   // État pour suivre le module survolé/actif (Gère la couleur du noyau et des flux)
   const [hoveredModule, setHoveredModule] = useState<string>('home');
 
   const modules = [
-    { id: 'home', name: 'HOME', color: '#FF6600', iconName: 'home', active: true },
-    { id: 'asset', name: 'ASSET', color: '#007BFF', iconName: 'asset', active: false },
-    { id: 'garage', name: 'GARAGE', color: '#DC3545', iconName: 'garage', active: true },
-    { id: 'kitchen', name: 'KITCHEN', color: '#28A745', iconName: 'kitchen', active: false },
-    { id: 'care', name: 'CARE', color: '#E0E0E0', iconName: 'care', active: false }
+    { id: 'home', name: 'HOME', color: '#FF6600', iconName: 'home', active: true }, // Toujours actif (le bridage Free/Premium se fait dedans)
+    { id: 'asset', name: 'ASSET', color: '#007BFF', iconName: 'asset', active: isPro },
+    { id: 'garage', name: 'GARAGE', color: '#DC3545', iconName: 'garage', active: isPro },
+    { id: 'kitchen', name: 'KITCHEN', color: '#28A745', iconName: 'kitchen', active: isPro },
+    { id: 'care', name: 'CARE', color: '#E0E0E0', iconName: 'care', active: isPro }
   ];
 
   // Couleur dynamique du noyau central selon le module survolé
@@ -126,6 +128,9 @@ export default function Hub({ onSelectModule }: HubProps) {
                   boxShadow: isHovered ? `0 0 20px ${mod.color}80, inset 0 2px 10px rgba(255,255,255,0.1)` : '0 4px 6px rgba(0,0,0,0.3)'
                 }}
               >
+                {/* NOUVEAU : Affichage du cadenas si inactif */}
+                {!mod.active && <div className="absolute -top-2 -right-2 text-lg z-20 drop-shadow-lg">🔒</div>}
+
                 {/* Icône étendue à 95% de la base */}
                 <img
                   src={`/${mod.iconName}.png`}

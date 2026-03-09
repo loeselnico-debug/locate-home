@@ -108,6 +108,11 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 * [X] **[07/03/2026] UX/UI Home (Vue B) :** Refonte majeure de `ValidationSas.tsx`. Changement de titre ("SCAN"). Création d'une carte à 3 zones (Image détourée, Terminal IA "Waouh effect" masquant le JSON brut, et Barre d'action basse). Ajout d'une Checkbox permettant d'ignorer un outil sans le supprimer, illustrant le concept de divulgation progressive et de Sas "Zéro-Trust".
 * [X] **[07/03/2026] UX/UI Home (Vue C) :** Refonte de la carte outil dans `Library.tsx` (Divulgation progressive). Suppression de la troncature pour le nom de l'outil, ajout de la Marque en surtitre, intégration du badge d'Énergie et réalignement du bloc de statut en bas de carte. Le bouton "Export PDF par rubrique" est décalé à une V2 pour des raisons de stabilité.
 * [X] **[07/03/2026] UX/UI Home (Vue D) :** Refonte majeure de `ToolDetail.tsx`. Transformation du formulaire d'édition en "Panneau de Contrôle" structuré (Grid) avec miniature persistante. Ajout des champs `condition` (État) et `notes` (Observations) pour créer une spécification technique ultra-détaillée type "Fiche Produit" assumant un scroll justifié par l'exhaustivité des données métiers.
+### ACQUIS V25 : SÉCURITÉ & MODULE ASSURANCE
+- [x] Synchronisation Stripe & Supabase opérationnelle pour la gestion du grade PREMIUM.
+- [x] Interface de saisie du profil utilisateur (Nom, Entreprise, Adresse) intégrée dans `SettingsPage.tsx` (Architecture zéro-serveur via `useAppSettings`).
+- [x] Génération dynamique du rapport PDF d'assurance dans `Dashboard.tsx` avec injection en temps réel des variables du profil.
+
 
 ---
 

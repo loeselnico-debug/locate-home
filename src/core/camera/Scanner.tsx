@@ -118,7 +118,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     const timerInterval = setInterval(() => {
       timeElapsed++;
       setRecordingTime(timeElapsed);
-      if (timeElapsed >= 10) {
+      if (timeElapsed >= 15) {
         clearInterval(timerInterval);
         if (mediaRecorder.state === "recording") mediaRecorder.stop();
       }
@@ -130,8 +130,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     if (!file) return;
 
     if (file.type.startsWith('image/')) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("ERREUR ZÉRO-TRUST : L'image dépasse la limite stricte de 5 Mo.");
+      if (file.size > 7 * 1024 * 1024) {
+        alert("ERREUR ZÉRO-TRUST : L'image dépasse la limite stricte de 7 Mo.");
         return;
       }
       const reader = new FileReader();
@@ -143,8 +143,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       videoElement.preload = 'metadata';
       videoElement.onloadedmetadata = () => {
         URL.revokeObjectURL(videoElement.src);
-        if (videoElement.duration > 11) {
-          alert("ERREUR ZÉRO-TRUST : La vidéo dépasse la limite stricte de 10 secondes.");
+        if (videoElement.duration > 15) {
+          alert("ERREUR ZÉRO-TRUST : La vidéo dépasse la limite stricte de 15 secondes.");
           return;
         }
         const reader = new FileReader();
@@ -313,7 +313,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center active:scale-90 backdrop-blur shrink-0">
               <img src="/icon-import.png" className="w-[85%] h-[85%] object-contain" alt="Import" />
             </button>
-            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 5MO<br/>/ 10S</span>
+            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest text-center leading-tight">MAX 7MO<br/>/ 15S</span>
             <input type="file" ref={fileInputRef} onChange={handleImport} hidden accept="image/*,video/*" />
           </div>
 
@@ -321,7 +321,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
             <button onClick={handlePhotoClick} disabled={isScanning || isAnalyzing} className="w-14 h-14 bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center active:scale-95 backdrop-blur shadow-[0_5px_20px_rgba(0,0,0,0.5)] shrink-0">
               <img src="/icon-photo.png" className="w-[100%] h-[100%] object-contain" alt="Photo" />
             </button>
-            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 5MO</span>
+            <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">MAX 7MO</span>
           </div>
 
           <div className="flex flex-col items-center gap-[1vh] w-1/4">
@@ -329,7 +329,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
               <img src="/icon-video.png" className="w-[100%] h-[100%] object-contain" alt="Vidéo" />
             </button>
             <span className="text-[2vw] sm:text-[8px] text-[#FF6600] font-bold uppercase tracking-widest">
-              {isScanning ? `SCAN... ${recordingTime}S` : 'MAX 10S'}
+              {isScanning ? `SCAN... ${recordingTime}S` : 'MAX 15S'}
             </span>
           </div>
         </div>

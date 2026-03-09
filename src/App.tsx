@@ -28,7 +28,12 @@ const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
-  const [view, setView] = useState<ViewState>('hub');
+  // ROUTAGE INTELLIGENT : Hub pour l'Admin (PRO), Accueil direct pour les utilisateurs standards
+  const [view, setView] = useState<ViewState>(() => {
+    const savedTier = localStorage.getItem('locate_user_tier');
+    return (savedTier === 'FREE' || savedTier === 'PREMIUM') ? 'home' : 'hub';
+  });
+
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isDbLoaded, setIsDbLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -158,7 +163,8 @@ const App = () => {
 
       <div className={view !== 'hub' ? 'pt-[12.5vh] h-full flex flex-col' : 'h-full flex flex-col'}>
         
-        {view === 'hub' && <Hub onSelectModule={(m: string) => setView(m as ViewState)} />}
+        {/* CORRECTION DU ROUTAGE HUB AVEC INJECTION DU TIER */}
+        {view === 'hub' && <Hub onSelectModule={(m: string) => setView(m as ViewState)} userTier={currentTier} />}
         
         {view === 'home' && <HomeMenu onNavigate={setView} tier={currentTier} />}
         {view === 'garage' && <GarageDashboard onBack={() => setView('hub')} />}

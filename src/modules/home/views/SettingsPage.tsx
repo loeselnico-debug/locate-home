@@ -171,6 +171,52 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </div>
       </div>
 
+{/* SECTION 2.5 : PROFIL ASSURANCE & RAPPORTS */}
+      <div className="mb-[5vh]">
+        <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">
+          <span className="w-[4px] h-[1.2em] bg-[#FF6600] mr-[2vw]"></span>
+          {t('profile_title')}
+        </h2>
+
+        <div className="bg-[#1A1A1A] rounded-2xl p-[3vh_4vw] border border-[#222] flex flex-col gap-[2.5vh]">
+          {/* Champ Nom */}
+          <div>
+            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.8rem)] uppercase tracking-wider mb-[1vh]">{t('profile_fullname')}</label>
+            <input 
+              type="text" 
+              value={settings.userProfile?.fullName || ''} 
+              onChange={(e) => updateSettings({ userProfile: { ...(settings.userProfile || { fullName: '', company: '', address: '' }), fullName: e.target.value } })}
+              placeholder="Ex: Jean Dupont"
+              className="w-full bg-[#0A0A0A] border border-[#333] text-white rounded-lg p-[1.5vh_3vw] focus:border-[#FF6600] outline-none transition-colors text-[clamp(0.8rem,3vw,1rem)]"
+            />
+          </div>
+
+          {/* Champ Entreprise */}
+          <div>
+            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.8rem)] uppercase tracking-wider mb-[1vh]">{t('profile_company')}</label>
+            <input 
+              type="text" 
+              value={settings.userProfile?.company || ''} 
+              onChange={(e) => updateSettings({ userProfile: { ...(settings.userProfile || { fullName: '', company: '', address: '' }), company: e.target.value } })}
+              placeholder="Ex: Locate Services"
+              className="w-full bg-[#0A0A0A] border border-[#333] text-white rounded-lg p-[1.5vh_3vw] focus:border-[#FF6600] outline-none transition-colors text-[clamp(0.8rem,3vw,1rem)]"
+            />
+          </div>
+
+          {/* Champ Adresse */}
+          <div>
+            <label className="block text-gray-400 text-[clamp(0.7rem,2.5vw,0.8rem)] uppercase tracking-wider mb-[1vh]">{t('profile_address')}</label>
+            <input 
+              type="text" 
+              value={settings.userProfile?.address || ''} 
+              onChange={(e) => updateSettings({ userProfile: { ...(settings.userProfile || { fullName: '', company: '', address: '' }), address: e.target.value } })}
+              placeholder="Ex: 123 avenue de l'Industrie, 75000 Paris"
+              className="w-full bg-[#0A0A0A] border border-[#333] text-white rounded-lg p-[1.5vh_3vw] focus:border-[#FF6600] outline-none transition-colors text-[clamp(0.8rem,3vw,1rem)]"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* SECTION 3 : SÉCURITÉ & DONNÉES */}
       <div className="mb-[5vh]">
         <h2 className="text-[clamp(1rem,4vw,1.2rem)] font-bold mb-[2vh] flex items-center tracking-widest text-gray-200">

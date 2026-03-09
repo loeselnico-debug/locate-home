@@ -1,6 +1,6 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.6 - Mode Live API & Mouchards)
- * Architecture : WebSocket Multimodal
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.7 - Force Text Modality)
+ * Architecture : WebSocket Multimodal (Gemini 2.0 Flash Exp)
  * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
@@ -69,8 +69,12 @@ class LiveService {
         
         const setupMessage = {
           setup: {
-            // LE BON MODÈLE : Stable, Multimodal (Texte + Image), compatible Bidi
-            model: "models/gemini-2.0-flash",
+            // LE SEUL MODÈLE 100% COMPATIBLE AVEC LE TUNNEL BIDI
+            model: "models/gemini-2.0-flash-exp",
+            // LE SECRET EST ICI : ON FORCE L'IA À RÉPONDRE EN TEXTE ET NON EN VOCAL
+            generationConfig: {
+              responseModalities: ["TEXT"]
+            },
             systemInstruction: {
               parts: [{ text: systemInstruction }]
             }
@@ -80,12 +84,10 @@ class LiveService {
         this.messageBuffer = "";
       };
 
-      // MOUCHARD 1 : Si Google nous raccroche au nez
       this.socket.onclose = (event) => {
         console.error(`🚪 [SONAR] Le serveur Google a coupé la connexion. Code: ${event.code}, Raison: ${event.reason}`);
       };
 
-      // MOUCHARD 2 : Si la connexion plante
       this.socket.onerror = (error) => {
         console.error("💥 [SONAR] Erreur critique sur le WebSocket :", error);
       };
@@ -95,10 +97,9 @@ class LiveService {
           if (typeof event.data === 'string') {
             const response = JSON.parse(event.data);
             
-            console.log("📡 [SONAR BIDI] Trame brute reçue :", response);
-
+            // Console allégée pour ne pas polluer l'écran, on ne loggue que les éléments utiles
             if (response.setupComplete) {
-              console.log("✅ [SONAR BIDI] Setup validé par Google ! L'IA est prête à écouter.");
+              console.log("✅ [SONAR BIDI] Setup validé ! L'IA est prête et configurée en mode TEXTE.");
               return;
             }
 
@@ -112,19 +113,25 @@ class LiveService {
             if (textChunk) {
               this.messageBuffer += textChunk;
               
+              // Affichage de ce que l'IA est en train d'écrire en temps réel
+              console.log("🤖 [IA DIT] :", textChunk);
+              
               const match = this.messageBuffer.match(/\{[\s\S]*\}/);
               if (match) {
                 try {
                   const parsedData = JSON.parse(match[0]) as LiveDiagnostic;
-                  if (!parsedData.hypothesis) parsedData.hypothesis = "Analyse en cours...";
-                  if (!parsedData.confidence) parsedData.confidence = 0.8;
+                  if (!parsedData.hypothesis) parsedData.hypothesis = "Analyse terminée.";
+                  if (!parsedData.confidence) parsedData.confidence = 0.9;
                   
                   onMessage(parsedData);
                   this.messageBuffer = ""; 
                 } catch (e) {
-                  // En attente
+                  // Le JSON se construit, on patiente
                 }
               }
+            } else if (response.serverContent) {
+               // Si l'IA envoie quand même de l'audio ou autre chose, on le voit !
+               console.warn("⚠️ [SONAR] Contenu non-texte reçu :", response.serverContent);
             }
           }
         } catch (error) {

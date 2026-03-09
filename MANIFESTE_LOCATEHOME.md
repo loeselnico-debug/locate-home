@@ -112,7 +112,11 @@ Application stricte du Protocole d’Analyse Visuelle Pyramidale (PAVP V5.0) par
 - [x] Synchronisation Stripe & Supabase opérationnelle pour la gestion du grade PREMIUM.
 - [x] Interface de saisie du profil utilisateur (Nom, Entreprise, Adresse) intégrée dans `SettingsPage.tsx` (Architecture zéro-serveur via `useAppSettings`).
 - [x] Génération dynamique du rapport PDF d'assurance dans `Dashboard.tsx` avec injection en temps réel des variables du profil.
-
+### ACQUIS V25.1 : ARCHITECTURE SUPER-APP & ROUTAGE INTELLIGENT
+- [x] Mise en place d'un routage conditionnel dans `App.tsx` : les utilisateurs standards (FREE/PREMIUM) sont dirigés vers le module Home, les profils PRO vers le Hub.
+- [x] Sécurisation du Hub : verrouillage visuel (cadenas) et logique des modules inactifs selon le grade de l'utilisateur.
+- [x] Création d'une "Backdoor Admin" dans les paramètres pour forcer le mode PRO en développement.
+- [x] Configuration du `manifest.json` avec l'icône générique Locate Systems pour une installation PWA unifiée.
 
 ---
 

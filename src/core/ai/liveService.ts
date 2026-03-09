@@ -80,42 +80,47 @@ class LiveService {
         this.messageBuffer = "";
       };
 
-      this.socket.onmessage = (event) => {
+     this.socket.onmessage = (event) => {
         try {
           if (typeof event.data === 'string') {
             const response = JSON.parse(event.data);
             
-            // Interception des erreurs de l'API Google
-            if (response.error) {
-              console.error("🔴 ERREUR API GOOGLE :", response.error);
+            // 📡 SONAR ACTIVÉ : On affiche absolument tout ce que Google nous répond
+            console.log("📡 [SONAR BIDI] Trame brute reçue :", response);
+
+            // 1. Vérification du Setup
+            if (response.setupComplete) {
+              console.log("✅ [SONAR BIDI] Setup validé par Google ! L'IA est prête à écouter.");
               return;
             }
 
+            // 2. Interception des erreurs silencieuses
+            if (response.error) {
+              console.error("🔴 [SONAR BIDI] ERREUR GOOGLE :", response.error);
+              return;
+            }
+
+            // 3. Extraction du texte
             const textChunk = response.serverContent?.modelTurn?.parts?.[0]?.text;
             
             if (textChunk) {
               this.messageBuffer += textChunk;
               
-              // DEBUG : Affichage dans la console F12 pour voir ce que l'IA dit réellement
-              console.log("🤖 [DEBUG IA] Buffer actuel :", this.messageBuffer);
-
-              // PARSER ROBUSTE : On cherche tout ce qui ressemble à du JSON
               const match = this.messageBuffer.match(/\{[\s\S]*\}/);
-              
               if (match) {
                 try {
                   const parsedData = JSON.parse(match[0]) as LiveDiagnostic;
-                  
-                  // Vérification de sécurité avant envoi au HUD
                   if (!parsedData.hypothesis) parsedData.hypothesis = "Analyse en cours...";
                   if (!parsedData.confidence) parsedData.confidence = 0.8;
                   
                   onMessage(parsedData);
-                  this.messageBuffer = ""; // Succès du parsing, on vide le buffer !
+                  this.messageBuffer = ""; 
                 } catch (e) {
-                  // Le JSON n'est pas encore terminé, l'IA est en train d'écrire la suite. On attend.
+                  // JSON incomplet, on attend
                 }
               }
+            } else if (response.serverContent) {
+              console.warn("⚠️ [SONAR BIDI] Contenu reçu, mais pas de texte détecté :", response.serverContent);
             }
           }
         } catch (error) {

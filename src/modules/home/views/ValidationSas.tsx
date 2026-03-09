@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useUserTier } from '../../../core/security/useUserTier';
 
 export interface AIScanResult {
+  brand?: string;
   typography?: string;
   brandColor?: string;
   categorie_id?: string;
@@ -99,6 +100,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
           const score = item.confidence ? Math.round(item.confidence * 100) : 0;
           const scoreColor = score >= 90 ? 'text-green-500' : score >= 70 ? 'text-[#FF6600]' : 'text-red-500';
           const isSelected = selectedItems[index];
+          const isConsumableType = item.categorie_id === 'quinc' || item.isConsumable; 
 
           return (
             <div 
@@ -136,11 +138,11 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                             ⚡ {item.energy}
                           </span>
                         )}
-                        {item.safetyStatus !== undefined && (
-                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${item.safetyStatus ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
-                            {item.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
-                          </span>
-                        )}
+                        {item.safetyStatus !== undefined && !isConsumableType && (
+                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${item.safetyStatus ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
+                        {item.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
+                      </span>
+                    )}
                       </div>
                     </div>
                     {currentTier !== 'FREE' && (
@@ -254,24 +256,26 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
               />
             </div>
 
-            {/* Champ 4 : Statut Opérationnel (Toggle) */}
-            <div className="mt-2">
-              <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-2 block">Statut Machine</label>
-              <div className="flex bg-[#0a0a0a] rounded-lg p-1 border border-white/10">
-                <button 
-                  onClick={() => setEditForm({...editForm, safetyStatus: false})}
-                  className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${!editForm.safetyStatus ? 'bg-green-500 text-black shadow-md' : 'text-gray-500'}`}
-                >
-                  ✓ Opérationnel
-                </button>
-                <button 
-                  onClick={() => setEditForm({...editForm, safetyStatus: true})}
-                  className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${editForm.safetyStatus ? 'bg-red-500 text-white shadow-md' : 'text-gray-500'}`}
-                >
-                  ⚠️ En Panne
-                </button>
-              </div>
+            {/* Champ 4 : Statut Opérationnel (Masqué si Quincaillerie) */}
+        {!(editForm.categorie_id === 'quinc' || editForm.isConsumable) && (
+          <div className="mt-2">
+            <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-2 block">Statut Machine</label>
+            <div className="flex bg-[#0a0a0a] rounded-lg p-1 border border-white/10">
+              <button 
+                onClick={() => setEditForm({...editForm, safetyStatus: false})}
+                className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${!editForm.safetyStatus ? 'bg-green-500 text-black shadow-md' : 'text-gray-500'}`}
+              >
+                ✓ Opérationnel
+              </button>
+              <button 
+                onClick={() => setEditForm({...editForm, safetyStatus: true})}
+                className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${editForm.safetyStatus ? 'bg-red-500 text-white shadow-md' : 'text-gray-500'}`}
+              >
+                ⚠️ En Panne
+              </button>
             </div>
+          </div>
+        )}
 
             {/* Bouton de Validation */}
             <button 

@@ -22,16 +22,16 @@ RÈGLE ABSOLUE : Tu dois retourner UNIQUEMENT un tableau JSON valide. Pas de tex
 Chaque objet détecté doit suivre cette structure EXACTE :
 [
   {
-    "brandColor": "${module === 'HOME' ? 'Marque/Couleur' : 'Marque ou Origine'}",
+    "brand": "${module === 'HOME' ? 'Marque exacte SEULE (ex: Makita, DeWalt). AUCUNE COULEUR.' : 'Marque ou Origine'}",
     "type": "${module === 'HOME' ? 'Nom générique usuel (ex: perceuse, tondeuse, marteau, mallette)' : 'Famille de produit'}",
     "morphology": "${module === 'HOME' ? 'Type d outil détaillé' : 'Type de denree ou objet'}",
     "zoomDetail": "${module === 'HOME' ? 'Detail technique' : 'Etat de fraicheur ou detail HACCP'}",
-    "typography": "${module === 'HOME' ? 'Modele exact' : 'DLC DDM ou SKU'}",
+    "typography": "${module === 'HOME' ? 'Modele exact (Si non lisible, écris: Non lisible)' : 'DLC DDM ou SKU'}",
     "confidence": 0.95,
     "categorie_id": "ID exact de la categorie",
     "etat": "Bon etat / Usage / Neuf / Perime",
-    "description": "Justification metier",
-    "isConsumable": ${module === 'KITCHEN' ? true : false},
+    "description": "Justification metier courte",
+    "isConsumable": ${module === 'KITCHEN' ? true : 'true si c\'est une vis, clou, joint, mastic, foret, colle. false sinon.'},
     "consumableLevel": 100
   }
 ]

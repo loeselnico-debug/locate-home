@@ -111,7 +111,7 @@ const App = () => {
       id: crypto.randomUUID(),
       date: new Date().toLocaleString(),
       toolName: item.label || item.typography || 'Outil Inconnu',
-      brand: item.brandColor || 'Marque N/A',
+      brand: item.brand || item.brandColor || 'Marque N/A', // On garde brandColor en secours pour les anciens scans en cache
       category: item.categorie_id || 'main',
       location: item.location || 'Atelier',
       condition: item.etat || 'Bon état',

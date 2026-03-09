@@ -1,6 +1,6 @@
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.5 - Parser Bidi Blindé)
- * Architecture : WebSocket Multimodal (Gemini 2.0 Flash Exp)
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.6 - Mode Live API & Mouchards)
+ * Architecture : WebSocket Multimodal
  * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
@@ -51,7 +51,7 @@ class LiveService {
       - Droit de veto absolu : Si une condition de sécurité manque, bloque le diagnostic immédiatement.
 
       FORMAT DE RÉPONSE EXIGÉ :
-      Tu dois répondre UNIQUEMENT avec un objet JSON valide, sans markdown (pas de balises \`\`\`json), avec cette structure exacte :
+      Tu dois répondre UNIQUEMENT avec un objet JSON valide, sans markdown, avec cette structure exacte :
       {
         "hypothesis": "Ton diagnostic, ta réponse ou ton instruction courte",
         "confidence": 0.95,
@@ -69,8 +69,8 @@ class LiveService {
         
         const setupMessage = {
           setup: {
-            // MIGRATION VERS LE MODÈLE STABLE (En accord avec la documentation Google 2026)
-            model: "models/gemini-2.5-flash",
+            // LE MODÈLE SPÉCIFIQUE AU WEBSOCKET (Issu de la doc Google "Live API models")
+            model: "models/gemini-2.5-flash-native-audio-preview-12-2025",
             systemInstruction: {
               parts: [{ text: systemInstruction }]
             }
@@ -80,27 +80,33 @@ class LiveService {
         this.messageBuffer = "";
       };
 
-     this.socket.onmessage = (event) => {
+      // MOUCHARD 1 : Si Google nous raccroche au nez
+      this.socket.onclose = (event) => {
+        console.error(`🚪 [SONAR] Le serveur Google a coupé la connexion. Code: ${event.code}, Raison: ${event.reason}`);
+      };
+
+      // MOUCHARD 2 : Si la connexion plante
+      this.socket.onerror = (error) => {
+        console.error("💥 [SONAR] Erreur critique sur le WebSocket :", error);
+      };
+
+      this.socket.onmessage = (event) => {
         try {
           if (typeof event.data === 'string') {
             const response = JSON.parse(event.data);
             
-            // 📡 SONAR ACTIVÉ : On affiche absolument tout ce que Google nous répond
             console.log("📡 [SONAR BIDI] Trame brute reçue :", response);
 
-            // 1. Vérification du Setup
             if (response.setupComplete) {
               console.log("✅ [SONAR BIDI] Setup validé par Google ! L'IA est prête à écouter.");
               return;
             }
 
-            // 2. Interception des erreurs silencieuses
             if (response.error) {
               console.error("🔴 [SONAR BIDI] ERREUR GOOGLE :", response.error);
               return;
             }
 
-            // 3. Extraction du texte
             const textChunk = response.serverContent?.modelTurn?.parts?.[0]?.text;
             
             if (textChunk) {
@@ -116,11 +122,9 @@ class LiveService {
                   onMessage(parsedData);
                   this.messageBuffer = ""; 
                 } catch (e) {
-                  // JSON incomplet, on attend
+                  // En attente
                 }
               }
-            } else if (response.serverContent) {
-              console.warn("⚠️ [SONAR BIDI] Contenu reçu, mais pas de texte détecté :", response.serverContent);
             }
           }
         } catch (error) {
@@ -130,7 +134,7 @@ class LiveService {
 
     } catch (error) {
       console.error("Erreur de connexion Live :", error);
-      throw new Error("Connexion impossible. Passage en mode Edge.");
+      throw new Error("Connexion impossible.");
     }
   }
 

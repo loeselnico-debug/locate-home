@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
-import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CheckSquare, LogOut, Lock, Clock } from 'lucide-react';
+import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CameraOff, CheckSquare, LogOut, Lock, Clock } from 'lucide-react';
 import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
 import { reportService } from '../services/reportService';
 import { useUserTier } from '../../../core/security/useUserTier';
@@ -14,14 +14,18 @@ interface LiveAssistantProps {
 const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const { currentTier } = useUserTier();
 
+  // NOUVEAUX ÉTATS : Séparation de la session IA et du flux vidéo
   const [isLive, setIsLive] = useState(false);
+  const [isVideoActive, setIsVideoActive] = useState(false); // La caméra est OFF par défaut
+  const [isPTTActive, setIsPTTActive] = useState(false); // État visuel du micro
+
   const [showSafety, setShowSafety] = useState(true);
   const [sessionClosed, setSessionClosed] = useState(false);
   const [finalReport, setFinalReport] = useState<any>(null);
   
-  const [diagnosticText, setDiagnosticText] = useState(`Système ${mode.toUpperCase()} en attente. Sécurisez la zone.`);
+  const [diagnosticText, setDiagnosticText] = useState(`Terminal ${mode.toUpperCase()} en attente. Sécurisez la zone.`);
   const [currentDiagnostic, setCurrentDiagnostic] = useState<LiveDiagnostic>({
-    hypothesis: "En attente de flux...",
+    hypothesis: "En attente de transmission...",
     confidence: 0,
     nextStep: "-"
   });
@@ -51,6 +55,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
   const allValidated = checks.every(c => c.validated);
 
+  // --- LOGIQUE DE REFROIDISSEMENT (TIER FREE) ---
   const getCooldownStatus = () => {
     const stored = localStorage.getItem('m5_free_usage');
     if (!stored) return { allowed: true, count: 0, waitMin: 0 };
@@ -85,8 +90,9 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     return () => clearInterval(timer);
   }, [isLive, freeTimeLeft, currentTier]);
 
+  // --- GESTION DE LA CAMÉRA (VISION BIONIQUE À LA DEMANDE) ---
   const captureAndSendFrame = () => {
-    if (videoRef.current && canvasRef.current) {
+    if (videoRef.current && canvasRef.current && isVideoActive) {
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       if (context && videoRef.current.videoWidth > 0) {
@@ -98,6 +104,33 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     }
   };
 
+  const toggleVisionBionique = async () => {
+    if (isVideoActive) {
+      // DÉSACTIVATION DE LA CAMÉRA
+      const stream = videoRef.current?.srcObject as MediaStream;
+      stream?.getTracks().forEach(t => t.stop());
+      if (videoRef.current) videoRef.current.srcObject = null;
+      if (frameIntervalRef.current) {
+        window.clearInterval(frameIntervalRef.current);
+        frameIntervalRef.current = null;
+      }
+      setIsVideoActive(false);
+      setDiagnosticText("Vision Bionique désactivée. Passage en mode Radio (Audio).");
+    } else {
+      // ACTIVATION DE LA CAMÉRA
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        if (videoRef.current) videoRef.current.srcObject = stream;
+        setIsVideoActive(true);
+        setDiagnosticText("Vision Bionique activée. Analyse visuelle en cours...");
+        frameIntervalRef.current = window.setInterval(captureAndSendFrame, 1600);
+      } catch (err) { 
+        setDiagnosticText("Erreur : Accès caméra refusé ou impossible."); 
+      }
+    }
+  };
+
+  // --- DÉMARRAGE ET ARRÊT DE LA SESSION ---
   const startLiveSession = async () => {
     if (allValidated) {
       if (currentTier === 'FREE') {
@@ -109,17 +142,19 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         setFreeTimeLeft(120);
       }
       setShowSafety(false);
+      
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        // ON OUVRE LE TUNNEL MAIS ON N'ALLUME PAS LA CAMÉRA
         setIsLive(true);
         startTimeRef.current = new Date();
         await liveService.connect(mode, (data) => {
           setDiagnosticText(data.hypothesis);
           setCurrentDiagnostic(data);
         });
-        frameIntervalRef.current = window.setInterval(captureAndSendFrame, 1600);
-      } catch (err) { setDiagnosticText("Erreur Caméra."); }
+        setDiagnosticText("Tunnel crypté ouvert. Mode Radio actif. Appuyez sur PTT pour parler.");
+      } catch (err) { 
+        setDiagnosticText("Erreur d'ouverture du Tunnel IA."); 
+      }
     }
   };
 
@@ -129,9 +164,10 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     const stream = videoRef.current?.srcObject as MediaStream;
     stream?.getTracks().forEach(t => t.stop());
     setIsLive(false);
+    setIsVideoActive(false);
     
     const reportData = {
-      mode, technicianId: "TECH-M5-001", location: "Atelier", equipmentId: "EQ-INCONNU",
+      mode, technicianId: "TECH-M5-001", location: "Zone Opérationnelle", equipmentId: "EQ-INCONNU",
       safetyChecks: checks, diagnostic: forcedReason ? { ...currentDiagnostic, hypothesis: forcedReason } : currentDiagnostic,
       startTime: startTimeRef.current || new Date(), endTime: new Date()
     };
@@ -140,6 +176,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     setSessionClosed(true);
   };
 
+  // --- ÉCRAN DE CLÔTURE (PDF) ---
   if (sessionClosed && finalReport) {
     return (
       <div className="fixed inset-0 bg-[#050505] z-50 flex flex-col p-6 overflow-y-auto">
@@ -165,14 +202,48 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     );
   }
 
+  // COULEURS DYNAMIQUES SELON LE MÉTIER
+  const themeColor = mode === 'maintenance' ? '#00E5FF' : '#DC2626'; // Cyan (Indus) vs Rouge (Méca)
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden select-none">
+      
+      {/* ZONE D'AFFICHAGE PRINCIPALE (RADIO OU VISION) */}
       <div className="relative flex-1 bg-[#050505] overflow-hidden">
-        <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-70" />
+        
+        {/* Canvas caché pour l'extraction d'images */}
+        <canvas ref={canvasRef} className="hidden" />
+
+        {isVideoActive ? (
+          // MODE VISION BIONIQUE : Flux vidéo en fond
+          <>
+            <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-70" />
+            {/* Ligne de scan scanner effet */}
+            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:5vw_5vw]"></div>
+          </>
+        ) : (
+          // MODE RADIO TACTIQUE : Interface Radar/Ondes
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]">
+            {isLive ? (
+              <div className="flex flex-col items-center justify-center">
+                <div className={`w-40 h-40 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${isPTTActive ? `border-[${themeColor}] scale-110 shadow-[0_0_50px_${themeColor}40]` : 'border-white/10'}`}>
+                  <div className={`w-32 h-32 rounded-full border border-white/5 flex items-center justify-center animate-pulse`}>
+                    <Mic size={48} className={isPTTActive ? `text-[${themeColor}]` : 'text-gray-600'} />
+                  </div>
+                </div>
+                <p className={`mt-8 font-mono text-xs uppercase tracking-widest ${isPTTActive ? `text-[${themeColor}]` : 'text-gray-500'}`}>
+                  {isPTTActive ? "Transmission en cours..." : "Canal Audio Ouvert"}
+                </p>
+              </div>
+            ) : (
+              <Shield size={64} className="text-white/10" />
+            )}
+          </div>
+        )}
         
         {/* HUD SUPÉRIEUR */}
         <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-30">
-          <div className="bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/10">
+          <div className="bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10">
             <h1 className="text-white font-black text-[12px] uppercase tracking-[0.3em]">LOCATE {mode.toUpperCase()}</h1>
             {currentTier === 'FREE' && freeTimeLeft !== null && (
               <div className="flex items-center gap-1 mt-1 text-[#FF6600]">
@@ -180,45 +251,36 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
               </div>
             )}
           </div>
+          
+          {/* Indicateur de Mode */}
+          {isLive && (
+             <div className={`px-3 py-1.5 rounded-full border backdrop-blur-md flex items-center gap-2 ${isVideoActive ? `bg-[${themeColor}]/20 border-[${themeColor}] text-[${themeColor}]` : 'bg-white/10 border-white/20 text-gray-300'}`}>
+               {isVideoActive ? <Camera size={12} /> : <Mic size={12} />}
+               <span className="text-[9px] font-black uppercase tracking-widest">{isVideoActive ? 'VISION' : 'RADIO'}</span>
+             </div>
+          )}
         </div>
 
-        {/* HUD LATÉRAL DYNAMIQUE */}
-        {isLive && (
-          <div className="absolute left-6 top-[20vh] z-30 flex flex-col gap-3">
-            {mode === 'mecanique' ? (
-              <div className="bg-black/60 backdrop-blur-md border-l-4 border-[#DC2626] p-3 rounded-r-xl">
-                <p className="text-[8px] font-black text-[#DC2626] uppercase">Brake Pressure</p>
-                <p className="text-xl text-white font-mono font-black">7.5 BAR</p>
-              </div>
-            ) : (
-              <div className="bg-black/60 backdrop-blur-md border-l-4 border-[#00E5FF] p-3 rounded-r-xl">
-                <p className="text-[8px] font-black text-[#00E5FF] uppercase">Pump Vib.</p>
-                <p className="text-xl text-white font-mono font-black">4.2 mm/s</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* MODALE SAFETY GATES (C'est ICI que tes variables sont lues !) */}
+        {/* MODALE SAFETY GATES (Bloquante au démarrage) */}
         {showSafety && (
           <div className="absolute inset-0 z-50 bg-[#050505]/95 backdrop-blur-2xl p-8 flex flex-col justify-center">
             <div className="max-w-md mx-auto w-full space-y-6">
               <div className="text-center">
-                <AlertTriangle className="mx-auto mb-4 text-[#DC2626]" size={40} />
+                <AlertTriangle className={`mx-auto mb-4 text-[${themeColor}]`} size={40} />
                 <h2 className="text-white font-black text-lg uppercase">Validation Sécurité</h2>
                 {cooldownMsg && <p className="text-[#FF6600] text-xs font-bold mt-2 animate-pulse">{cooldownMsg}</p>}
               </div>
               <div className="space-y-2">
                 {checks.map(check => (
                   <button key={check.id} onClick={() => setChecks(prev => prev.map(c => c.id === check.id ? {...c, validated: !c.validated} : c))}
-                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${check.validated ? 'bg-[#DC2626]/10 border-[#DC2626] text-white' : 'bg-white/5 border-white/5 text-gray-500'}`}>
+                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${check.validated ? `bg-[${themeColor}]/10 border-[${themeColor}] text-white` : 'bg-white/5 border-white/5 text-gray-500'}`}>
                     <div className="flex items-center gap-4">{check.icon}<span className="text-[10px] font-black uppercase">{check.label}</span></div>
-                    {check.validated && <CheckCircle2 size={18} className="text-[#DC2626]" />}
+                    {check.validated && <CheckCircle2 size={18} className={`text-[${themeColor}]`} />}
                   </button>
                 ))}
               </div>
               <button disabled={!allValidated || cooldownMsg !== null} onClick={startLiveSession}
-                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] ${allValidated && !cooldownMsg ? 'bg-white text-black' : 'bg-gray-900 text-gray-700'}`}>
+                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all ${allValidated && !cooldownMsg ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]' : 'bg-gray-900 text-gray-700'}`}>
                 Ouvrir Tunnel Expertise
               </button>
             </div>
@@ -227,50 +289,59 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       </div>
 
       {/* CONSOLE IA INFÉRIEURE : COMMANDES DE TERRAIN */}
-      <div className="h-[28vh] bg-[#050505] border-t border-white/5 p-6 flex flex-col items-center justify-between z-40 relative">
+      <div className="h-[30vh] bg-[#050505] border-t border-white/5 p-6 flex flex-col items-center justify-between z-40 relative">
         
         {/* TERMINAL DE TEXTE IA */}
-        <div className="w-full bg-black/40 rounded-xl border border-white/5 p-4 min-h-[80px]">
-          <p className="text-[#FF6600] font-mono text-[10px] uppercase tracking-wider">
+        <div className="w-full bg-black/60 rounded-xl border border-white/10 p-4 min-h-[80px] flex items-center shadow-inner">
+          <p className={`font-mono text-[10px] uppercase tracking-wider leading-relaxed ${currentDiagnostic.safetyAlert ? 'text-red-500 font-bold animate-pulse' : 'text-[#FF6600]'}`}>
             {">"} {diagnosticText}
           </p>
         </div>
 
         {/* BARRE D'ACTIONS TACTIQUES */}
-        <div className="flex items-center justify-around w-full mt-4">
-           
-           {/* BOUTON CAMERA : SCAN MANUEL OCR / PIÈCE */}
+        <div className="flex items-center justify-between w-full mt-4 px-2">
+            
+           {/* BOUTON 1 : TOGGLE VISION BIONIQUE */}
            <button 
-             onClick={() => setDiagnosticText("Capture manuelle pour analyse OCR...")}
-             className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
+             onClick={toggleVisionBionique}
+             disabled={!isLive}
+             className={`flex flex-col items-center gap-2 transition-all group ${!isLive ? 'opacity-30' : 'active:scale-90'}`}
            >
-              <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-[#FF6600]/50 transition-colors">
-                <Camera size={20} className="text-white group-hover:text-[#FF6600]" />
+              <div className={`w-14 h-14 rounded-full border flex items-center justify-center transition-colors ${isVideoActive ? `bg-[${themeColor}]/20 border-[${themeColor}] shadow-[0_0_15px_${themeColor}40]` : 'bg-white/5 border-white/10 group-hover:border-white/30'}`}>
+                {isVideoActive ? <Camera size={22} className={`text-[${themeColor}]`} /> : <CameraOff size={22} className="text-white/60" />}
               </div>
-              <span className="text-[8px] font-black uppercase text-white/60 tracking-tighter">
-                Scan {mode === 'maintenance' ? 'Folio' : 'Pièce'}
+              <span className={`text-[8px] font-black uppercase tracking-tighter ${isVideoActive ? `text-[${themeColor}]` : 'text-white/60'}`}>
+                {isVideoActive ? 'Vision ON' : 'Vision OFF'}
               </span>
            </button>
 
            {/* BOUTON CENTRAL : PTT (PUSH TO TALK) */}
            <div className="relative">
               <button 
-                className={`w-24 h-24 rounded-full flex flex-col items-center justify-center border-b-4 transition-all active:scale-95 shadow-2xl ${
-                  isLive ? 'bg-[#FF6600] border-orange-800' : 'bg-gray-900 border-black'
+                onPointerDown={() => isLive && setIsPTTActive(true)}
+                onPointerUp={() => isLive && setIsPTTActive(false)}
+                onPointerLeave={() => isLive && setIsPTTActive(false)}
+                disabled={!isLive}
+                className={`w-24 h-24 rounded-full flex flex-col items-center justify-center border-b-[6px] transition-all shadow-2xl select-none ${
+                  !isLive 
+                    ? 'bg-gray-900 border-black opacity-50' 
+                    : isPTTActive 
+                      ? 'bg-[#FF6600] border-orange-900 scale-95 translate-y-[4px]' 
+                      : 'bg-[#FF6600] border-orange-800 active:scale-95 hover:bg-[#ff7b24]'
                 }`}
               >
-                <Mic size={32} className="text-white" />
-                <span className="text-[8px] font-black text-white uppercase mt-1">PTT</span>
+                <Mic size={32} className="text-white drop-shadow-md" />
+                <span className="text-[9px] font-black text-white uppercase mt-1 tracking-widest drop-shadow-md">PTT</span>
               </button>
            </div>
 
-           {/* BOUTON CLÔTURE */}
+           {/* BOUTON 3 : CLÔTURE DE L'INTERVENTION */}
            <button 
              onClick={() => closeAndGenerateReport()} 
              className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
            >
-              <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
-                <X size={20} className="text-[#DC2626]" />
+              <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
+                <X size={22} className="text-[#DC2626]" />
               </div>
               <span className="text-[8px] font-black uppercase text-[#DC2626] tracking-tighter">Fin Diag.</span>
            </button>

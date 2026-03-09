@@ -16,8 +16,10 @@ export interface AIScanResult {
   consumableLevel?: number;
   imageUrl?: string;
   location?: string;
-  energy?: string; // <-- NOUVEAU : Champ Énergie
-  safetyStatus?: boolean; // <-- NOUVEAU : Statut opérationnel (false = OK, true = Alerte)
+  energy?: string; 
+  safetyStatus?: boolean;
+  // NOUVEAU : Champ pour stocker les coordonnées du contour
+  box_2d?: number[]; 
 }
 
 interface ValidationSasProps {
@@ -31,7 +33,6 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
   const [selectedItems, setSelectedItems] = useState<boolean[]>(pendingItems.map(() => true));
   const { currentTier } = useUserTier();
 
-  // NOUVEAUX ÉTATS POUR L'ÉDITION RAPIDE
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<AIScanResult>>({});
 
@@ -46,13 +47,11 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
     setSelectedItems(newSelection);
   };
 
-  // OUVERTURE DE LA MODALE D'ÉDITION
   const openEditModal = (index: number) => {
     setEditingIndex(index);
     setEditForm({ ...itemsToValidate[index] });
   };
 
-  // SAUVEGARDE DES MODIFICATIONS
   const saveEdit = () => {
     if (editingIndex !== null) {
       const updatedItems = [...itemsToValidate];
@@ -100,7 +99,20 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
           const score = item.confidence ? Math.round(item.confidence * 100) : 0;
           const scoreColor = score >= 90 ? 'text-green-500' : score >= 70 ? 'text-[#FF6600]' : 'text-red-500';
           const isSelected = selectedItems[index];
-          const isConsumableType = item.categorie_id === 'quinc' || item.isConsumable; 
+          const isConsumableType = item.categorie_id === 'quinc' || item.isConsumable;
+
+          // CALCUL DES COORDONNÉES DU CONTOUR NÉON
+          let neonOverlayStyle = {};
+          if (item.box_2d && item.box_2d.length === 4) {
+            // Gemini renvoie [ymin, xmin, ymax, xmax] normalisé entre 0 et 1000
+            const [ymin, xmin, ymax, xmax] = item.box_2d;
+            neonOverlayStyle = {
+              top: `${ymin / 10}%`,
+              left: `${xmin / 10}%`,
+              height: `${(ymax - ymin) / 10}%`,
+              width: `${(xmax - xmin) / 10}%`,
+            };
+          }
 
           return (
             <div 
@@ -108,15 +120,28 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
               className={`bg-[#1E1E1E] border rounded-xl flex flex-col overflow-hidden transition-all duration-300 ${isSelected ? 'border-[#FF6600] shadow-[0_0_15px_rgba(255,102,0,0.15)]' : 'border-white/5 opacity-50 grayscale-[50%]'}`}
             >
               <div className="flex p-[3vw] gap-[3vw]">
-                <div className="w-[22vw] h-[22vw] max-w-[90px] max-h-[90px] bg-[#0a0a0a] border border-white/10 rounded-lg flex items-center justify-center p-2 shrink-0 relative">
+                {/* ZONE DE LA MINIATURE AVEC CONTOUR NÉON */}
+                <div className="w-[22vw] h-[22vw] max-w-[90px] max-h-[90px] bg-[#0a0a0a] border border-white/10 rounded-lg shrink-0 relative overflow-hidden p-1 shadow-inner">
                   {item.imageUrl ? (
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.label} 
-                      className={`w-full h-full object-contain ${currentTier !== 'FREE' ? 'drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]' : ''}`}
-                    />
+                    <>
+                      <img 
+                        src={item.imageUrl} 
+                        alt={item.label} 
+                        className="w-full h-full object-contain"
+                      />
+                      
+                      {/* LE CONTOUR ORANGE NÉON (SUPERPOSÉ) */}
+                      {item.box_2d && (
+                        <div 
+                          className="absolute border-2 border-[#FF6600] rounded-[2px] shadow-[0_0_10px_#FF6600,inset_0_0_5px_#FF6600] pointer-events-none"
+                          style={neonOverlayStyle}
+                        />
+                      )}
+                    </>
                   ) : (
-                    <span className="text-2xl opacity-30">📷</span>
+                    <div className="flex items-center justify-center w-full h-full">
+                      <span className="text-2xl opacity-30">📷</span>
+                    </div>
                   )}
                 </div>
 
@@ -124,7 +149,7 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-2">
                       <span className="text-gray-400 font-black text-[9px] uppercase tracking-widest leading-none block mb-1">
-                        {item.brandColor || 'Marque N/A'}
+                        {item.brand || item.brandColor || 'Marque N/A'}
                       </span>
                       <h3 className="text-white font-bold text-[clamp(0.9rem,3.5vw,1.1rem)] leading-tight whitespace-normal">
                         {item.label || item.typography || 'Outil Inconnu'}
@@ -139,10 +164,10 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
                           </span>
                         )}
                         {item.safetyStatus !== undefined && !isConsumableType && (
-                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${item.safetyStatus ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
-                        {item.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
-                      </span>
-                    )}
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${item.safetyStatus ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
+                            {item.safetyStatus ? 'ALERTE' : 'OPÉRATIONNEL'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     {currentTier !== 'FREE' && (
@@ -213,82 +238,68 @@ const ValidationSas: React.FC<ValidationSasProps> = ({ pendingItems, onValidateA
       {/* ========================================== */}
       {editingIndex !== null && (
         <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col justify-end">
-          <div className="bg-[#1E1E1E] rounded-t-3xl border-t border-[#FF6600]/50 p-[5vw] flex flex-col gap-[2.5vh] animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.8)] pb-[max(5vh,env(safe-area-inset-bottom))]">
+          <div className="bg-[#1E1E1E] rounded-t-3xl border-t border-[#FF6600]/50 p-[5vw] flex flex-col gap-[2.5vh] animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.8)] pb-[max(5vh,env(safe-area-inset-bottom))] relative overflow-hidden">
             
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+            {/* RAPPEL DE LA MINIATURE AVEC SON CONTOUR NÉON DANS LA MODALE */}
+            <div className="absolute top-4 right-5 w-[15vw] h-[15vw] max-w-[60px] max-h-[60px] bg-black rounded-lg border border-white/10 p-1 overflow-hidden shadow-inner">
+               {editForm.imageUrl && (
+                    <>
+                      <img src={editForm.imageUrl} alt="Miniature" className="w-full h-full object-contain" />
+                      {editForm.box_2d && (
+                        <div 
+                          className="absolute border-[1.5px] border-[#FF6600] rounded-[1px] shadow-[0_0_6px_#FF6600,inset_0_0_3px_#FF6600] pointer-events-none"
+                          style={{
+                              top: `${editForm.box_2d[0] / 10}%`,
+                              left: `${editForm.box_2d[1] / 10}%`,
+                              height: `${(editForm.box_2d[2] - editForm.box_2d[0]) / 10}%`,
+                              width: `${(editForm.box_2d[3] - editForm.box_2d[1]) / 10}%`,
+                          }}
+                        />
+                      )}
+                    </>
+               )}
+            </div>
+
+            <div className="flex justify-between items-center border-b border-white/10 pb-3 pr-16">
               <h3 className="text-white font-black uppercase tracking-widest text-[1.2rem]">Correction IA</h3>
-              <button onClick={() => setEditingIndex(null)} className="text-white/50 text-2xl font-light active:scale-90">×</button>
+              <button onClick={() => setEditingIndex(null)} className="text-white/50 text-2xl font-light active:scale-90 absolute top-4 right-4 z-20">×</button>
             </div>
 
             {/* Champ 1 : Marque */}
             <div>
               <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-1 block">Marque</label>
-              <input 
-                type="text" 
-                value={editForm.brandColor || ''} 
-                onChange={(e) => setEditForm({...editForm, brandColor: e.target.value})}
-                className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-[#FF6600]"
-                placeholder="Ex: DeWalt, Makita..."
-              />
+              <input type="text" value={editForm.brand || editForm.brandColor || ''} onChange={(e) => setEditForm({...editForm, brand: e.target.value})} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-[#FF6600]" placeholder="Ex: DeWalt, Makita..."/>
             </div>
 
             {/* Champ 2 : Genre / Modèle */}
             <div>
               <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-1 block">Genre / Modèle</label>
-              <input 
-                type="text" 
-                value={editForm.label || editForm.typography || ''} 
-                onChange={(e) => setEditForm({...editForm, label: e.target.value})}
-                className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-[#FF6600]"
-                placeholder="Ex: Visseuse à choc, Scie circulaire..."
-              />
+              <input type="text" value={editForm.label || editForm.typography || ''} onChange={(e) => setEditForm({...editForm, label: e.target.value})} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-[#FF6600]" placeholder="Ex: Visseuse à choc, Scie circulaire..."/>
             </div>
 
             {/* Champ 3 : Énergie */}
             <div>
               <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-1 block">Énergie (Batterie / Secteur)</label>
-              <input 
-                type="text" 
-                value={editForm.energy || ''} 
-                onChange={(e) => setEditForm({...editForm, energy: e.target.value})}
-                className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-[#FF6600]"
-                placeholder="Ex: 18V, Filaire 220V, Thermique..."
-              />
+              <input type="text" value={editForm.energy || ''} onChange={(e) => setEditForm({...editForm, energy: e.target.value})} className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-[#FF6600]" placeholder="Ex: 18V, Filaire 220V, Thermique..."/>
             </div>
 
             {/* Champ 4 : Statut Opérationnel (Masqué si Quincaillerie) */}
-        {!(editForm.categorie_id === 'quinc' || editForm.isConsumable) && (
-          <div className="mt-2">
-            <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-2 block">Statut Machine</label>
-            <div className="flex bg-[#0a0a0a] rounded-lg p-1 border border-white/10">
-              <button 
-                onClick={() => setEditForm({...editForm, safetyStatus: false})}
-                className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${!editForm.safetyStatus ? 'bg-green-500 text-black shadow-md' : 'text-gray-500'}`}
-              >
-                ✓ Opérationnel
-              </button>
-              <button 
-                onClick={() => setEditForm({...editForm, safetyStatus: true})}
-                className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${editForm.safetyStatus ? 'bg-red-500 text-white shadow-md' : 'text-gray-500'}`}
-              >
-                ⚠️ En Panne
-              </button>
-            </div>
-          </div>
-        )}
+            {!(editForm.categorie_id === 'quinc' || editForm.isConsumable) && (
+              <div className="mt-2">
+                <label className="text-[#FF6600] text-[10px] font-black uppercase tracking-widest ml-1 mb-2 block">Statut Machine</label>
+                <div className="flex bg-[#0a0a0a] rounded-lg p-1 border border-white/10">
+                  <button onClick={() => setEditForm({...editForm, safetyStatus: false})} className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${!editForm.safetyStatus ? 'bg-green-500 text-black shadow-md' : 'text-gray-500'}`}>✓ Opérationnel</button>
+                  <button onClick={() => setEditForm({...editForm, safetyStatus: true})} className={`flex-1 py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${editForm.safetyStatus ? 'bg-red-500 text-white shadow-md' : 'text-gray-500'}`}>⚠️ En Panne</button>
+                </div>
+              </div>
+            )}
 
-            {/* Bouton de Validation */}
-            <button 
-              onClick={saveEdit}
-              className="w-full bg-[#FF6600] text-black py-4 rounded-xl font-black uppercase tracking-widest mt-4 active:scale-95 transition-transform"
-            >
+            <button onClick={saveEdit} className="w-full bg-[#FF6600] text-black py-4 rounded-xl font-black uppercase tracking-widest mt-4 active:scale-95 transition-transform">
               Appliquer la correction
             </button>
-
           </div>
         </div>
       )}
-
     </div>
   );
 };

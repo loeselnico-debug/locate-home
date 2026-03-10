@@ -127,7 +127,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
             <h2 className="text-[#FF6600] font-bold text-[clamp(1rem,4vw,1.1rem)] uppercase tracking-wide mb-[1vh]">PRÉAMBULE : Mentions Légales</h2>
             <ul className="list-none space-y-1">
               <li><strong>Éditeur du service :</strong> Nicolas Loesel EI - Locate Systems</li>
-              <li><strong>SIRET :</strong> [Ton numéro SIRET]</li>
+              <li><strong>SIRET :</strong> [101 891 190 00015 (Code APE : 62.01Z)]</li>
               <li><strong>Siège Social :</strong> 209 rue Jacques Brel 30730 FONS, France</li>
               <li><strong>Contact :</strong> contact@locate-systems.com</li>
               <li><strong>Hébergement :</strong> Application déployée via Vercel / Base de données stockée en local sur l'appareil.</li>

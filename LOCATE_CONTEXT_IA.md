@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 10/03/2026 01:31:22
+> 📅 Archive générée le : 10/03/2026 16:32:01
 
 
 // ==========================================
@@ -50,20 +50,12 @@ const App = () => {
   const [pendingItems, setPendingItems] = useState<AIScanResult[]>([]);
   const { currentTier } = useUserTier();
 
-  // VERIFICATION DE LA SESSION SUPABASE ET INTERCEPTION STRIPE
   useEffect(() => {
-    // ---> NOUVEAU : INTERCEPTION DU RETOUR STRIPE <---
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      // 1. On nettoie l'URL pour cacher le paramètre (esthétique & sécurité)
       window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // 2. On met à jour l'utilisateur dans Supabase définitivement
-      supabase.auth.updateUser({ data: { tier: 'PREMIUM' } }).then(() => {
-        localStorage.setItem('locate_user_tier', 'PREMIUM');
-        alert("✅ Paiement validé ! Bienvenue dans l'univers LOCATE PREMIUM.");
-        window.location.reload();
-      });
+      // On affiche juste un message. Le Webhook a déjà mis à jour la BDD en coulisse !
+      alert("✅ Paiement validé ! Bienvenue dans l'univers LOCATE PREMIUM. Veuillez rafraîchir la page si vos droits ne sont pas encore actifs.");
     }
     // --------------------------------------------------
 
@@ -4488,6 +4480,7 @@ import { useUserTier } from '../../../core/security/useUserTier';
 import { TIERS_CONFIG, type UserTier } from '../../../core/security/tiers';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import PrivacyPolicy from './PrivacyPolicy';
+import { supabase } from '../../../core/security/supabaseClient';
 
 interface SettingsPageProps {
   onBack?: () => void; 
@@ -4513,15 +4506,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
   const hasAcceptedTerms = settings.acceptedTerms === true;
 
   // GESTIONNAIRE D'ABONNEMENT ET BACKDOOR ADMIN
-  const handleTierSelection = (tier: UserTier) => {
+  const handleTierSelection = async (tier: UserTier) => {
     if (!hasAcceptedTerms) return;
 
     if (tier === 'FREE') {
       setTier('FREE');
     } else if (tier === 'PRO') {
-      // BACKDOOR ADMIN : Permet de forcer l'accès au Hub
       const forceAdmin = window.confirm(
-        "BACKDOOR ADMIN 🛠️\n\nForcer l'activation du grade PRO pour accéder au Hub ?\n\n(En production, cela renverra vers un devis)."
+        "BACKDOOR ADMIN 🛠️\n\nForcer l'activation du grade PRO pour accéder au Hub ?"
       );
       if (forceAdmin) {
         setTier('PRO');
@@ -4533,15 +4525,27 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         "▶ Cliquez sur [Annuler] pour l'abonnement MENSUEL (2,99 € TTC)"
       );
 
+      // 1. On récupère l'ID sécurisé de l'utilisateur connecté via Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!userId) {
+        alert("Erreur critique : Impossible de vous identifier. Veuillez vous reconnecter.");
+        return;
+      }
+
+      // 2. Préparation des liens de paiement
       const stripeMensuelUrl = "https://buy.stripe.com/7sY6oG9eEa4X8sF2gU77O00";
       const stripeAnnuelUrl = "https://buy.stripe.com/dRm14m4Yob91eR34p277O01";
-      const targetUrl = isAnnual ? stripeAnnuelUrl : stripeMensuelUrl;
+      const baseTargetUrl = isAnnual ? stripeAnnuelUrl : stripeMensuelUrl;
 
-      window.open(targetUrl, '_blank');
-      setTier('PREMIUM');
+      // 3. LE BLINDAGE : On attache l'ID de l'utilisateur en filigrane pour Stripe
+      const finalUrl = `${baseTargetUrl}?client_reference_id=${userId}`;
+
+      // 4. Redirection vers le guichet de paiement
+      window.location.href = finalUrl;
     }
   };
-
   if (showPrivacy) {
     return <PrivacyPolicy onBack={() => setShowPrivacy(false)} />;
   }

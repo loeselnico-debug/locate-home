@@ -41,20 +41,12 @@ const App = () => {
   const [pendingItems, setPendingItems] = useState<AIScanResult[]>([]);
   const { currentTier } = useUserTier();
 
-  // VERIFICATION DE LA SESSION SUPABASE ET INTERCEPTION STRIPE
   useEffect(() => {
-    // ---> NOUVEAU : INTERCEPTION DU RETOUR STRIPE <---
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      // 1. On nettoie l'URL pour cacher le paramètre (esthétique & sécurité)
       window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // 2. On met à jour l'utilisateur dans Supabase définitivement
-      supabase.auth.updateUser({ data: { tier: 'PREMIUM' } }).then(() => {
-        localStorage.setItem('locate_user_tier', 'PREMIUM');
-        alert("✅ Paiement validé ! Bienvenue dans l'univers LOCATE PREMIUM.");
-        window.location.reload();
-      });
+      // On affiche juste un message. Le Webhook a déjà mis à jour la BDD en coulisse !
+      alert("✅ Paiement validé ! Bienvenue dans l'univers LOCATE PREMIUM. Veuillez rafraîchir la page si vos droits ne sont pas encore actifs.");
     }
     // --------------------------------------------------
 

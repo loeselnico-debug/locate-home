@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 09/03/2026 21:57:50
+> 📅 Archive générée le : 10/03/2026 01:31:22
 
 
 // ==========================================
@@ -642,12 +642,11 @@ export const geminiService = {
 
 ```tsx
 /**
- * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V1.2 - Architecture Cloisonnée)
- * Architecture : WebSocket Multimodal (Gemini 2.0 Flash)
+ * LOCATE SYSTEMS - LIVE ASSISTANT SERVICE (V2.1 - JSON Schema Forcé)
+ * Architecture : REST Multimodal (Gemini 2.5 Flash)
  * Standard : OSA/CBM, OBD-II, J1939 & RGPD Zéro-Trace
  */
 
-// IMPORT STRICTEMENT SÉPARÉ DES BIBLES MÉTIERS
 import { GARAGE_M5_RULES } from './expertisemetier/mecanique';
 import { MAINTENANCE_M5_RULES } from './expertisemetier/maintenance';
 
@@ -659,116 +658,134 @@ export interface LiveDiagnostic {
 }
 
 class LiveService {
-  private socket: WebSocket | null = null;
-  private frameInterval: number | null = null;
+  private apiKey: string = "";
+  private systemInstruction: string = "";
+  private latestFrame: string | null = null;
+  private onMessageCallback: ((data: LiveDiagnostic) => void) | null = null;
 
   async connect(mode: 'maintenance' | 'mecanique', onMessage: (data: LiveDiagnostic) => void) {
-    // 1. Récupération de la clé API
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
+    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY || "";
     
-    if (!apiKey) {
+    if (!this.apiKey) {
       console.error("Clé d'API manquante. Vérifiez le fichier .env.");
       throw new Error("Impossible d'établir le tunnel sécurisé.");
     }
 
-    // 2. AIGUILLAGE DU CERVEAU (ZÉRO CROSS-CONTAMINATION)
-    let role = "";
-    let rulesContext = "";
+    this.onMessageCallback = onMessage;
 
-    if (mode === 'mecanique') {
-      role = "Expert Mécanique Auto & Poids Lourds (OBD2, J1939, UTAC, Thermique)";
-      rulesContext = JSON.stringify(GARAGE_M5_RULES, null, 2);
-    } else if (mode === 'maintenance') {
-      role = "Expert Maintenance Industrielle (AFNOR, OSA/CBM, LOTO)";
-      rulesContext = JSON.stringify(MAINTENANCE_M5_RULES, null, 2);
-    }
+    let role = mode === 'mecanique' ? "Expert Mécanique Auto & Poids Lourds" : "Expert Maintenance Industrielle";
+    let rulesContext = mode === 'mecanique' ? JSON.stringify(GARAGE_M5_RULES) : JSON.stringify(MAINTENANCE_M5_RULES);
 
-    // Injection de la directive militaire "Zéro-Fioriture"
-    const systemInstruction = `
-      Tu es l'${role} du système LOCATE. 
-      Mode actif : ${mode.toUpperCase()}.
+    this.systemInstruction = `
+      Tu es l'${role} du système LOCATE. Mode actif : ${mode.toUpperCase()}.
       
-      VOICI TA BIBLE MÉTIER STRICTE À APPLIQUER ABSOLUMENT :
+      VOICI TA BIBLE MÉTIER STRICTE :
       ${rulesContext}
 
-      PROTOCOLE DE COMMUNICATION OBLIGATOIRE :
+      PROTOCOLE DE COMMUNICATION :
       - Zéro phrase de courtoisie. Va à l'essentiel.
-      - Format exigé : "Étape [X] : [Action]. Dis 'Fait' quand c'est terminé."
-      - Isolement du doute : Aucune extrapolation. Si la vidéo est floue, dis : "Visuel non conforme. Nettoie la lentille."
-      - Droit de veto absolu : Si une condition de sécurité manque (levage sans chandelle, tension haute sans EPI), bloque le diagnostic immédiatement.
+      - Droit de veto absolu si une condition de sécurité manque (LOTO, VAT, etc.). Pose des questions pour valider ces étapes si le technicien ne l'a pas fait.
+      - Ton objectif est de guider pas à pas.
     `;
 
-    try {
-      // 3. Établissement du tunnel WebSocket
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BiDiGenerateContent?key=${apiKey}`;
-      this.socket = new WebSocket(wsUrl);
-
-      this.socket.onopen = () => {
-        console.log(`🔗 Tunnel Live LOCATE établi en mode : ${mode.toUpperCase()}`);
-        
-        // 4. Envoi du Setup Message avec le Manifeste Métier spécifique au mode
-        const setupMessage = {
-          setup: {
-            model: "models/gemini-2.0-flash",
-            systemInstruction: {
-              parts: [{ text: systemInstruction }]
-            }
-          }
-        };
-        this.socket?.send(JSON.stringify(setupMessage));
-      };
-
-      this.socket.onmessage = (event) => {
-        try {
-          const response = JSON.parse(event.data);
-          
-          // Log brut pour surveiller les retours de l'API Bidi
-          console.log("Trame IA reçue :", response);
-
-          // En attendant le vrai parsing complexe des 'serverContent' de Gemini Bidi, 
-          // on garde ce stub fonctionnel pour que l'UI ne crashe pas.
-          onMessage({
-            hypothesis: `Analyse du flux visuel ${mode.toUpperCase()} en cours...`,
-            confidence: 0.90,
-            nextStep: "Attente de données capteurs ou visuelles."
-          });
-        } catch (error) {
-          console.error("Erreur de lecture de la trame IA :", error);
-        }
-      };
-
-    } catch (error) {
-      console.error("Erreur de connexion Live :", error);
-      throw new Error("Connexion impossible. Passage en mode Edge (Asynchrone).");
-    }
+    setTimeout(() => {
+      console.log(`🔗 [EDGE MODE] Tunnel Asynchrone établi en mode : ${mode.toUpperCase()}`);
+    }, 500);
   }
 
   sendVideoFrame(canvas: HTMLCanvasElement) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      const base64Data = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
+    this.latestFrame = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
+  }
+
+  async sendPrompt(text: string) {
+    if (!this.onMessageCallback) return;
+
+    console.log(`🚀 [EDGE MODE] Transmission en cours... Texte : "${text}"`);
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`;
       
-      const message = {
-        realtimeInput: {
-          mediaChunks: [{
-            mimeType: "image/jpeg",
-            data: base64Data
-          }]
-        }
+      const parts: any[] = [{ text: text }];
+      
+      if (this.latestFrame) {
+        console.log("📸 [EDGE MODE] Image bionique jointe à la transmission.");
+        parts.push({
+          inlineData: { mimeType: "image/jpeg", data: this.latestFrame }
+        });
+        this.latestFrame = null; 
+      }
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: this.systemInstruction }] },
+          contents: [{ role: "user", parts: parts }],
+          generationConfig: { 
+            responseMimeType: "application/json",
+            // L'ARME ABSOLUE : ON FORCE L'IA À UTILISER EXACTEMENT CES VARIABLES
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                hypothesis: { 
+                  type: "STRING", 
+                  description: "Ta réponse verbale, ton diagnostic ou ta question directe au technicien." 
+                },
+                confidence: { 
+                  type: "NUMBER", 
+                  description: "Ton niveau de certitude technique sous forme de nombre (ex: 0.95)." 
+                },
+                nextStep: { 
+                  type: "STRING", 
+                  description: "L'action physique que le technicien doit accomplir ensuite." 
+                },
+                safetyAlert: { 
+                  type: "STRING", 
+                  description: "Une alerte de danger immédiat. Laisse vide s'il n'y a pas de danger." 
+                }
+              },
+              required: ["hypothesis", "confidence", "nextStep"]
+            }
+          }
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+
+      const textResponse = data.candidates[0].content.parts[0].text;
+      console.log("✅ [EDGE MODE] Réponse brute de l'IA :", textResponse);
+      
+      const parsedData = JSON.parse(textResponse);
+      
+      // FILET DE SÉCURITÉ : Au cas où l'IA trébuche, on ne fait pas crasher l'UI
+      const finalData: LiveDiagnostic = {
+        hypothesis: parsedData.hypothesis || "Action confirmée.",
+        confidence: parsedData.confidence !== undefined ? parsedData.confidence : 0.99,
+        nextStep: parsedData.nextStep || "-",
+        safetyAlert: parsedData.safetyAlert || undefined
       };
-      this.socket.send(JSON.stringify(message));
+
+      this.onMessageCallback(finalData);
+
+    } catch (error) {
+      console.error("💥 [EDGE MODE] Erreur de transmission :", error);
+      this.onMessageCallback({
+        hypothesis: "Erreur de transmission réseau. Répétez.",
+        confidence: 0,
+        nextStep: "Vérifier la connexion.",
+        safetyAlert: "COMMUNICATION PERDUE"
+      });
     }
   }
 
   terminate() {
-    if (this.frameInterval) {
-      window.clearInterval(this.frameInterval);
-      this.frameInterval = null;
-    }
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
-    }
-    console.log("🔒 [ZÉRO-TRACE] Session terminée. Buffer vidéo détruit.");
+    this.latestFrame = null;
+    this.onMessageCallback = null;
+    console.log("🔒 [ZÉRO-TRACE] Session terminée. Buffer mémoire purgé.");
   }
 }
 
@@ -2365,7 +2382,7 @@ export const GarageReport: React.FC<GarageReportProps> = ({ reportData }) => {
 
 ```tsx
 import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
-import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CheckSquare, LogOut, Lock, Clock } from 'lucide-react';
+import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CameraOff, CheckSquare, LogOut, Lock, Clock, AlertOctagon } from 'lucide-react';
 import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
 import { reportService } from '../services/reportService';
 import { useUserTier } from '../../../core/security/useUserTier';
@@ -2381,13 +2398,20 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const { currentTier } = useUserTier();
 
   const [isLive, setIsLive] = useState(false);
+  const [isVideoActive, setIsVideoActive] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  
   const [showSafety, setShowSafety] = useState(true);
+  const [showDegradedConfirm, setShowDegradedConfirm] = useState(false);
+  const [isDegradedMode, setIsDegradedMode] = useState(false);
+  const [bypassedWarnings, setBypassedWarnings] = useState<string[]>([]);
+
   const [sessionClosed, setSessionClosed] = useState(false);
   const [finalReport, setFinalReport] = useState<any>(null);
   
-  const [diagnosticText, setDiagnosticText] = useState(`Système ${mode.toUpperCase()} en attente. Sécurisez la zone.`);
+  const [diagnosticText, setDiagnosticText] = useState(`Terminal ${mode.toUpperCase()} en attente. Sécurisez la zone.`);
   const [currentDiagnostic, setCurrentDiagnostic] = useState<LiveDiagnostic>({
-    hypothesis: "En attente de flux...",
+    hypothesis: "En attente de transmission...",
     confidence: 0,
     nextStep: "-"
   });
@@ -2399,6 +2423,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<Date | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   const [checks, setChecks] = useState(
     mode === 'maintenance'
@@ -2406,16 +2431,73 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
           { id: 'loto', label: 'Consignation LOTO effectuée', icon: <Power size={18} />, validated: false },
           { id: 'vat', label: 'VAT (Absence Tension)', icon: <Zap size={18} />, validated: false },
           { id: 'h2s', label: 'Détecteur H2S & Gaz actif', icon: <Wind size={18} />, validated: false },
-          { id: 'epi', label: 'EPI adéquats portés', icon: <Shield size={18} />, validated: false },
         ]
       : [
           { id: 'levage', label: 'Chandelles / Béquilles en place', icon: <Shield size={18} />, validated: false },
-          { id: 'pto', label: 'Consignation PTO (Prise de mouvement)', icon: <Power size={18} />, validated: false },
-          { id: 've', label: 'EPI VE (Gants Classe 0 si > 60V)', icon: <Zap size={18} />, validated: false },
+          { id: 'pto', label: 'Consignation PTO', icon: <Power size={18} />, validated: false },
+          { id: 've', label: 'EPI Haute Tension (VE)', icon: <Zap size={18} />, validated: false },
         ]
   );
 
   const allValidated = checks.every(c => c.validated);
+
+  const speak = (text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 1.0;
+    utterance.pitch = 0.9;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.lang = 'fr-FR';
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setDiagnosticText(`🎙️ VOUS : "${transcript.toUpperCase()}"`);
+        setIsListening(false);
+        liveService.sendPrompt(transcript);
+      };
+      
+      recognitionRef.current.onerror = () => setIsListening(false);
+      recognitionRef.current.onend = () => setIsListening(false);
+    }
+  }, []);
+
+  // --- CHRONOLOGIE PÉDAGOGIQUE (MODE DÉGRADÉ) ---
+  // Déclenchements stricts et uniques à +5 min, +15 min, et +60 min
+  useEffect(() => {
+    const timeouts: number[] = [];
+
+    if (isLive && isDegradedMode && bypassedWarnings.length > 0) {
+      
+      const triggerReminder = (timeLabel: string) => {
+        const randomWarning = bypassedWarnings[Math.floor(Math.random() * bypassedWarnings.length)];
+        setDiagnosticText(`⚠️ RAPPEL SÉCURITÉ (+${timeLabel}) : ${randomWarning.toUpperCase()}`);
+        speak(`Rappel de sécurité. ${randomWarning}`);
+      };
+
+      // Planification des rappels en millisecondes
+      // 5 minutes
+      timeouts.push(window.setTimeout(() => triggerReminder("5 min"), 5 * 60 * 1000));
+      // 15 minutes
+      timeouts.push(window.setTimeout(() => triggerReminder("15 min"), 15 * 60 * 1000));
+      // 60 minutes
+      timeouts.push(window.setTimeout(() => triggerReminder("1h"), 60 * 60 * 1000));
+    }
+
+    // Nettoyage des chronomètres si le technicien quitte ou termine l'intervention avant
+    return () => {
+      timeouts.forEach(t => window.clearTimeout(t));
+    };
+  }, [isLive, isDegradedMode, bypassedWarnings]);
 
   const getCooldownStatus = () => {
     const stored = localStorage.getItem('m5_free_usage');
@@ -2442,7 +2524,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     let timer: number;
     if (isLive && currentTier === 'FREE' && freeTimeLeft !== null) {
       if (freeTimeLeft <= 0) {
-        registerFreeUsage();
+        registerFreeUsage(); // On sauvegarde l'utilisation avant de fermer
         closeAndGenerateReport("Temps gratuit écoulé. Mode Premium requis.");
       } else {
         timer = window.setInterval(() => setFreeTimeLeft(prev => (prev !== null ? prev - 1 : 0)), 1000);
@@ -2452,7 +2534,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   }, [isLive, freeTimeLeft, currentTier]);
 
   const captureAndSendFrame = () => {
-    if (videoRef.current && canvasRef.current) {
+    if (videoRef.current && canvasRef.current && isVideoActive) {
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       if (context && videoRef.current.videoWidth > 0) {
@@ -2464,28 +2546,104 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     }
   };
 
-  const startLiveSession = async () => {
-    if (allValidated) {
-      if (currentTier === 'FREE') {
-        const status = getCooldownStatus();
-        if (!status.allowed) {
-          setCooldownMsg(`Tunnel IA en refroidissement. Attendez ${status.waitMin} min.`);
-          return;
-        }
-        setFreeTimeLeft(120);
+  const toggleVisionBionique = async () => {
+    if (isVideoActive) {
+      const stream = videoRef.current?.srcObject as MediaStream;
+      stream?.getTracks().forEach(t => t.stop());
+      if (videoRef.current) videoRef.current.srcObject = null;
+      if (frameIntervalRef.current) {
+        window.clearInterval(frameIntervalRef.current);
+        frameIntervalRef.current = null;
       }
-      setShowSafety(false);
+      setIsVideoActive(false);
+      setDiagnosticText("Vision Bionique désactivée. Mode Radio actif.");
+      speak("Caméra coupée.");
+    } else {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         if (videoRef.current) videoRef.current.srcObject = stream;
-        setIsLive(true);
-        startTimeRef.current = new Date();
-        await liveService.connect(mode, (data) => {
-          setDiagnosticText(data.hypothesis);
-          setCurrentDiagnostic(data);
-        });
+        setIsVideoActive(true);
+        
+        setDiagnosticText("Vision Bionique activée. Analyse visuelle...");
+        speak("Vision activée.");
+        setTimeout(() => {
+          captureAndSendFrame();
+          liveService.sendPrompt("Je viens d'activer la caméra. Analyse l'image et donne-moi ton premier diagnostic visuel sur ce que tu vois.");
+        }, 1500);
+
         frameIntervalRef.current = window.setInterval(captureAndSendFrame, 1600);
-      } catch (err) { setDiagnosticText("Erreur Caméra."); }
+      } catch (err) { 
+        setDiagnosticText("Erreur : Accès caméra refusé."); 
+      }
+    }
+  };
+
+  const handlePreStart = () => {
+    // FIX : Réactivation de la vérification du mode FREE
+    if (currentTier === 'FREE') {
+      const status = getCooldownStatus();
+      if (!status.allowed) {
+        setCooldownMsg(`Tunnel IA en refroidissement. Attendez ${status.waitMin} min.`);
+        return;
+      }
+      setFreeTimeLeft(120);
+    }
+
+    if (allValidated) {
+      startLiveSession(false);
+    } else {
+      const warnings: string[] = [];
+      checks.forEach(c => {
+        if (!c.validated) {
+          if (c.id === 'loto' || c.id === 'pto') warnings.push("L'énergie mécanique ou pneumatique résiduelle pardonne rarement. Assure-toi que personne ne peut réarmer le système dans ton dos.");
+          if (c.id === 'vat' || c.id === 've') warnings.push("L'électricité est un mal invisible. Une VAT prend 10 secondes et te garantit de rentrer chez toi ce soir.");
+          if (c.id === 'h2s') warnings.push("Dans une fosse ou un espace confiné, les gaz ne préviennent pas. Garde une extraction d'air active.");
+          if (c.id === 'levage') warnings.push("L'hydraulique peut lâcher à tout moment. Sécurise toujours avec des chandelles mécaniques.");
+        }
+      });
+      setBypassedWarnings(warnings);
+      setShowSafety(false);
+      setShowDegradedConfirm(true);
+    }
+  };
+
+  const startLiveSession = async (degraded: boolean) => {
+    setShowSafety(false);
+    setShowDegradedConfirm(false);
+    setIsDegradedMode(degraded);
+    
+    speak("Initialisation du système LOCATE.");
+
+    try {
+      setIsLive(true);
+      startTimeRef.current = new Date();
+      await liveService.connect(mode, (data) => {
+        setDiagnosticText(data.hypothesis);
+        // FIX : Sauvegarde de la réponse IA pour le PDF !
+        setCurrentDiagnostic(data); 
+        speak(data.hypothesis);
+      });
+      
+      const msg = degraded 
+        ? "Tunnel ouvert en MODE DÉGRADÉ. Prudence maximale. Appuyez sur PTT pour parler."
+        : "Tunnel crypté ouvert. Mode Radio actif. Appuyez sur PTT pour parler.";
+      
+      setDiagnosticText(msg);
+      
+    } catch (err) { 
+      setDiagnosticText("Erreur d'ouverture du Tunnel IA."); 
+    }
+  };
+
+  const togglePTT = () => {
+    if (!isLive) return;
+    if (isListening) {
+      setIsListening(false);
+      try { recognitionRef.current?.stop(); } catch(e) {}
+    } else {
+      setIsListening(true);
+      setDiagnosticText("Écoute en cours... (Parlez puis patientez)");
+      try { recognitionRef.current?.start(); } catch(e) {}
     }
   };
 
@@ -2495,15 +2653,24 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     const stream = videoRef.current?.srcObject as MediaStream;
     stream?.getTracks().forEach(t => t.stop());
     setIsLive(false);
+    setIsVideoActive(false);
     
+    let finalHypothesis = currentDiagnostic.hypothesis;
+    if (isDegradedMode) {
+      finalHypothesis = `[MODE DÉGRADÉ ENGAGÉ PAR LE TECHNICIEN] - ${finalHypothesis}`;
+    }
+
     const reportData = {
-      mode, technicianId: "TECH-M5-001", location: "Atelier", equipmentId: "EQ-INCONNU",
-      safetyChecks: checks, diagnostic: forcedReason ? { ...currentDiagnostic, hypothesis: forcedReason } : currentDiagnostic,
+      mode, technicianId: "TECH-M5-001", location: "Zone Opérationnelle", equipmentId: "EQ-INCONNU",
+      safetyChecks: checks, 
+      diagnostic: forcedReason ? { ...currentDiagnostic, hypothesis: forcedReason } : { ...currentDiagnostic, hypothesis: finalHypothesis },
       startTime: startTimeRef.current || new Date(), endTime: new Date()
     };
+    
     const report = await reportService.generateMaintenanceReport(reportData);
     setFinalReport(report);
     setSessionClosed(true);
+    speak("Intervention clôturée. Génération du rapport.");
   };
 
   if (sessionClosed && finalReport) {
@@ -2531,112 +2698,176 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     );
   }
 
+  const themeColor = mode === 'maintenance' ? '#00E5FF' : '#DC2626'; 
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden select-none">
+      
       <div className="relative flex-1 bg-[#050505] overflow-hidden">
-        <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-70" />
+        <canvas ref={canvasRef} className="hidden" />
+
+        <video ref={videoRef} autoPlay playsInline className={`absolute inset-0 w-full h-full object-cover opacity-70 ${isVideoActive ? 'block' : 'hidden'}`} />
         
-        {/* HUD SUPÉRIEUR */}
+        {isVideoActive && (
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:5vw_5vw]"></div>
+        )}
+
+        {!isVideoActive && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]">
+            {isLive ? (
+              <div className="flex flex-col items-center justify-center">
+                <div className={`w-40 h-40 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${isListening ? `border-[${themeColor}] scale-110 shadow-[0_0_50px_${themeColor}40]` : 'border-white/10'}`}>
+                  <div className={`w-32 h-32 rounded-full border flex items-center justify-center ${isListening ? `border-[${themeColor}] animate-pulse bg-[${themeColor}]/10` : 'border-white/5'}`}>
+                    <Mic size={48} className={isListening ? `text-[${themeColor}]` : 'text-gray-600'} />
+                  </div>
+                </div>
+                <p className={`mt-8 font-mono text-xs uppercase tracking-widest ${isListening ? `text-[${themeColor}]` : 'text-gray-500'}`}>
+                  {isListening ? "Écoute en cours..." : "Canal Audio Ouvert (Cliquer PTT)"}
+                </p>
+              </div>
+            ) : (
+              <Shield size={64} className="text-white/10" />
+            )}
+          </div>
+        )}
+        
         <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-30">
-          <div className="bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/10">
+          <div className="bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10">
             <h1 className="text-white font-black text-[12px] uppercase tracking-[0.3em]">LOCATE {mode.toUpperCase()}</h1>
+            
+            {/* FIX : Réintégration du chrono FREE */}
             {currentTier === 'FREE' && freeTimeLeft !== null && (
               <div className="flex items-center gap-1 mt-1 text-[#FF6600]">
                 <Clock size={10} /><span className="font-mono text-[10px] font-black">{Math.floor(freeTimeLeft / 60)}:{(freeTimeLeft % 60).toString().padStart(2, '0')}</span>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* HUD LATÉRAL DYNAMIQUE */}
-        {isLive && (
-          <div className="absolute left-6 top-[20vh] z-30 flex flex-col gap-3">
-            {mode === 'mecanique' ? (
-              <div className="bg-black/60 backdrop-blur-md border-l-4 border-[#DC2626] p-3 rounded-r-xl">
-                <p className="text-[8px] font-black text-[#DC2626] uppercase">Brake Pressure</p>
-                <p className="text-xl text-white font-mono font-black">7.5 BAR</p>
-              </div>
-            ) : (
-              <div className="bg-black/60 backdrop-blur-md border-l-4 border-[#00E5FF] p-3 rounded-r-xl">
-                <p className="text-[8px] font-black text-[#00E5FF] uppercase">Pump Vib.</p>
-                <p className="text-xl text-white font-mono font-black">4.2 mm/s</p>
+            {isDegradedMode && (
+              <div className="text-red-500 font-black text-[9px] uppercase tracking-widest mt-1 animate-pulse flex items-center gap-1">
+                <AlertOctagon size={10} /> MODE DÉGRADÉ
               </div>
             )}
           </div>
-        )}
+          
+          {isLive && (
+             <div className={`px-3 py-1.5 rounded-full border backdrop-blur-md flex items-center gap-2 ${isVideoActive ? `bg-[${themeColor}]/20 border-[${themeColor}] text-[${themeColor}]` : 'bg-white/10 border-white/20 text-gray-300'}`}>
+               {isVideoActive ? <Camera size={12} /> : <Mic size={12} />}
+               <span className="text-[9px] font-black uppercase tracking-widest">{isVideoActive ? 'VISION' : 'RADIO'}</span>
+             </div>
+          )}
+        </div>
 
-        {/* MODALE SAFETY GATES (C'est ICI que tes variables sont lues !) */}
-        {showSafety && (
+        {showSafety && !showDegradedConfirm && (
           <div className="absolute inset-0 z-50 bg-[#050505]/95 backdrop-blur-2xl p-8 flex flex-col justify-center">
             <div className="max-w-md mx-auto w-full space-y-6">
               <div className="text-center">
-                <AlertTriangle className="mx-auto mb-4 text-[#DC2626]" size={40} />
+                <AlertTriangle className={`mx-auto mb-4 text-[${themeColor}]`} size={40} />
                 <h2 className="text-white font-black text-lg uppercase">Validation Sécurité</h2>
+                {/* FIX : Réintégration du message d'erreur de refroidissement */}
                 {cooldownMsg && <p className="text-[#FF6600] text-xs font-bold mt-2 animate-pulse">{cooldownMsg}</p>}
               </div>
               <div className="space-y-2">
                 {checks.map(check => (
                   <button key={check.id} onClick={() => setChecks(prev => prev.map(c => c.id === check.id ? {...c, validated: !c.validated} : c))}
-                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${check.validated ? 'bg-[#DC2626]/10 border-[#DC2626] text-white' : 'bg-white/5 border-white/5 text-gray-500'}`}>
+                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${check.validated ? `bg-[${themeColor}]/10 border-[${themeColor}] text-white` : 'bg-white/5 border-white/5 text-gray-500'}`}>
                     <div className="flex items-center gap-4">{check.icon}<span className="text-[10px] font-black uppercase">{check.label}</span></div>
-                    {check.validated && <CheckCircle2 size={18} className="text-[#DC2626]" />}
+                    {check.validated && <CheckCircle2 size={18} className={`text-[${themeColor}]`} />}
                   </button>
                 ))}
               </div>
-              <button disabled={!allValidated || cooldownMsg !== null} onClick={startLiveSession}
-                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] ${allValidated && !cooldownMsg ? 'bg-white text-black' : 'bg-gray-900 text-gray-700'}`}>
-                Ouvrir Tunnel Expertise
+              
+              <button disabled={cooldownMsg !== null} onClick={handlePreStart}
+                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all ${cooldownMsg ? 'bg-gray-900 text-gray-700' : allValidated ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]' : 'bg-[#DC2626]/20 text-[#DC2626] border border-[#DC2626]/50'}`}>
+                {allValidated ? 'Ouvrir Tunnel Expertise' : 'Forcer Intervention (Dégradé)'}
               </button>
             </div>
           </div>
         )}
+
+        {showDegradedConfirm && (
+          <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-3xl p-6 flex flex-col justify-center">
+            <div className="max-w-md mx-auto w-full bg-[#1A0505] border border-[#DC2626] rounded-2xl p-6 shadow-[0_0_50px_rgba(220,38,38,0.2)]">
+              <div className="flex items-center gap-3 mb-6 border-b border-[#DC2626]/30 pb-4">
+                <AlertOctagon className="text-[#DC2626] w-8 h-8" />
+                <h2 className="text-white font-black text-sm uppercase tracking-widest leading-tight">Dédouanement<br/>Mode Dégradé</h2>
+              </div>
+              
+              <div className="space-y-4 mb-8">
+                {bypassedWarnings.map((warning, idx) => (
+                  <div key={idx} className="bg-black/50 p-4 rounded-lg border-l-4 border-[#FF6600]">
+                    <p className="text-white/80 text-xs italic leading-relaxed">"{warning}"</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-red-950/50 p-3 rounded-lg mb-6 border border-red-500/20">
+                <p className="text-red-400 text-[9px] uppercase tracking-widest text-center font-bold">
+                  En poursuivant, vous engagez votre responsabilité. Locate Systems décline toute responsabilité. Le rapport sera tagué.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => { setShowDegradedConfirm(false); setShowSafety(true); }} className="flex-1 py-4 bg-gray-900 text-gray-400 rounded-xl font-black text-[10px] uppercase tracking-widest">
+                  Annuler
+                </button>
+                <button onClick={() => startLiveSession(true)} className="flex-[2] py-4 bg-[#DC2626] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
+                  J'y vais quand même
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
-      {/* CONSOLE IA INFÉRIEURE : COMMANDES DE TERRAIN */}
-      <div className="h-[28vh] bg-[#050505] border-t border-white/5 p-6 flex flex-col items-center justify-between z-40 relative">
+      <div className="h-[30vh] bg-[#050505] border-t border-white/5 p-6 flex flex-col items-center justify-between z-40 relative">
         
-        {/* TERMINAL DE TEXTE IA */}
-        <div className="w-full bg-black/40 rounded-xl border border-white/5 p-4 min-h-[80px]">
-          <p className="text-[#FF6600] font-mono text-[10px] uppercase tracking-wider">
+        <div className="w-full bg-black/60 rounded-xl border border-white/10 p-4 min-h-[80px] flex items-center shadow-inner">
+          <p className={`font-mono text-[10px] uppercase tracking-wider leading-relaxed ${currentDiagnostic.safetyAlert ? 'text-red-500 font-bold animate-pulse' : 'text-[#FF6600]'}`}>
             {">"} {diagnosticText}
           </p>
         </div>
 
-        {/* BARRE D'ACTIONS TACTIQUES */}
-        <div className="flex items-center justify-around w-full mt-4">
-           
-           {/* BOUTON CAMERA : SCAN MANUEL OCR / PIÈCE */}
+        <div className="flex items-center justify-between w-full mt-4 px-2">
+            
            <button 
-             onClick={() => setDiagnosticText("Capture manuelle pour analyse OCR...")}
-             className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
+             onClick={toggleVisionBionique}
+             disabled={!isLive}
+             className={`flex flex-col items-center gap-2 transition-all group ${!isLive ? 'opacity-30' : 'active:scale-90'}`}
            >
-              <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-[#FF6600]/50 transition-colors">
-                <Camera size={20} className="text-white group-hover:text-[#FF6600]" />
+              <div className={`w-14 h-14 rounded-full border flex items-center justify-center transition-colors ${isVideoActive ? `bg-[${themeColor}]/20 border-[${themeColor}] shadow-[0_0_15px_${themeColor}40]` : 'bg-white/5 border-white/10 group-hover:border-white/30'}`}>
+                {isVideoActive ? <Camera size={22} className={`text-[${themeColor}]`} /> : <CameraOff size={22} className="text-white/60" />}
               </div>
-              <span className="text-[8px] font-black uppercase text-white/60 tracking-tighter">
-                Scan {mode === 'maintenance' ? 'Folio' : 'Pièce'}
+              <span className={`text-[8px] font-black uppercase tracking-tighter ${isVideoActive ? `text-[${themeColor}]` : 'text-white/60'}`}>
+                {isVideoActive ? 'Vision ON' : 'Vision OFF'}
               </span>
            </button>
 
-           {/* BOUTON CENTRAL : PTT (PUSH TO TALK) */}
            <div className="relative">
               <button 
-                className={`w-24 h-24 rounded-full flex flex-col items-center justify-center border-b-4 transition-all active:scale-95 shadow-2xl ${
-                  isLive ? 'bg-[#FF6600] border-orange-800' : 'bg-gray-900 border-black'
+                onClick={togglePTT}
+                disabled={!isLive}
+                className={`w-24 h-24 rounded-full flex flex-col items-center justify-center border-b-[6px] transition-all shadow-2xl select-none ${
+                  !isLive 
+                    ? 'bg-gray-900 border-black opacity-50' 
+                    : isListening 
+                      ? 'bg-[#FF6600] border-orange-900 scale-95 translate-y-[4px] animate-pulse' 
+                      : 'bg-[#FF6600] border-orange-800 active:scale-95 hover:bg-[#ff7b24]'
                 }`}
               >
-                <Mic size={32} className="text-white" />
-                <span className="text-[8px] font-black text-white uppercase mt-1">PTT</span>
+                <Mic size={32} className="text-white drop-shadow-md" />
+                <span className="text-[9px] font-black text-white uppercase mt-1 tracking-widest drop-shadow-md">
+                  {isListening ? 'PARLEZ' : 'PTT'}
+                </span>
               </button>
            </div>
 
-           {/* BOUTON CLÔTURE */}
            <button 
              onClick={() => closeAndGenerateReport()} 
              className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
            >
-              <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
-                <X size={20} className="text-[#DC2626]" />
+              <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
+                <X size={22} className="text-[#DC2626]" />
               </div>
               <span className="text-[8px] font-black uppercase text-[#DC2626] tracking-tighter">Fin Diag.</span>
            </button>

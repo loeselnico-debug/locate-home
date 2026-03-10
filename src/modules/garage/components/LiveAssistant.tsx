@@ -88,16 +88,32 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     }
   }, []);
 
+  // --- CHRONOLOGIE PÉDAGOGIQUE (MODE DÉGRADÉ) ---
+  // Déclenchements stricts et uniques à +5 min, +15 min, et +60 min
   useEffect(() => {
-    let reminderTimer: number;
+    const timeouts: number[] = [];
+
     if (isLive && isDegradedMode && bypassedWarnings.length > 0) {
-      reminderTimer = window.setInterval(() => {
+      
+      const triggerReminder = (timeLabel: string) => {
         const randomWarning = bypassedWarnings[Math.floor(Math.random() * bypassedWarnings.length)];
-        setDiagnosticText(`⚠️ RAPPEL SÉCURITÉ : ${randomWarning.toUpperCase()}`);
-        speak(`Attention technicien. ${randomWarning}`);
-      }, 60000);
+        setDiagnosticText(`⚠️ RAPPEL SÉCURITÉ (+${timeLabel}) : ${randomWarning.toUpperCase()}`);
+        speak(`Rappel de sécurité. ${randomWarning}`);
+      };
+
+      // Planification des rappels en millisecondes
+      // 5 minutes
+      timeouts.push(window.setTimeout(() => triggerReminder("5 min"), 5 * 60 * 1000));
+      // 15 minutes
+      timeouts.push(window.setTimeout(() => triggerReminder("15 min"), 15 * 60 * 1000));
+      // 60 minutes
+      timeouts.push(window.setTimeout(() => triggerReminder("1h"), 60 * 60 * 1000));
     }
-    return () => clearInterval(reminderTimer);
+
+    // Nettoyage des chronomètres si le technicien quitte ou termine l'intervention avant
+    return () => {
+      timeouts.forEach(t => window.clearTimeout(t));
+    };
   }, [isLive, isDegradedMode, bypassedWarnings]);
 
   const getCooldownStatus = () => {

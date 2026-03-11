@@ -8,13 +8,13 @@ const genAI = new GoogleGenerativeAI(apiKey || "");
 
 // --- PROMPT SYSTEME DYNAMIQUE (VERSION V26 SANS CONTOUR NÉON) ---
 const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string, module: 'HOME' | 'KITCHEN' = 'HOME') => {
-  const brandInstruction = module === 'HOME' ? 'Marque exacte SEULE (ex: Makita, DeWalt, Bosch). AUCUNE COULEUR.' : 'Marque ou Origine';
-  const typeInstruction = module === 'HOME' ? 'Nom générique usuel (ex: perceuse, tondeuse, mallette, tournevis)' : 'Famille de produit';
+  const brandInstruction = module === 'HOME' ? 'Marque exacte SEULE. DÉDUIRE OBLIGATOIREMENT la marque via couleurs/formes/design si le texte est flou (ex: Bleu/Rouge = Bosch/Milwaukee).' : 'Marque ou Origine';
+  const typeInstruction = module === 'HOME' ? 'Nom générique usuel (ex: perceuse, meuleuse, niveau laser)' : 'Famille de produit';
   const morphInstruction = module === 'HOME' ? 'Type d outil détaillé' : 'Type de denree ou objet';
-  const zoomInstruction = module === 'HOME' ? 'Detail technique précis' : 'Etat de fraicheur ou detail HACCP';
-  const typoInstruction = module === 'HOME' ? 'Modele exact (Si non lisible, écris: Non lisible)' : 'DLC DDM ou SKU';
+  const zoomInstruction = module === 'HOME' ? 'Detail technique (ex: 12V, 18V, filaire, batterie)' : 'Etat de fraicheur ou detail HACCP';
+  const typoInstruction = module === 'HOME' ? 'Modèle ou Gamme. DÉDUIRE via design si plaque illisible (ex: Bosch Professional, gamme M18). Écrire Inconnu uniquement si impossible.' : 'DLC DDM ou SKU';
   const consumableInstruction = module === 'KITCHEN' ? 'true' : 'true si vis, clou, joint, foret, colle. false sinon.';
-
+  
   return `
 Tu es l Expert Vision ${module === 'HOME' ? 'Industrielle' : 'Culinaire HACCP'} du système LOCATE. 
 Localisation de l analyse : ${userLocation}.

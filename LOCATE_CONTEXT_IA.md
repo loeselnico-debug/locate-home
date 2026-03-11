@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 11/03/2026 00:14:28
+> 📅 Archive générée le : 12/03/2026 00:21:48
 
 
 // ==========================================
@@ -536,13 +536,13 @@ const genAI = new GoogleGenerativeAI(apiKey || "");
 
 // --- PROMPT SYSTEME DYNAMIQUE (VERSION V26 SANS CONTOUR NÉON) ---
 const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string, module: 'HOME' | 'KITCHEN' = 'HOME') => {
-  const brandInstruction = module === 'HOME' ? 'Marque exacte SEULE (ex: Makita, DeWalt, Bosch). AUCUNE COULEUR.' : 'Marque ou Origine';
-  const typeInstruction = module === 'HOME' ? 'Nom générique usuel (ex: perceuse, tondeuse, mallette, tournevis)' : 'Famille de produit';
+  const brandInstruction = module === 'HOME' ? 'Marque exacte SEULE. DÉDUIRE OBLIGATOIREMENT la marque via couleurs/formes/design si le texte est flou (ex: Bleu/Rouge = Bosch/Milwaukee).' : 'Marque ou Origine';
+  const typeInstruction = module === 'HOME' ? 'Nom générique usuel (ex: perceuse, meuleuse, niveau laser)' : 'Famille de produit';
   const morphInstruction = module === 'HOME' ? 'Type d outil détaillé' : 'Type de denree ou objet';
-  const zoomInstruction = module === 'HOME' ? 'Detail technique précis' : 'Etat de fraicheur ou detail HACCP';
-  const typoInstruction = module === 'HOME' ? 'Modele exact (Si non lisible, écris: Non lisible)' : 'DLC DDM ou SKU';
+  const zoomInstruction = module === 'HOME' ? 'Detail technique (ex: 12V, 18V, filaire, batterie)' : 'Etat de fraicheur ou detail HACCP';
+  const typoInstruction = module === 'HOME' ? 'Modèle ou Gamme. DÉDUIRE via design si plaque illisible (ex: Bosch Professional, gamme M18). Écrire Inconnu uniquement si impossible.' : 'DLC DDM ou SKU';
   const consumableInstruction = module === 'KITCHEN' ? 'true' : 'true si vis, clou, joint, foret, colle. false sinon.';
-
+  
   return `
 Tu es l Expert Vision ${module === 'HOME' ? 'Industrielle' : 'Culinaire HACCP'} du système LOCATE. 
 Localisation de l analyse : ${userLocation}.
@@ -927,6 +927,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     const stream = videoRef.current.srcObject as MediaStream;
     const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 1000000 });
     const chunks: Blob[] = [];
+    const capturedFrames: string[] = []; // NOUVEAU : Tableau pour stocker nos 3 images clés
 
     setIsScanning(true);
     setRecordingTime(0);
@@ -938,7 +939,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = reader.result as string;
-        runAnalysis(base64, false);
+        // NOUVEAU : On transmet nos frames capturées à l'analyseur
+        runAnalysis(base64, false, capturedFrames);
       };
       reader.readAsDataURL(blob);
       if (flashOn) await toggleTorch();
@@ -952,6 +954,18 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     const timerInterval = setInterval(() => {
       timeElapsed++;
       setRecordingTime(timeElapsed);
+
+      // NOUVEAU : EXTRACTION SILENCIEUSE À 3s, 8s et 12s
+      if (timeElapsed === 3 || timeElapsed === 8 || timeElapsed === 12) {
+        if (videoRef.current) {
+          const canvas = document.createElement('canvas');
+          canvas.width = videoRef.current.videoWidth;
+          canvas.height = videoRef.current.videoHeight;
+          canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
+          capturedFrames.push(canvas.toDataURL('image/jpeg', 0.8)); // Qualité 80%
+        }
+      }
+
       if (timeElapsed >= 15) {
         clearInterval(timerInterval);
         if (mediaRecorder.state === "recording") mediaRecorder.stop();
@@ -989,7 +1003,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     }
   };
 
-  const runAnalysis = async (data: string, isImage: boolean) => {
+  // NOUVEAU : Ajout du paramètre fallbackImages
+  const runAnalysis = async (data: string, isImage: boolean, fallbackImages: string[] = []) => {
     setIsAnalyzing(true);
     try {
       const rawResults = isImage 
@@ -997,15 +1012,19 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         : await geminiService.analyzeVideo(data, selectedLocation);
 
       if (rawResults && rawResults.length > 0) {
-        const certifiedItems = rawResults.map((item: any) => {
+        const certifiedItems = rawResults.map((item: any, index: number) => {
           const validation = validateLocateObject(item as ScanResult);
+          
+          // NOUVEAU : On attribue cycliquement l'une de nos 3 frames capturées à l'objet
+          const fallbackImg = fallbackImages.length > 0 ? fallbackImages[index % fallbackImages.length] : undefined;
+
           return {
             ...item,
             _validationStatus: validation.status,
             _validationMessage: validation.message,
             label: validation.status === "CERTIFIED" ? validation.label : item.label,
-            imageUrl: isImage ? data : undefined,
-            location: selectedLocation // <-- NOUVEAU : On injecte la zone cliquée
+            imageUrl: isImage ? data : fallbackImg, // <-- Si vidéo, on utilise la frame capturée
+            location: selectedLocation
           };
         }).filter((item: any) => item._validationStatus === "CERTIFIED");
         
@@ -4385,7 +4404,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
             <h2 className="text-[#FF6600] font-bold text-[clamp(1rem,4vw,1.1rem)] uppercase tracking-wide mb-[1vh]">PRÉAMBULE : Mentions Légales</h2>
             <ul className="list-none space-y-1">
               <li><strong>Éditeur du service :</strong> Nicolas Loesel EI - Locate Systems</li>
-              <li><strong>SIRET :</strong> [101 891 190 00015 (Code APE : 62.01Z)]</li>
+              <li><strong>SIRET :</strong> 101 891 190 00015 (Code APE : 62.01Z)</li>
               <li><strong>Siège Social :</strong> 209 rue Jacques Brel 30730 FONS, France</li>
               <li><strong>Contact :</strong> contact@locate-systems.com</li>
               <li><strong>Hébergement :</strong> Application déployée via Vercel / Base de données stockée en local sur l'appareil.</li>

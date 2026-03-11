@@ -93,6 +93,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     const stream = videoRef.current.srcObject as MediaStream;
     const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 1000000 });
     const chunks: Blob[] = [];
+    const capturedFrames: string[] = []; // NOUVEAU : Tableau pour stocker nos 3 images clés
 
     setIsScanning(true);
     setRecordingTime(0);
@@ -104,7 +105,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = reader.result as string;
-        runAnalysis(base64, false);
+        // NOUVEAU : On transmet nos frames capturées à l'analyseur
+        runAnalysis(base64, false, capturedFrames);
       };
       reader.readAsDataURL(blob);
       if (flashOn) await toggleTorch();
@@ -118,6 +120,18 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     const timerInterval = setInterval(() => {
       timeElapsed++;
       setRecordingTime(timeElapsed);
+
+      // NOUVEAU : EXTRACTION SILENCIEUSE À 3s, 8s et 12s
+      if (timeElapsed === 3 || timeElapsed === 8 || timeElapsed === 12) {
+        if (videoRef.current) {
+          const canvas = document.createElement('canvas');
+          canvas.width = videoRef.current.videoWidth;
+          canvas.height = videoRef.current.videoHeight;
+          canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
+          capturedFrames.push(canvas.toDataURL('image/jpeg', 0.8)); // Qualité 80%
+        }
+      }
+
       if (timeElapsed >= 15) {
         clearInterval(timerInterval);
         if (mediaRecorder.state === "recording") mediaRecorder.stop();
@@ -155,7 +169,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
     }
   };
 
-  const runAnalysis = async (data: string, isImage: boolean) => {
+  // NOUVEAU : Ajout du paramètre fallbackImages
+  const runAnalysis = async (data: string, isImage: boolean, fallbackImages: string[] = []) => {
     setIsAnalyzing(true);
     try {
       const rawResults = isImage 
@@ -163,15 +178,19 @@ export const Scanner: React.FC<ScannerProps> = ({ onBack, onAnalysisComplete }) 
         : await geminiService.analyzeVideo(data, selectedLocation);
 
       if (rawResults && rawResults.length > 0) {
-        const certifiedItems = rawResults.map((item: any) => {
+        const certifiedItems = rawResults.map((item: any, index: number) => {
           const validation = validateLocateObject(item as ScanResult);
+          
+          // NOUVEAU : On attribue cycliquement l'une de nos 3 frames capturées à l'objet
+          const fallbackImg = fallbackImages.length > 0 ? fallbackImages[index % fallbackImages.length] : undefined;
+
           return {
             ...item,
             _validationStatus: validation.status,
             _validationMessage: validation.message,
             label: validation.status === "CERTIFIED" ? validation.label : item.label,
-            imageUrl: isImage ? data : undefined,
-            location: selectedLocation // <-- NOUVEAU : On injecte la zone cliquée
+            imageUrl: isImage ? data : fallbackImg, // <-- Si vidéo, on utilise la frame capturée
+            location: selectedLocation
           };
         }).filter((item: any) => item._validationStatus === "CERTIFIED");
         

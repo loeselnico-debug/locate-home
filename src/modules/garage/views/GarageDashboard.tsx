@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Factory, Wrench, ChevronRight } from 'lucide-react';
+import { Factory, Wrench, ChevronRight, CheckSquare } from 'lucide-react';
 import LiveAssistant from '../components/LiveAssistant';
-
 
 interface GarageDashboardProps {
   onBack?: () => void;
 }
 
 const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
-  const [activeMode, setActiveMode] = useState<'menu' | 'maintenance' | 'mecanique'>('menu');
+  // AJOUT DU MODE 'servante'
+  const [activeMode, setActiveMode] = useState<'menu' | 'maintenance' | 'mecanique' | 'servante'>('menu');
 
   if (activeMode !== 'menu') {
-    return <LiveAssistant mode={activeMode} onExit={() => setActiveMode('menu')} />;
+    // Si c'est le mode servante, on passera la logique plus tard. Pour l'instant, on utilise l'assistant mécanique par défaut
+    const modeToPass = activeMode === 'servante' ? 'mecanique' : activeMode;
+    return <LiveAssistant mode={modeToPass} onExit={() => setActiveMode('menu')} />;
   }
 
   return (
@@ -36,11 +38,9 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         className="flex-1 group relative overflow-hidden bg-[#0a0a0a] hover:bg-[#111] transition-all duration-500 border-b md:border-b-0 md:border-r border-white/5 flex flex-col justify-center items-center p-8 active:scale-95"
       >
         <div className="absolute inset-0 bg-gradient-to-t from-red-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
         <Factory size={72} className="text-white/60 mb-6 group-hover:text-red-500 group-hover:scale-110 transition-all duration-500" />
-        <h2 className="text-white font-black text-3xl uppercase tracking-tighter mb-2 text-center">Maintenance<br/>Industrielle</h2>
-        <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center mb-12">Usines • Stations d'épuration • Automatisme</p>
-
+        <h2 className="text-white font-black text-2xl lg:text-3xl uppercase tracking-tighter mb-2 text-center">Maintenance<br/>Industrielle</h2>
+        <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center mb-12">Usines • Stations • Automatisme</p>
         <div className="flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-[0.2em] bg-red-950/30 px-6 py-3 rounded-full border border-red-500/20">
           Système OSA/CBM <ChevronRight size={14} />
         </div>
@@ -49,16 +49,28 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
       {/* 🚜 BOUTON 2 : MÉCANIQUE AUTO & PL */}
       <button
         onClick={() => setActiveMode('mecanique')}
-        className="flex-1 group relative overflow-hidden bg-[#080808] hover:bg-[#111] transition-all duration-500 flex flex-col justify-center items-center p-8 active:scale-95"
+        className="flex-1 group relative overflow-hidden bg-[#080808] hover:bg-[#111] transition-all duration-500 border-b md:border-b-0 md:border-r border-white/5 flex flex-col justify-center items-center p-8 active:scale-95"
       >
         <div className="absolute inset-0 bg-gradient-to-t from-red-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
         <Wrench size={72} className="text-white/60 mb-6 group-hover:text-red-500 group-hover:scale-110 transition-all duration-500" />
-        <h2 className="text-white font-black text-3xl uppercase tracking-tighter mb-2 text-center">Mécanique<br/>Auto & P.L.</h2>
-        <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center mb-12">Véhicules Légers • Poids Lourds • Hydraulique</p>
-
+        <h2 className="text-white font-black text-2xl lg:text-3xl uppercase tracking-tighter mb-2 text-center">Mécanique<br/>Auto & P.L.</h2>
+        <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center mb-12">Véhicules Légers • Poids Lourds</p>
         <div className="flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-[0.2em] bg-red-950/30 px-6 py-3 rounded-full border border-red-500/20">
           Diagnostic OBD2 <ChevronRight size={14} />
+        </div>
+      </button>
+
+      {/* 🧰 BOUTON 3 : CONTRÔLE SERVANTE (FACOM PoC) */}
+      <button
+        onClick={() => setActiveMode('servante')}
+        className="flex-1 group relative overflow-hidden bg-[#0a0a0a] hover:bg-[#111] transition-all duration-500 flex flex-col justify-center items-center p-8 active:scale-95"
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-[#FF6600]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <CheckSquare size={72} className="text-white/60 mb-6 group-hover:text-[#FF6600] group-hover:scale-110 transition-all duration-500" />
+        <h2 className="text-white font-black text-2xl lg:text-3xl uppercase tracking-tighter mb-2 text-center">Contrôle<br/>Servante</h2>
+        <p className="text-gray-500 text-[10px] uppercase tracking-widest text-center mb-12">Prise de poste • Scan QR • PDF</p>
+        <div className="flex items-center gap-2 text-[#FF6600] font-black text-[10px] uppercase tracking-[0.2em] bg-[#FF6600]/10 px-6 py-3 rounded-full border border-[#FF6600]/30">
+          Tool Control <ChevronRight size={14} />
         </div>
       </button>
 

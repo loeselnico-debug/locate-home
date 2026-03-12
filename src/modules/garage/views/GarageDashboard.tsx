@@ -22,7 +22,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   // --- VUES TEMPORAIRES POUR LE POC MARQUE BLANCHE ---
   if (activeMode === 'prise_poste' || activeMode === 'fin_poste') {
     return (
-      <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center p-6 text-center font-sans">
+      <div className="w-full h-[calc(100dvh-12.5vh)] bg-[#050505] flex flex-col items-center justify-center p-6 text-center font-sans">
         <QrCode className="text-[#FF6600] w-20 h-20 mb-6 animate-pulse" />
         <h2 className="text-white font-black text-2xl uppercase tracking-widest mb-2">
           {activeMode === 'prise_poste' ? 'INITIALISATION SERVANTE' : 'CLÔTURE & AUDIT'}
@@ -45,7 +45,8 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   // --- SOUS-MENU OPÉRATEUR MÉCANIQUE ---
   if (activeMode === 'mecanique_menu') {
     return (
-      <div className="h-full w-full bg-[#050505] flex flex-col font-sans">
+      // Hauteur totale moins le header principal de l'app (12.5vh)
+      <div className="w-full h-[calc(100dvh-12.5vh)] bg-[#050505] flex flex-col font-sans overflow-hidden">
         
         {/* HEADER LOCAL STRICT : 10vh */}
         <div className="h-[10vh] shrink-0 border-b border-white/10 flex items-center px-[4vw] gap-4 bg-[#0a0a0a]">
@@ -58,8 +59,8 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* CONTENEUR DES 3 BOUTONS : flex-1 (prend le reste de l'écran) */}
-        <div className="flex-1 flex flex-col md:flex-row pb-[max(2vh,env(safe-area-inset-bottom))]">
+        {/* CONTENEUR DES 3 BOUTONS : Hauteur stricte calculée (100dvh - 12.5vh - 10vh = 77.5vh) */}
+        <div className="h-[calc(100dvh-22.5vh)] flex flex-col md:flex-row pb-[env(safe-area-inset-bottom)]">
           
           {/* ÉTAPE 1 : PRISE DE POSTE */}
           <button onClick={() => setActiveMode('prise_poste')} className="flex-1 bg-[#050505] border-b md:border-b-0 md:border-r border-white/5 flex flex-col items-center justify-center gap-[2vh] hover:bg-[#0a0a0a] transition-all group active:scale-[0.98]">
@@ -102,7 +103,8 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
 
   // --- MENU PRINCIPAL (HOME) ---
   return (
-    <div className="h-full w-full bg-[#050505] flex flex-col font-sans">
+    // Hauteur totale moins le header principal de l'app (12.5vh)
+    <div className="w-full h-[calc(100dvh-12.5vh)] bg-[#050505] flex flex-col font-sans overflow-hidden">
       
       {/* HEADER LOCAL STRICT : 10vh */}
       <div className="h-[10vh] shrink-0 border-b border-white/5 flex items-center px-[4vw] gap-4 bg-[#0a0a0a]">
@@ -117,8 +119,8 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* CONTENEUR DES 2 BOUTONS : flex-1 */}
-      <div className="flex-1 flex flex-col md:flex-row pb-[max(2vh,env(safe-area-inset-bottom))]">
+      {/* CONTENEUR DES 2 BOUTONS : Hauteur stricte calculée (77.5vh) */}
+      <div className="h-[calc(100dvh-22.5vh)] flex flex-col md:flex-row pb-[env(safe-area-inset-bottom)]">
         
         {/* 🏭 BOUTON 1 : MAINTENANCE INDUSTRIELLE */}
         <button

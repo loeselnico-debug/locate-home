@@ -20,6 +20,9 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
     return <LiveAssistant mode="mecanique" onExit={() => setActiveMode('mecanique_menu')} />;
   }
 
+  // =======================================================================
+  // VUE MÉCANIQUE (Rappel des couleurs : Rouge #DC2626)
+  // =======================================================================
   if (activeMode === 'mecanique_menu') {
     return (
       <div className="h-full bg-[#121212] text-white flex flex-col overflow-hidden font-sans">
@@ -44,6 +47,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         </section>
 
         <main className="flex-1 px-[4vw] pb-[4.5vh] flex flex-col gap-[2vh]">
+          {/* BOUTON 1: PRISE DE POSTE */}
           <button 
             onClick={() => setActiveMode('prise_poste')}
             className="flex-1 w-full rounded-2xl border border-[#DC2626]/30 group transition-all duration-300 hover:border-[#DC2626] hover:shadow-[0_0_30px_rgba(220,38,38,0.2)] active:scale-[0.98] relative overflow-hidden bg-black/40 flex flex-col items-center justify-center gap-4 text-center px-6"
@@ -56,6 +60,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
             </div>
           </button>
 
+          {/* BOUTON 2: ASSISTANT IA */}
           <button 
             onClick={() => setActiveMode('mecanique_live')}
             className="flex-1 w-full rounded-2xl border border-white/10 group transition-all duration-300 hover:border-white/30 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-[0.98] relative overflow-hidden bg-black/40 flex flex-col items-center justify-center gap-4 text-center px-6"
@@ -68,6 +73,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
             </div>
           </button>
 
+          {/* BOUTON 3: FIN DE POSTE */}
           <button 
             onClick={() => setActiveMode('fin_poste')}
             className="flex-1 w-full rounded-2xl border border-[#DC2626]/30 group transition-all duration-300 hover:border-[#DC2626] hover:shadow-[0_0_30px_rgba(220,38,38,0.2)] active:scale-[0.98] relative overflow-hidden bg-black/40 flex flex-col items-center justify-center gap-4 text-center px-6"
@@ -85,13 +91,13 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   }
 
   // =======================================================================
-  // VUE 0 : MENU PRINCIPAL (AIGUILLEUR) - FLEX FLUIDE
+  // VUE 0 : MENU PRINCIPAL (AIGUILLEUR) - OPTIMISATION LISIBILITÉ V21
   // =======================================================================
   return (
     <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
       
-      {/* ÉTAPE 1 : HEADER - Fixe à 10vh */}
-      <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#D3D3D3] rounded-2xl flex items-center justify-between px-[4vw] shrink-0">
+      {/* HEADER (10vh) */}
+      <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#D3D3D3] rounded-2xl flex items-center justify-between px-[4vw] shrink-0 shadow-lg">
         <div className="flex items-center gap-4">
           {onBack && (
             <button onClick={onBack} className="active:scale-90 transition-transform">
@@ -113,40 +119,40 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* ÉTAPE 2 : MAINTENANCE INDUSTRIELLE - S'adapte avec flex-1 */}
+      {/* BLOC 1 : MAINTENANCE INDUSTRIELLE (CYAN #00E5FF) */}
       <button
         onClick={() => setActiveMode('maintenance_live')}
-        className="flex-1 relative overflow-hidden bg-black border border-[#00E5FF] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all"
+        className="flex-1 relative overflow-hidden bg-black border border-[#00E5FF]/50 hover:border-[#00E5FF] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
       >
-        <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(0,229,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,0.08)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+        <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(0,229,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
         
-        <Factory size={64} className="text-[#D3D3D3] mb-6 relative z-10" />
+        <Factory size={64} className="text-[#D3D3D3] mb-6 relative z-10 group-hover:scale-110 transition-transform" />
         <h2 className="text-white font-black text-[clamp(1.5rem,5vw,2rem)] uppercase tracking-tighter mb-2 text-center leading-tight relative z-10">
           Maintenance<br/>Industrielle
         </h2>
-        <p className="text-[#DC2626] text-[10px] uppercase tracking-widest text-center mb-8 relative z-10">
+        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest text-center mb-8 relative z-10">
           Usines • Stations • Automatisme
         </p>
-        <div className="flex items-center gap-2 text-[#DC2626] font-black text-[10px] uppercase tracking-[0.2em] bg-red-950/30 px-5 py-2.5 rounded-full border border-[#DC2626]/20 relative z-10">
+        <div className="flex items-center gap-2 text-[#00E5FF] font-black text-[10px] uppercase tracking-[0.2em] bg-[#00E5FF]/10 px-6 py-3 rounded-full border border-[#00E5FF]/30 relative z-10 shadow-[0_0_15px_rgba(0,229,255,0.2)]">
           Système OSA/CBM
         </div>
       </button>
 
-      {/* ÉTAPE 3 : MÉCANIQUE AUTO & P.L. - S'adapte avec flex-1 */}
+      {/* BLOC 2 : MÉCANIQUE AUTO & P.L. (ROUGE #DC2626) */}
       <button
         onClick={() => setActiveMode('mecanique_menu')}
-        className="flex-1 relative overflow-hidden bg-black border border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all"
+        className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
       >
-        <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.08)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+        <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
         
-        <Wrench size={64} className="text-[#D3D3D3] mb-6 relative z-10" />
+        <Wrench size={64} className="text-[#D3D3D3] mb-6 relative z-10 group-hover:scale-110 transition-transform" />
         <h2 className="text-white font-black text-[clamp(1.5rem,5vw,2rem)] uppercase tracking-tighter mb-2 text-center leading-tight relative z-10">
           Mécanique<br/>Auto & P.L.
         </h2>
-        <p className="text-[#DC2626] text-[10px] uppercase tracking-widest text-center mb-8 relative z-10">
+        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest text-center mb-8 relative z-10">
           Véhicules Légers • Poids Lourds
         </p>
-        <div className="flex items-center gap-2 text-[#DC2626] font-black text-[10px] uppercase tracking-[0.2em] bg-red-950/30 px-5 py-2.5 rounded-full border border-[#DC2626]/20 relative z-10">
+        <div className="flex items-center gap-2 text-[#DC2626] font-black text-[10px] uppercase tracking-[0.2em] bg-[#DC2626]/10 px-6 py-3 rounded-full border border-[#DC2626]/30 relative z-10 shadow-[0_0_15px_rgba(220,38,38,0.2)]">
           Diagnostic OBD2
         </div>
       </button>

@@ -19,17 +19,17 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
     return <LiveAssistant mode="mecanique" onExit={() => setActiveMode('mecanique_menu')} />;
   }
 
-  // --- VUES TEMPORAIRES POUR LE POC FACOM ---
+  // --- VUES TEMPORAIRES POUR LE POC MARQUE BLANCHE ---
   if (activeMode === 'prise_poste' || activeMode === 'fin_poste') {
     return (
-      <div className="w-full h-full bg-[#050505] flex flex-col items-center justify-center p-6 text-center font-sans">
+      <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center p-6 text-center font-sans">
         <QrCode className="text-[#FF6600] w-20 h-20 mb-6 animate-pulse" />
         <h2 className="text-white font-black text-2xl uppercase tracking-widest mb-2">
           {activeMode === 'prise_poste' ? 'INITIALISATION SERVANTE' : 'CLÔTURE & AUDIT'}
         </h2>
         <p className="text-gray-400 text-xs uppercase tracking-widest mb-8 max-w-md">
           {activeMode === 'prise_poste' 
-            ? "Scan du QR Code FACOM en cours. Vérification de l'inventaire entrant..." 
+            ? "Scan du QR Code en cours. Vérification de l'inventaire entrant..." 
             : "Contrôle visuel de la servante. Génération du rapport anti-perte (FOD)..."}
         </p>
         <button 
@@ -45,11 +45,11 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   // --- SOUS-MENU OPÉRATEUR MÉCANIQUE ---
   if (activeMode === 'mecanique_menu') {
     return (
-      <div className="w-full h-full bg-[#050505] flex flex-col font-sans overflow-hidden">
+      <div className="h-full w-full bg-[#050505] flex flex-col font-sans">
         
         {/* HEADER LOCAL STRICT : 10vh */}
         <div className="h-[10vh] shrink-0 border-b border-white/10 flex items-center px-[4vw] gap-4 bg-[#0a0a0a]">
-          <button onClick={() => setActiveMode('home')} className="w-10 h-10 bg-black/50 border border-white/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+          <button onClick={() => setActiveMode('home')} className="w-10 h-10 bg-black/50 border border-white/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform shrink-0">
             <ArrowLeft className="text-white" size={20} />
           </button>
           <div className="flex flex-col justify-center">
@@ -58,25 +58,25 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* CONTENEUR DES 3 BOUTONS : Occupe 100% du reste avec protection footer (pb-safe) */}
+        {/* CONTENEUR DES 3 BOUTONS : flex-1 (prend le reste de l'écran) */}
         <div className="flex-1 flex flex-col md:flex-row pb-[max(2vh,env(safe-area-inset-bottom))]">
           
           {/* ÉTAPE 1 : PRISE DE POSTE */}
           <button onClick={() => setActiveMode('prise_poste')} className="flex-1 bg-[#050505] border-b md:border-b-0 md:border-r border-white/5 flex flex-col items-center justify-center gap-[2vh] hover:bg-[#0a0a0a] transition-all group active:scale-[0.98]">
-            <div className="w-[15vh] h-[15vh] max-w-[80px] max-h-[80px] bg-[#FF6600]/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-              <QrCode size={36} className="text-[#FF6600]" />
+            <div className="w-[12vh] h-[12vh] max-w-[80px] max-h-[80px] bg-[#FF6600]/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <QrCode size={32} className="text-[#FF6600]" />
             </div>
             <div className="text-center px-4">
               <h3 className="text-white font-black text-[clamp(1.1rem,3vw,1.5rem)] uppercase tracking-widest mb-1">1. Prise de Poste</h3>
-              <p className="text-gray-500 text-[10px] uppercase tracking-widest">Scan Servante "Name of Tech"</p>
+              <p className="text-gray-500 text-[10px] uppercase tracking-widest">Scan QR Servante</p>
             </div>
           </button>
 
-          {/* ÉTAPE 2 : ASSISTANT IA (Existant) */}
+          {/* ÉTAPE 2 : ASSISTANT IA */}
           <button onClick={() => setActiveMode('mecanique_live')} className="flex-1 bg-[#0a0a0a] border-b md:border-b-0 md:border-r border-white/5 flex flex-col items-center justify-center gap-[2vh] hover:bg-[#111] transition-all group active:scale-[0.98] relative overflow-hidden shadow-[inset_0_0_30px_rgba(220,38,38,0.05)]">
             <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
-            <div className="w-[15vh] h-[15vh] max-w-[80px] max-h-[80px] bg-red-600/10 border border-red-500/30 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform relative z-10">
-              <Mic size={36} className="text-red-500" />
+            <div className="w-[12vh] h-[12vh] max-w-[80px] max-h-[80px] bg-red-600/10 border border-red-500/30 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform relative z-10">
+              <Mic size={32} className="text-red-500" />
             </div>
             <div className="text-center px-4 relative z-10">
               <h3 className="text-red-500 font-black text-[clamp(1.1rem,3vw,1.5rem)] uppercase tracking-widest mb-1 drop-shadow-md">2. Assistant IA</h3>
@@ -86,8 +86,8 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
 
           {/* ÉTAPE 3 : FIN DE POSTE */}
           <button onClick={() => setActiveMode('fin_poste')} className="flex-1 bg-[#050505] flex flex-col items-center justify-center gap-[2vh] hover:bg-[#0a0a0a] transition-all group active:scale-[0.98]">
-            <div className="w-[15vh] h-[15vh] max-w-[80px] max-h-[80px] bg-green-500/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-              <ClipboardCheck size={36} className="text-green-500" />
+            <div className="w-[12vh] h-[12vh] max-w-[80px] max-h-[80px] bg-green-500/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <ClipboardCheck size={32} className="text-green-500" />
             </div>
             <div className="text-center px-4">
               <h3 className="text-white font-black text-[clamp(1.1rem,3vw,1.5rem)] uppercase tracking-widest mb-1">3. Fin de Poste</h3>
@@ -102,12 +102,12 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
 
   // --- MENU PRINCIPAL (HOME) ---
   return (
-    <div className="w-full h-full bg-[#050505] flex flex-col font-sans overflow-hidden">
+    <div className="h-full w-full bg-[#050505] flex flex-col font-sans">
       
       {/* HEADER LOCAL STRICT : 10vh */}
       <div className="h-[10vh] shrink-0 border-b border-white/5 flex items-center px-[4vw] gap-4 bg-[#0a0a0a]">
         {onBack && (
-          <button onClick={onBack} className="w-10 h-10 bg-black/50 border border-white/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+          <button onClick={onBack} className="w-10 h-10 bg-black/50 border border-white/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform shrink-0">
             <img src="/icon-return.png" alt="Retour" className="w-[60%] h-[60%] object-contain opacity-80" />
           </button>
         )}

@@ -48,6 +48,8 @@ export const GARAGE_M5_RULES = {
   // 6. EXPERTISE MÉTALLURGIQUE (ANALYSE THERMIQUE & REVENU ACIER)
   thermal_analysis: {
     zone_1: { color: "Jaune Paille", temp: "220°C", status: "Dureté Max / Cassant. Si pièce de friction : début de glaçage thermique détecté." },
+    zone_2: { color: "Jaune Foncé", temp: "260°C", status: "Bon équilibre dureté/ténacité." },
+    zone_3: { color: "Violet/Pourpre", temp: "285°C", status: "Début de perte de dureté." },
     zone_4: { color: "Bleu", temp: "290°C+", status: "DANGER : Acier détrempé. Surchauffe extrême. Remplacement OBLIGATOIRE (Perte résistance structurelle)." },
     zone_5: { color: "Gris", temp: ">350°C", status: "CRITIQUE : Destruction thermique. Remplacement immédiat." },
     hydraulique_tactile: {

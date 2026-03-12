@@ -11,9 +11,8 @@ type ViewState = 'home' | 'maintenance_live' | 'mecanique_menu' | 'mecanique_liv
 
 const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<ViewState>('home');
-  const { currentTier } = useUserTier(); // Récupération du grade pour le Header
+  const { currentTier } = useUserTier();
 
-  // --- ROUTAGE VERS LE LIVE ASSISTANT ---
   if (activeMode === 'maintenance_live') {
     return <LiveAssistant mode="maintenance" onExit={() => setActiveMode('home')} />;
   }
@@ -21,14 +20,10 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
     return <LiveAssistant mode="mecanique" onExit={() => setActiveMode('mecanique_menu')} />;
   }
 
-  // =======================================================================
-  // VUE 1 : SOUS-MENU MÉCANIQUE
-  // =======================================================================
   if (activeMode === 'mecanique_menu') {
     return (
       <div className="h-full bg-[#121212] text-white flex flex-col overflow-hidden font-sans">
-        {/* SOUS-HEADER STRICT - 10vh */}
-        <section className="h-[10vh] border-b border-white/5 flex items-center justify-between px-[4vw] shrink-0">
+        <section className="h-[10vh] min-h-[60px] border-b border-white/5 flex items-center justify-between px-[4vw] shrink-0">
           <div className="flex items-center gap-4">
             <button onClick={() => setActiveMode('home')} className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors active:scale-90 shrink-0">
               <ArrowLeft className="text-white" size={24} />
@@ -48,12 +43,10 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
           </div>
         </section>
 
-        {/* CONTENEUR DES 3 BOUTONS (77.5vh restants) */}
         <main className="flex-1 px-[4vw] pb-[4.5vh] flex flex-col gap-[2vh]">
-          {/* BOUTON 1: PRISE DE POSTE */}
           <button 
             onClick={() => setActiveMode('prise_poste')}
-            className="h-[23vh] w-full rounded-2xl border border-[#DC2626]/30 group transition-all duration-300 hover:border-[#DC2626] hover:shadow-[0_0_30px_rgba(220,38,38,0.2)] active:scale-[0.98] relative overflow-hidden bg-black/40 shrink-0 flex flex-col items-center justify-center gap-4 text-center px-6"
+            className="flex-1 w-full rounded-2xl border border-[#DC2626]/30 group transition-all duration-300 hover:border-[#DC2626] hover:shadow-[0_0_30px_rgba(220,38,38,0.2)] active:scale-[0.98] relative overflow-hidden bg-black/40 flex flex-col items-center justify-center gap-4 text-center px-6"
           >
             <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.06)_1px,transparent_1px)] bg-[size:3vw_3vw]"></div>
             <ScanQrCode className="text-[#DC2626] group-hover:scale-110 transition-transform relative z-10" size={48} />
@@ -63,10 +56,9 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
             </div>
           </button>
 
-          {/* BOUTON 2: ASSISTANT IA */}
           <button 
             onClick={() => setActiveMode('mecanique_live')}
-            className="h-[23vh] w-full rounded-2xl border border-white/10 group transition-all duration-300 hover:border-white/30 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-[0.98] relative overflow-hidden bg-black/40 shrink-0 flex flex-col items-center justify-center gap-4 text-center px-6"
+            className="flex-1 w-full rounded-2xl border border-white/10 group transition-all duration-300 hover:border-white/30 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-[0.98] relative overflow-hidden bg-black/40 flex flex-col items-center justify-center gap-4 text-center px-6"
           >
             <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:3vw_3vw]"></div>
             <Mic className="text-[#DC2626] group-hover:scale-110 transition-transform relative z-10" size={48} />
@@ -76,10 +68,9 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
             </div>
           </button>
 
-          {/* BOUTON 3: FIN DE POSTE */}
           <button 
             onClick={() => setActiveMode('fin_poste')}
-            className="h-[23vh] w-full rounded-2xl border border-[#DC2626]/30 group transition-all duration-300 hover:border-[#DC2626] hover:shadow-[0_0_30px_rgba(220,38,38,0.2)] active:scale-[0.98] relative overflow-hidden bg-black/40 shrink-0 flex flex-col items-center justify-center gap-4 text-center px-6"
+            className="flex-1 w-full rounded-2xl border border-[#DC2626]/30 group transition-all duration-300 hover:border-[#DC2626] hover:shadow-[0_0_30px_rgba(220,38,38,0.2)] active:scale-[0.98] relative overflow-hidden bg-black/40 flex flex-col items-center justify-center gap-4 text-center px-6"
           >
             <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.06)_1px,transparent_1px)] bg-[size:3vw_3vw]"></div>
             <ClipboardCheck className="text-[#DC2626] group-hover:scale-110 transition-transform relative z-10" size={48} />
@@ -94,13 +85,13 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   }
 
   // =======================================================================
-  // VUE 0 : MENU PRINCIPAL (AIGUILLEUR) - RESTRUCTURED
+  // VUE 0 : MENU PRINCIPAL (AIGUILLEUR) - FLEX FLUIDE
   // =======================================================================
   return (
     <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
       
-      {/* ÉTAPE 1 : HEADER (10vh) */}
-      <div className="h-[10vh] bg-[#121212] border border-[#D3D3D3] rounded-2xl flex items-center justify-between px-[4vw] shrink-0">
+      {/* ÉTAPE 1 : HEADER - Fixe à 10vh */}
+      <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#D3D3D3] rounded-2xl flex items-center justify-between px-[4vw] shrink-0">
         <div className="flex items-center gap-4">
           {onBack && (
             <button onClick={onBack} className="active:scale-90 transition-transform">
@@ -122,10 +113,10 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* ÉTAPE 2 : MAINTENANCE INDUSTRIELLE (35vh) */}
+      {/* ÉTAPE 2 : MAINTENANCE INDUSTRIELLE - S'adapte avec flex-1 */}
       <button
         onClick={() => setActiveMode('maintenance_live')}
-        className="h-[35vh] relative overflow-hidden bg-black border border-[#00E5FF] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all shrink-0"
+        className="flex-1 relative overflow-hidden bg-black border border-[#00E5FF] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all"
       >
         <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(0,229,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,0.08)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
         
@@ -141,10 +132,10 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         </div>
       </button>
 
-      {/* ÉTAPE 3 : MÉCANIQUE AUTO & P.L. (35vh) */}
+      {/* ÉTAPE 3 : MÉCANIQUE AUTO & P.L. - S'adapte avec flex-1 */}
       <button
         onClick={() => setActiveMode('mecanique_menu')}
-        className="h-[35vh] relative overflow-hidden bg-black border border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all shrink-0"
+        className="flex-1 relative overflow-hidden bg-black border border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all"
       >
         <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.08)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
         

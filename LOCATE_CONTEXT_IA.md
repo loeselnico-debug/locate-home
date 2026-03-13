@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 13/03/2026 18:15:10
+> 📅 Archive générée le : 13/03/2026 18:26:43
 
 
 // ==========================================
@@ -3893,6 +3893,9 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // =========================================================
+  // 1. PREMIER CERVEAU : GESTION DE LA CAMÉRA
+  // =========================================================
   useEffect(() => {
     if (step === 'shooting') {
       navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
@@ -3901,36 +3904,6 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
         })
         .catch(err => console.error("Erreur caméra:", err));
     }
-
-    // NOUVEAU : DÉCLENCHEUR D'ANALYSE IA
-  useEffect(() => {
-    if (step === 'analyzing' && capturedImages.length > 0) {
-      const runAI = async () => {
-        try {
-          // 1. On envoie les photos à Gemini
-          const analysis = await geminiService.analyzeServanteFOD(capturedImages, profile?.id);
-
-          // 2. Si Gemini répond, on pré-remplit le rapport
-          if (analysis) {
-            setShiftStatus(analysis.status as ShiftStatus);
-            
-            if (analysis.status === 'DEGRADE') {
-              // L'IA a trouvé une anomalie (trou rouge, chaos), elle coche les cases toute seule !
-              if (analysis.tags) setSelectedTags(analysis.tags);
-              if (analysis.justification) setJustification(analysis.justification);
-            }
-          }
-        } catch (error) {
-          console.error("Erreur lors de l'analyse IA:", error);
-        } finally {
-          // 3. Quoi qu'il arrive (succès ou échec réseau), on libère le mécanicien vers le Sas de validation
-          setStep('report');
-        }
-      };
-
-      runAI();
-    }
-  }, [step, capturedImages, profile?.id]);
     
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
@@ -3939,6 +3912,34 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
       }
     };
   }, [step]);
+
+  // =========================================================
+  // 2. DEUXIÈME CERVEAU : L'ANALYSE IA (BIEN SÉPARÉ !)
+  // =========================================================
+  useEffect(() => {
+    if (step === 'analyzing' && capturedImages.length > 0) {
+      const runAI = async () => {
+        try {
+          const analysis = await geminiService.analyzeServanteFOD(capturedImages, profile?.id);
+
+          if (analysis) {
+            setShiftStatus(analysis.status as ShiftStatus);
+            if (analysis.status === 'DEGRADE') {
+              if (analysis.tags) setSelectedTags(analysis.tags);
+              if (analysis.justification) setJustification(analysis.justification);
+            }
+          }
+        } catch (error) {
+          console.error("Erreur lors de l'analyse IA:", error);
+        } finally {
+          setStep('report');
+        }
+      };
+
+      runAI();
+    }
+  }, [step, capturedImages, profile?.id]);
+  // =========================================================
 
   const toggleTorch = async () => {
     if (!videoRef.current?.srcObject) return;

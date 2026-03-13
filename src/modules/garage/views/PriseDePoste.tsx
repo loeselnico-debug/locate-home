@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { QrCode, ArrowLeft, CheckCircle2, Zap } from 'lucide-react';
+import { QrCode, ArrowLeft, CheckCircle2, Zap, Loader2, } from 'lucide-react';
 
 interface PriseDePosteProps {
   onBack: () => void;
 }
 
-// 🧬 PROFIL TYPE D'UNE SERVANTE (Ce que le QR Code est censé télécharger)
 interface ServanteProfile {
   id: string;
   name: string;
@@ -19,21 +18,25 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
   const [step, setStep] = useState<Step>('scan_qr');
   const [profile, setProfile] = useState<ServanteProfile | null>(null);
   
-  // Compteur de tir (ex: Tiroir 1 sur 6)
   const [currentShot, setCurrentShot] = useState<number>(1);
+  const [flashOn, setFlashOn] = useState(false);
+  
+  // NOUVEAU : Stockage des photos capturées
+  const [capturedImages, setCapturedImages] = useState<string[]>([]);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
+  // NOUVEAU : Référence vers le canvas caché pour la compression
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Démarrage de la caméra lors du passage à l'étape 'shooting'
   useEffect(() => {
     if (step === 'shooting') {
       navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         .then(stream => {
           if (videoRef.current) videoRef.current.srcObject = stream;
         })
-        .catch(err => console.error("Erreur d'accès à la caméra", err));
+        .catch(err => console.error("Erreur caméra:", err));
     }
     
-    // Nettoyage de la caméra si on quitte l'étape
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
@@ -42,62 +45,96 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
     };
   }, [step]);
 
-  // SIMULATION DU SCAN QR
+  const toggleTorch = async () => {
+    if (!videoRef.current?.srcObject) return;
+    const track = (videoRef.current.srcObject as MediaStream).getVideoTracks()[0];
+    const capabilities = track.getCapabilities() as any;
+    if (capabilities.torch) {
+      try {
+        const newState = !flashOn;
+        await track.applyConstraints({ advanced: [{ torch: newState }] } as any);
+        setFlashOn(newState);
+      } catch (err) { 
+        console.error("Erreur Torche:", err); 
+      }
+    }
+  };
+
   const handleSimulateScan = () => {
-    // Le QR code télécharge instantanément ces données :
     setProfile({
       id: 'FACOM-JET-001',
       name: 'Servante Châssis Moteur',
-      totalDrawers: 6, // 6 tiroirs moussés
+      totalDrawers: 6,
       foamColor: 'Rouge'
     });
+    setCapturedImages([]); // Reset des images
+    setCurrentShot(1);
     setStep('shooting');
   };
 
-  // LE DÉCLENCHEUR DE LA RAFALE
+  // NOUVEAU : LE MOTEUR DE CAPTURE ET COMPRESSION
   const handleCapture = () => {
-    if (!profile) return;
+    if (!profile || !videoRef.current || !canvasRef.current) return;
     
-    // Le nombre total de photos = Tiroirs + 1 (Le plateau libre)
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    // 1. Capture et compression de l'image (Max 1280px pour épargner la RAM)
+    if (context && video.videoWidth > 0) {
+      const targetWidth = 1280;
+      const targetHeight = (video.videoHeight / video.videoWidth) * targetWidth;
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      context.drawImage(video, 0, 0, targetWidth, targetHeight);
+      
+      // Conversion en base64 avec qualité JPEG à 70%
+      const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+      setCapturedImages(prev => [...prev, base64Image]);
+    }
+
     const maxShots = profile.totalDrawers + 1;
 
-    // TODO: Ici on fera le canvas.toDataURL() pour sauvegarder la photo en mémoire
-
+    // 2. Logique d'enchaînement
     if (currentShot < maxShots) {
-      setCurrentShot(prev => prev + 1); // On passe au tiroir suivant instantanément
+      setCurrentShot(prev => prev + 1);
     } else {
-      setStep('analyzing'); // Fini, on passe à l'analyse
+      if (flashOn) toggleTorch();
+      
+      // Passage à l'écran d'analyse
+      setStep('analyzing');
+      
+      // Simulation d'une analyse IA qui dure 3 secondes
+      setTimeout(() => {
+        setStep('report');
+      }, 3000);
     }
   };
 
   // ==========================================
-  // VUE 1 : LE SCAN DU QR CODE (Handshake)
+  // VUE 1 : LE SCAN DU QR CODE
   // ==========================================
   if (step === 'scan_qr') {
     return (
       <div className="w-full h-full bg-[#121212] flex flex-col px-[4vw] pt-[2vh] pb-[4vh] font-sans">
-        {/* Header simple */}
         <div className="h-[10vh] flex items-center shrink-0">
           <button onClick={onBack} className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 active:scale-90 transition-transform">
             <ArrowLeft className="text-white" size={24} />
           </button>
           <div className="ml-4">
             <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.1rem,4vw,1.4rem)] leading-none">Prise de Poste</h2>
-            <span className="text-[#DC2626] font-bold uppercase tracking-widest text-[10px]">Étape 1 : Identification</span>
+            <span className="text-[#D3D3D3] font-bold uppercase tracking-widest text-[10px]">Étape 1 : Identification</span>
           </div>
         </div>
 
-        {/* Le Viseur QR */}
         <div className="flex-1 flex flex-col items-center justify-center">
           <div className="relative w-[60vw] h-[60vw] max-w-[250px] max-h-[250px] border-2 border-[#DC2626] rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(220,38,38,0.15)] mb-8">
             <div className="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-[#DC2626] rounded-tl-lg"></div>
             <div className="absolute top-4 right-4 w-6 h-6 border-t-4 border-r-4 border-[#DC2626] rounded-tr-lg"></div>
             <div className="absolute bottom-4 left-4 w-6 h-6 border-b-4 border-l-4 border-[#DC2626] rounded-bl-lg"></div>
             <div className="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-[#DC2626] rounded-br-lg"></div>
-            
             <QrCode size={80} className="text-[#DC2626] opacity-80 animate-pulse" />
-            
-            {/* Ligne laser */}
             <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#FF6600] shadow-[0_0_15px_#FF6600]"></div>
           </div>
           
@@ -106,7 +143,6 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
             Visez le QR Code principal situé sur le flanc ou le plateau de votre servante.
           </p>
 
-          {/* BOUTON TEMPORAIRE POUR SIMULER LE SCAN */}
           <button 
             onClick={handleSimulateScan}
             className="mt-12 bg-[#DC2626] text-white px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs active:scale-95 transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(220,38,38,0.4)]"
@@ -119,14 +155,16 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
   }
 
   // ==========================================
-  // VUE 2 : LE MITRAILLAGE (Appareil Photo)
+  // VUE 2 : LE MITRAILLAGE
   // ==========================================
   if (step === 'shooting' && profile) {
     const isPlateauLibre = currentShot > profile.totalDrawers;
 
     return (
       <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden font-sans select-none">
-        {/* Flux Caméra en plein écran */}
+        {/* CANVAS CACHÉ POUR LA COMPRESSION DES PHOTOS */}
+        <canvas ref={canvasRef} className="hidden" />
+
         <video 
           ref={videoRef} 
           autoPlay 
@@ -134,7 +172,6 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
           className="absolute inset-0 w-full h-full object-cover opacity-80" 
         />
 
-        {/* HUD Tête Haute */}
         <div className="absolute top-0 left-0 w-full p-6 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-start z-10">
           <div>
             <span className="text-[#DC2626] font-black text-[10px] uppercase tracking-widest block mb-1">
@@ -144,19 +181,20 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
               {isPlateauLibre ? "Plateau Libre" : `Tiroir ${currentShot}/${profile.totalDrawers}`}
             </h1>
           </div>
-          <button onClick={() => setStep('scan_qr')} className="w-10 h-10 bg-black/50 border border-white/20 rounded-full flex items-center justify-center backdrop-blur-md active:scale-90">
+          <button onClick={() => {
+            if (flashOn) toggleTorch();
+            setStep('scan_qr');
+          }} className="w-10 h-10 bg-black/50 border border-white/20 rounded-full flex items-center justify-center backdrop-blur-md active:scale-90">
             <span className="text-white font-bold text-xl leading-none mb-1">×</span>
           </button>
         </div>
 
-        {/* Cadre Fantôme / Guide visuel */}
         <div className="absolute inset-x-[5vw] top-[20vh] bottom-[25vh] border-2 border-dashed border-white/30 rounded-2xl flex items-center justify-center pointer-events-none z-10">
           <p className="text-white/50 font-bold uppercase tracking-widest text-[10px] bg-black/40 px-4 py-1.5 rounded-full backdrop-blur-sm">
             {isPlateauLibre ? "Cadrer le dessus de la servante" : "Aligner le tiroir complet ici"}
           </p>
         </div>
 
-        {/* Zone de déclenchement (Bottom) */}
         <div className="absolute bottom-0 left-0 w-full h-[20vh] bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-center z-10 pb-[env(safe-area-inset-bottom)]">
           <button 
             onClick={handleCapture}
@@ -164,25 +202,89 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
           >
             <div className={`w-[85%] h-[85%] rounded-full transition-colors ${isPlateauLibre ? 'bg-[#FF6600]' : 'bg-white'}`}></div>
           </button>
+
+          <button 
+            onClick={toggleTorch} 
+            className={`absolute right-[6vw] bottom-[max(5vh,env(safe-area-inset-bottom))] w-14 h-14 rounded-2xl backdrop-blur-md flex items-center justify-center border transition-all active:scale-90 ${
+              flashOn 
+                ? 'bg-[#DC2626]/20 border-[#DC2626] shadow-[0_0_15px_rgba(220,38,38,0.4)]' 
+                : 'bg-black/40 border-white/10'
+            }`}
+          >
+            <Zap size={24} className={flashOn ? 'text-[#DC2626] fill-[#DC2626]' : 'text-white/50'} />
+          </button>
         </div>
       </div>
     );
   }
 
   // ==========================================
-  // VUE 3 & 4 : ANALYSE ET RAPPORT (Placeholder)
+  // VUE 3 : EN COURS D'ANALYSE IA
+  // ==========================================
+  if (step === 'analyzing') {
+    return (
+      <div className="w-full h-full bg-[#121212] flex flex-col items-center justify-center px-6 text-center font-sans">
+        <Loader2 size={64} className="text-[#DC2626] mb-6 animate-spin" />
+        <h2 className="text-white font-black uppercase text-2xl tracking-widest mb-2 animate-pulse">
+          Analyse FOD...
+        </h2>
+        <p className="text-gray-400 text-xs uppercase tracking-widest mt-4">
+          Traitement de {capturedImages.length} clichés par le système Locate M5.
+        </p>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // VUE 4 : LE RAPPORT / SAS DE VALIDATION
   // ==========================================
   return (
-    <div className="w-full h-full bg-[#121212] flex flex-col items-center justify-center px-6 text-center">
-      <CheckCircle2 size={64} className="text-green-500 mb-6" />
-      <h2 className="text-white font-black uppercase text-2xl tracking-widest mb-2">Acquisition Terminée</h2>
-      <p className="text-gray-400 text-sm">Les 7 clichés sont prêts pour l'analyse IA.</p>
+    <div className="w-full h-full bg-[#121212] flex flex-col px-[4vw] pt-[2vh] pb-[4vh] font-sans">
+      <div className="h-[10vh] flex items-center shrink-0 border-b border-white/5 mb-4">
+        <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.1rem,4vw,1.4rem)] leading-none">
+          Validation Servante
+        </h2>
+      </div>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-4">
+        
+        {/* En-tête de validation global */}
+        <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4 flex items-center gap-4">
+          <CheckCircle2 className="text-green-500 shrink-0" size={32} />
+          <div>
+            <h3 className="text-green-500 font-black uppercase tracking-widest text-sm">Contrôle Réussi</h3>
+            <p className="text-gray-400 text-[10px] uppercase tracking-widest mt-1">L'IA n'a détecté aucune empreinte vide.</p>
+          </div>
+        </div>
+
+        <h4 className="text-[#D3D3D3] font-bold text-[10px] uppercase tracking-widest mt-6 mb-2 border-b border-white/10 pb-2">
+          Clichés enregistrés ({capturedImages.length})
+        </h4>
+
+        {/* Grille des photos capturées */}
+        <div className="grid grid-cols-2 gap-3">
+          {capturedImages.map((img, idx) => {
+            const isPlateau = idx === capturedImages.length - 1;
+            return (
+              <div key={idx} className="relative aspect-square bg-[#1A1A1A] rounded-xl border border-white/5 overflow-hidden">
+                <img src={img} alt={`Shot ${idx}`} className="w-full h-full object-cover opacity-80" />
+                <div className="absolute bottom-0 left-0 w-full bg-black/60 backdrop-blur-md p-1.5 text-center border-t border-white/10">
+                  <span className="text-[9px] font-black uppercase text-white tracking-widest">
+                    {isPlateau ? 'Plateau' : `Tiroir ${idx + 1}`}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+      </div>
       
       <button 
         onClick={onBack}
-        className="mt-12 w-full bg-[#1A1A1A] border border-white/10 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs active:scale-95"
+        className="mt-6 w-full bg-[#DC2626] text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs active:scale-95 shadow-[0_0_20px_rgba(220,38,38,0.4)]"
       >
-        Retour au menu
+        Signer & Clôturer
       </button>
     </div>
   );

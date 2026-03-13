@@ -403,6 +403,9 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
             link.click();
             URL.revokeObjectURL(url);
 
+          // NOUVEAU : On sauvegarde les photos dans le cache du téléphone pour ce soir !
+            localStorage.setItem(`locatem5_morning_${profile?.id}`, JSON.stringify(capturedImages))
+
             onBack();
           } catch (error) {
             console.error("Erreur PDF:", error);

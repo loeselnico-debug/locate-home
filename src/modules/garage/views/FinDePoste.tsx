@@ -83,9 +83,15 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     });
     setEveningImages([]);
     
-    // Simulation : On récupère les 7 photos prises ce matin par le tech
-    setMorningImagesMock(Array(7).fill(MOCK_MORNING_BASE64));
-
+    // NOUVEAU : On fouille dans la mémoire du téléphone pour retrouver les photos du matin
+    const savedMorningShots = localStorage.getItem(`locatem5_morning_FACOM-JET-001`);
+    if (savedMorningShots) {
+      setMorningImagesMock(JSON.parse(savedMorningShots));
+    } else {
+      // Sécurité si le technicien n'avait pas fait sa prise de poste ce matin
+      setMorningImagesMock(Array(7).fill(MOCK_MORNING_BASE64));
+    }
+    
     setCurrentShot(1);
     setShiftStatus('CONFORME');
     setJustification('');

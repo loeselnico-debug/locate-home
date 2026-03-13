@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Mail, Shield } from 'lucide-react';
+import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Mail, Shield, ShieldAlert } from 'lucide-react';
 import LiveAssistant from '../components/LiveAssistant';
 import { useUserTier } from '../../../core/security/useUserTier';
 import PriseDePoste from './PriseDePoste';
+import TourDeControle from './TourDeControle';
 
 interface GarageDashboardProps {
   onBack?: () => void;
 }
 
-type ViewState = 'home' | 'maintenance_live' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste';
+type ViewState = 'home' | 'maintenance_live' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle';
 
 const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<ViewState>('home');
@@ -26,6 +27,11 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   if (activeMode === 'prise_poste') {
     return <PriseDePoste onBack={() => setActiveMode('mecanique_menu')} />;
   }
+
+  // --- ROUTAGE VERS LA TOUR DE CONTRÔLE (CHEF D'ATELIER)
+  if (activeMode === 'tour_controle') {
+  return <TourDeControle onBack={() => setActiveMode('home')} />;
+}
 
   // =======================================================================
   // VUE 1 : SOUS-MENU MÉCANIQUE (Refonte 4 Conteneurs Flex)
@@ -48,6 +54,26 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
             </span>
           </div>
         </div>
+
+<header className="flex items-center justify-between mb-8">
+  <div className="flex gap-4">
+    <ArrowLeft className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
+    <Settings className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
+    <Mail className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
+    {/* BOUTON TOUR DE CONTRÔLE */}
+    <button 
+      onClick={() => setActiveMode('tour_controle')}
+      className="ml-2 flex items-center justify-center text-[#00E5FF] hover:text-white transition-colors"
+    >
+      <ShieldAlert size={24} />
+    </button>
+  </div>
+
+  <div className="border border-[#FF6600] text-[#FF6600] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+    <Shield size={12} />
+    PRO
+  </div>
+</header>
 
         {/* CONTENEUR 2 : PRISE DE POSTE (Flex-1) */}
         <button 

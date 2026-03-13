@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { QrCode, ArrowLeft, CheckCircle2, Zap, Loader2, RotateCcw, AlertOctagon } from 'lucide-react';
+import { supabase } from '../../../core/security/supabaseClient';
 
 interface FinDePosteProps {
   onBack: () => void;
@@ -91,7 +92,7 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
       // Sécurité si le technicien n'avait pas fait sa prise de poste ce matin
       setMorningImagesMock(Array(7).fill(MOCK_MORNING_BASE64));
     }
-    
+
     setCurrentShot(1);
     setShiftStatus('CONFORME');
     setJustification('');
@@ -293,6 +294,23 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
           if (shiftStatus === 'DEGRADE' && selectedTags.length === 0 && justification.trim() === '') { alert("Saisir un motif."); return; }
           setIsGenerating(true);
           try {
+            // =========================================================
+            // NOUVEAU : TRANSMISSION SATELLITE À LA TOUR DE CONTRÔLE
+            // =========================================================
+            const { error: dbError } = await supabase.from('servantes_status').upsert({
+              id: profile?.id || 'FACOM-JET-001',
+              technician_id: 'TECH-01',
+              technician_name: 'Alexandre (TECH-01)',
+              status: shiftStatus,
+              tags: selectedTags,
+              details: justification,
+              updated_at: new Date().toISOString()
+            });
+
+            if (dbError) {
+              console.warn("Erreur de transmission :", dbError.message);
+            }
+            // =========================================================
             const { pdf } = await import('@react-pdf/renderer');
             const { FinDePosteReport } = await import('../components/FinDePosteReport');
             const reportData = {

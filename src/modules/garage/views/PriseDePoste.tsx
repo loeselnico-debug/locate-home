@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { QrCode, ArrowLeft, CheckCircle2, Zap, Loader2, RotateCcw, AlertOctagon } from 'lucide-react';
 import { geminiService } from '../../../core/ai/geminiService';
+import { supabase } from '../../../core/security/supabaseClient';
 
 interface PriseDePosteProps {
   onBack: () => void;
@@ -411,6 +412,23 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
           setIsGenerating(true);
 
           try {
+            // =========================================================
+            // NOUVEAU : TRANSMISSION SATELLITE À LA TOUR DE CONTRÔLE
+            // =========================================================
+            const { error: dbError } = await supabase.from('servantes_status').upsert({
+              id: profile?.id || 'FACOM-JET-001',
+              technician_id: 'TECH-01',
+              technician_name: 'Alexandre (TECH-01)',
+              status: shiftStatus,
+              tags: selectedTags,
+              details: justification,
+              updated_at: new Date().toISOString()
+            });
+
+            if (dbError) {
+              console.warn("Erreur de transmission :", dbError.message);
+            }
+            // =========================================================
             const { pdf } = await import('@react-pdf/renderer');
             const { PriseDePosteReport } = await import('../components/PriseDePosteReport');
 

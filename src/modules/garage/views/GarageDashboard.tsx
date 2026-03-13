@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Mail, Shield } from 'lucide-react';
 import LiveAssistant from '../components/LiveAssistant';
 import { useUserTier } from '../../../core/security/useUserTier';
+import PriseDePoste from './PriseDePoste';
 
 interface GarageDashboardProps {
   onBack?: () => void;
@@ -13,11 +14,17 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<ViewState>('home');
   const { currentTier } = useUserTier();
 
+  // --- ROUTAGE VERS LE LIVE ASSISTANT ---
   if (activeMode === 'maintenance_live') {
     return <LiveAssistant mode="maintenance" onExit={() => setActiveMode('home')} />;
   }
   if (activeMode === 'mecanique_live') {
     return <LiveAssistant mode="mecanique" onExit={() => setActiveMode('mecanique_menu')} />;
+  }
+
+  // --- ROUTAGE VERS LA PRISE DE POSTE ---
+  if (activeMode === 'prise_poste') {
+    return <PriseDePoste onBack={() => setActiveMode('mecanique_menu')} />;
   }
 
   // =======================================================================

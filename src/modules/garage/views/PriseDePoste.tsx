@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { QrCode, ArrowLeft, CheckCircle2, Zap, Loader2, } from 'lucide-react';
+import { QrCode, ArrowLeft, CheckCircle2, Zap, Loader2, RotateCcw } from 'lucide-react';
 
 interface PriseDePosteProps {
   onBack: () => void;
@@ -20,12 +20,11 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
   
   const [currentShot, setCurrentShot] = useState<number>(1);
   const [flashOn, setFlashOn] = useState(false);
+  const [showFlash, setShowFlash] = useState(false); // NOUVEAU : Effet Flash visuel
   
-  // NOUVEAU : Stockage des photos capturées
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
   
   const videoRef = useRef<HTMLVideoElement>(null);
-  // NOUVEAU : Référence vers le canvas caché pour la compression
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -67,12 +66,11 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
       totalDrawers: 6,
       foamColor: 'Rouge'
     });
-    setCapturedImages([]); // Reset des images
+    setCapturedImages([]);
     setCurrentShot(1);
     setStep('shooting');
   };
 
-  // NOUVEAU : LE MOTEUR DE CAPTURE ET COMPRESSION
   const handleCapture = () => {
     if (!profile || !videoRef.current || !canvasRef.current) return;
     
@@ -80,7 +78,7 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
 
-    // 1. Capture et compression de l'image (Max 1280px pour épargner la RAM)
+    // 1. Capture et compression
     if (context && video.videoWidth > 0) {
       const targetWidth = 1280;
       const targetHeight = (video.videoHeight / video.videoWidth) * targetWidth;
@@ -89,26 +87,33 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
       canvas.height = targetHeight;
       context.drawImage(video, 0, 0, targetWidth, targetHeight);
       
-      // Conversion en base64 avec qualité JPEG à 70%
       const base64Image = canvas.toDataURL('image/jpeg', 0.7);
       setCapturedImages(prev => [...prev, base64Image]);
     }
 
+    // 2. Effet visuel Flash (Feedback)
+    setShowFlash(true);
+    setTimeout(() => setShowFlash(false), 150);
+
     const maxShots = profile.totalDrawers + 1;
 
-    // 2. Logique d'enchaînement
+    // 3. Enchaînement
     if (currentShot < maxShots) {
       setCurrentShot(prev => prev + 1);
     } else {
       if (flashOn) toggleTorch();
-      
-      // Passage à l'écran d'analyse
       setStep('analyzing');
-      
-      // Simulation d'une analyse IA qui dure 3 secondes
       setTimeout(() => {
         setStep('report');
       }, 3000);
+    }
+  };
+
+  // NOUVEAU : Fonction pour annuler la dernière photo
+  const handleUndo = () => {
+    if (capturedImages.length > 0) {
+      setCapturedImages(prev => prev.slice(0, -1)); // Retire la dernière image
+      setCurrentShot(prev => prev - 1); // Recule le compteur
     }
   };
 
@@ -162,7 +167,9 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
 
     return (
       <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden font-sans select-none">
-        {/* CANVAS CACHÉ POUR LA COMPRESSION DES PHOTOS */}
+        {/* NOUVEAU : EFFET FLASH BLANC */}
+        {showFlash && <div className="absolute inset-0 bg-white z-40 opacity-80 transition-opacity duration-150"></div>}
+        
         <canvas ref={canvasRef} className="hidden" />
 
         <video 
@@ -195,24 +202,57 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
           </p>
         </div>
 
-        <div className="absolute bottom-0 left-0 w-full h-[20vh] bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-center z-10 pb-[env(safe-area-inset-bottom)]">
+        {/* NOUVEAU : BANDEAU DES MINIATURES EN DIRECT */}
+        {capturedImages.length > 0 && (
+          <div className="absolute bottom-[22vh] left-0 w-full px-[5vw] flex gap-3 overflow-x-auto no-scrollbar z-20 items-end pb-2">
+            {capturedImages.map((img, idx) => (
+              <div key={idx} className="relative w-14 h-14 shrink-0 rounded-lg border-2 border-[#DC2626] overflow-hidden shadow-lg animate-in fade-in zoom-in duration-200">
+                <img src={img} className="w-full h-full object-cover opacity-90" alt={`Miniature ${idx}`} />
+                <div className="absolute bottom-0 left-0 w-full bg-black/80 text-[8px] text-white text-center font-black py-0.5">
+                  {idx === profile.totalDrawers ? 'PLAT.' : `T${idx + 1}`}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="absolute bottom-0 left-0 w-full h-[20vh] bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-between z-10 pb-[env(safe-area-inset-bottom)] px-[8vw]">
+          
+          {/* BOUTON ANNULER (UNDO) */}
+          <div className="w-14 flex justify-start">
+            {capturedImages.length > 0 && (
+              <button 
+                onClick={handleUndo}
+                className="w-12 h-12 bg-black/60 border border-white/20 rounded-full flex flex-col items-center justify-center active:scale-90 transition-all text-white/70 hover:text-white"
+              >
+                <RotateCcw size={18} className="mb-0.5" />
+                <span className="text-[6px] font-black uppercase tracking-widest">Refaire</span>
+              </button>
+            )}
+          </div>
+
+          {/* DÉCLENCHEUR */}
           <button 
             onClick={handleCapture}
-            className="w-[20vw] h-[20vw] max-w-[80px] max-h-[80px] rounded-full border-[4px] border-white/20 flex items-center justify-center active:scale-90 transition-transform"
+            className="w-[20vw] h-[20vw] max-w-[80px] max-h-[80px] rounded-full border-[4px] border-white/20 flex items-center justify-center active:scale-90 transition-transform shrink-0 shadow-[0_0_20px_rgba(0,0,0,0.5)]"
           >
             <div className={`w-[85%] h-[85%] rounded-full transition-colors ${isPlateauLibre ? 'bg-[#FF6600]' : 'bg-white'}`}></div>
           </button>
 
-          <button 
-            onClick={toggleTorch} 
-            className={`absolute right-[6vw] bottom-[max(5vh,env(safe-area-inset-bottom))] w-14 h-14 rounded-2xl backdrop-blur-md flex items-center justify-center border transition-all active:scale-90 ${
-              flashOn 
-                ? 'bg-[#DC2626]/20 border-[#DC2626] shadow-[0_0_15px_rgba(220,38,38,0.4)]' 
-                : 'bg-black/40 border-white/10'
-            }`}
-          >
-            <Zap size={24} className={flashOn ? 'text-[#DC2626] fill-[#DC2626]' : 'text-white/50'} />
-          </button>
+          {/* BOUTON FLASH */}
+          <div className="w-14 flex justify-end">
+            <button 
+              onClick={toggleTorch} 
+              className={`w-14 h-14 rounded-2xl backdrop-blur-md flex items-center justify-center border transition-all active:scale-90 ${
+                flashOn 
+                  ? 'bg-[#DC2626]/20 border-[#DC2626] shadow-[0_0_15px_rgba(220,38,38,0.4)]' 
+                  : 'bg-black/40 border-white/10'
+              }`}
+            >
+              <Zap size={24} className={flashOn ? 'text-[#DC2626] fill-[#DC2626]' : 'text-white/50'} />
+            </button>
+          </div>
+
         </div>
       </div>
     );
@@ -248,7 +288,6 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
 
       <div className="flex-1 overflow-y-auto no-scrollbar space-y-4">
         
-        {/* En-tête de validation global */}
         <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4 flex items-center gap-4">
           <CheckCircle2 className="text-green-500 shrink-0" size={32} />
           <div>
@@ -261,7 +300,6 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
           Clichés enregistrés ({capturedImages.length})
         </h4>
 
-        {/* Grille des photos capturées */}
         <div className="grid grid-cols-2 gap-3">
           {capturedImages.map((img, idx) => {
             const isPlateau = idx === capturedImages.length - 1;
@@ -277,7 +315,6 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
             );
           })}
         </div>
-
       </div>
       
       <button 

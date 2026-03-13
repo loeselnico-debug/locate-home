@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { type UserTier, TIERS_CONFIG, type TierConfig } from './tiers';
-import { supabase } from './supabaseClient'; // NOUVEAU : Connexion à la base
+import { supabase } from './supabaseClient';
 
 const TIER_STORAGE_KEY = 'locate_user_tier';
-
-// NOUVEAU : On passe le défaut à FREE (logique pour vendre le Premium)
 const DEFAULT_TIER: UserTier = 'FREE';
 
 export const useUserTier = () => {
@@ -13,23 +11,35 @@ export const useUserTier = () => {
 
   useEffect(() => {
     const fetchTierInfo = async () => {
-      // 1. Lecture ultra-rapide du stockage local
+      // 1. Lecture ultra-rapide du stockage local (pour l'affichage immédiat)
       const savedTier = localStorage.getItem(TIER_STORAGE_KEY) as UserTier;
       if (savedTier && ['FREE', 'PREMIUM', 'PRO'].includes(savedTier)) {
         setCurrentTier(savedTier);
         setTierConfig(TIERS_CONFIG[savedTier]);
       }
 
-      // 2. Vérification silencieuse et sécurisée auprès de Supabase
+      // 2. Vérification sécurisée auprès de Supabase (La BDD a toujours raison)
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.user_metadata?.tier) {
-        const realTier = session.user.user_metadata.tier as UserTier;
-        
-        // Si Supabase dit autre chose que le local, on écrase le local (La BDD a toujours raison)
-        if (['FREE', 'PREMIUM', 'PRO'].includes(realTier) && realTier !== savedTier) {
-          setCurrentTier(realTier);
-          setTierConfig(TIERS_CONFIG[realTier]);
-          localStorage.setItem(TIER_STORAGE_KEY, realTier);
+      
+      if (session?.user) {
+        // NOUVEAU : On interroge directement ta nouvelle table 'profiles'
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('subscription_plan')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error) console.warn("Information Supabase :", error.message);
+
+        if (data && data.subscription_plan) {
+          // On passe le 'free' de Supabase en 'FREE' pour React
+          const realTier = data.subscription_plan.toUpperCase() as UserTier;
+          
+          if (['FREE', 'PREMIUM', 'PRO'].includes(realTier) && realTier !== savedTier) {
+            setCurrentTier(realTier);
+            setTierConfig(TIERS_CONFIG[realTier]);
+            localStorage.setItem(TIER_STORAGE_KEY, realTier);
+          }
         }
       }
     };
@@ -43,21 +53,17 @@ export const useUserTier = () => {
     setCurrentTier(tier);
     setTierConfig(TIERS_CONFIG[tier]);
     
-    // 2. Synchronisation sécurisée dans Supabase (métadonnées)
+    // 2. Synchronisation sécurisée dans Supabase (Backdoor Admin)
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      await supabase.auth.updateUser({
-        data: { tier: tier }
-      });
+      await supabase
+        .from('profiles')
+        .update({ subscription_plan: tier.toLowerCase() }) // On renvoie en minuscules
+        .eq('id', session.user.id);
     }
     
-    // 3. Rechargement pour appliquer les droits partout
     window.location.reload();
   };
 
-  return { 
-    currentTier, 
-    tierConfig, 
-    setTier 
-  };
+  return { currentTier, tierConfig, setTier };
 };

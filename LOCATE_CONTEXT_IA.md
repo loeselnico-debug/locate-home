@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 13/03/2026 05:54:52
+> 📅 Archive générée le : 13/03/2026 18:02:06
 
 
 // ==========================================
@@ -548,7 +548,7 @@ import { KITCHEN_M4_RULES } from './expertisemetier/kitchen';
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
-// --- PROMPT SYSTEME DYNAMIQUE (VERSION V26 SANS CONTOUR NÉON) ---
+// --- PROMPT SYSTEME DYNAMIQUE HOME & KITCHEN ---
 const getSystemPrompt = (userLocation: string, rulesContext: string, categoriesContext: string, module: 'HOME' | 'KITCHEN' = 'HOME') => {
   const brandInstruction = module === 'HOME' ? 'Marque exacte SEULE. DÉDUIRE OBLIGATOIREMENT la marque via couleurs/formes/design si le texte est flou (ex: Bleu/Rouge = Bosch/Milwaukee).' : 'Marque ou Origine';
   const typeInstruction = module === 'HOME' ? 'Nom générique usuel (ex: perceuse, meuleuse, niveau laser)' : 'Famille de produit';
@@ -637,6 +637,57 @@ export const geminiService = {
     } catch (error) { 
       console.error("Erreur Gemini (Video):", error);
       return []; 
+    }
+  },
+
+
+ // --- FONCTION SPÉCIALISÉE POUR L'ANALYSE FOD (Foreign Object Debris) SUR LES SERVANTES D'ATELIER ---
+ analyzeServanteFOD: async (base64Images: string[], servanteId: string = "INCONNU"): Promise<{status: string, tags: string[], justification: string} | null> => {
+    if (!apiKey) {
+      console.error("Clé API Gemini introuvable.");
+      return null;
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
+      });
+
+      const prompt = `
+Tu es l'Expert Vision Industrielle du protocole FOD (Foreign Object Debris) du système LOCATE M5.
+Tu vas analyser ${base64Images.length} clichés consécutifs représentant les tiroirs et le plateau de la servante d'atelier "${servanteId}".
+
+RÈGLE D'ANALYSE (LE STANDARD 5S) :
+- La plupart des tiroirs possèdent des mousses de rangement (souvent bicolores, ex: noir dessus, rouge ou couleur vive au fond).
+- Cherche les "trous" : une empreinte d'outil vide laisse apparaître la couleur de fond de la mousse.
+- Outils en vrac : détecte les zones de "Rangement chaos" où les outils ne sont pas dans leurs empreintes.
+
+INSTRUCTION DE SORTIE :
+Tu dois retourner UNIQUEMENT un objet JSON valide suivant cette structure EXACTE :
+{
+  "status": "CONFORME" | "DEGRADE",
+  "tags": [],
+  "justification": ""
+}
+
+Logique de remplissage :
+- Si AUCUN trou n'est visible et que tout est rangé -> "status": "CONFORME", "tags": [], "justification": "Contrôle visuel OK. Aucune anomalie détectée."
+- Si au moins UN trou est visible ou qu'un tiroir est en vrac -> "status": "DEGRADE". 
+  - Dans "tags", inclus les motifs pertinents parmi : ["Outil manquant", "Rangement chaos", "Outil mal placé"].
+  - Dans "justification", sois chirurgical. Ex: "Tiroir 02 : Empreinte de pince vide visible. Tiroir 04 : Clés en vrac."
+`;
+
+      const imageParts = base64Images.map(base64 => ({
+        inlineData: { data: base64.split(',')[1], mimeType: "image/jpeg" }
+      }));
+
+      const result = await model.generateContent([prompt, ...imageParts]);
+      return JSON.parse(result.response.text());
+      
+    } catch (error) {
+      console.error("Erreur Gemini (Analyse FOD):", error);
+      return null;
     }
   }
 };
@@ -1452,11 +1503,9 @@ export const TIERS_CONFIG: Record<UserTier, TierConfig> = {
 ```tsx
 import { useState, useEffect } from 'react';
 import { type UserTier, TIERS_CONFIG, type TierConfig } from './tiers';
-import { supabase } from './supabaseClient'; // NOUVEAU : Connexion à la base
+import { supabase } from './supabaseClient';
 
 const TIER_STORAGE_KEY = 'locate_user_tier';
-
-// NOUVEAU : On passe le défaut à FREE (logique pour vendre le Premium)
 const DEFAULT_TIER: UserTier = 'FREE';
 
 export const useUserTier = () => {
@@ -1465,23 +1514,35 @@ export const useUserTier = () => {
 
   useEffect(() => {
     const fetchTierInfo = async () => {
-      // 1. Lecture ultra-rapide du stockage local
+      // 1. Lecture ultra-rapide du stockage local (pour l'affichage immédiat)
       const savedTier = localStorage.getItem(TIER_STORAGE_KEY) as UserTier;
       if (savedTier && ['FREE', 'PREMIUM', 'PRO'].includes(savedTier)) {
         setCurrentTier(savedTier);
         setTierConfig(TIERS_CONFIG[savedTier]);
       }
 
-      // 2. Vérification silencieuse et sécurisée auprès de Supabase
+      // 2. Vérification sécurisée auprès de Supabase (La BDD a toujours raison)
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.user_metadata?.tier) {
-        const realTier = session.user.user_metadata.tier as UserTier;
-        
-        // Si Supabase dit autre chose que le local, on écrase le local (La BDD a toujours raison)
-        if (['FREE', 'PREMIUM', 'PRO'].includes(realTier) && realTier !== savedTier) {
-          setCurrentTier(realTier);
-          setTierConfig(TIERS_CONFIG[realTier]);
-          localStorage.setItem(TIER_STORAGE_KEY, realTier);
+      
+      if (session?.user) {
+        // NOUVEAU : On interroge directement ta nouvelle table 'profiles'
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('subscription_plan')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error) console.warn("Information Supabase :", error.message);
+
+        if (data && data.subscription_plan) {
+          // On passe le 'free' de Supabase en 'FREE' pour React
+          const realTier = data.subscription_plan.toUpperCase() as UserTier;
+          
+          if (['FREE', 'PREMIUM', 'PRO'].includes(realTier) && realTier !== savedTier) {
+            setCurrentTier(realTier);
+            setTierConfig(TIERS_CONFIG[realTier]);
+            localStorage.setItem(TIER_STORAGE_KEY, realTier);
+          }
         }
       }
     };
@@ -1495,23 +1556,19 @@ export const useUserTier = () => {
     setCurrentTier(tier);
     setTierConfig(TIERS_CONFIG[tier]);
     
-    // 2. Synchronisation sécurisée dans Supabase (métadonnées)
+    // 2. Synchronisation sécurisée dans Supabase (Backdoor Admin)
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      await supabase.auth.updateUser({
-        data: { tier: tier }
-      });
+      await supabase
+        .from('profiles')
+        .update({ subscription_plan: tier.toLowerCase() }) // On renvoie en minuscules
+        .eq('id', session.user.id);
     }
     
-    // 3. Rechargement pour appliquer les droits partout
     window.location.reload();
   };
 
-  return { 
-    currentTier, 
-    tierConfig, 
-    setTier 
-  };
+  return { currentTier, tierConfig, setTier };
 };
 ```
 
@@ -2240,6 +2297,132 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </AppSettingsProvider>
   </React.StrictMode>,
 );
+```
+
+// ==========================================
+// 📂 FICHIER : \src\modules\garage\components\FinDePosteReport.tsx
+// ==========================================
+
+```tsx
+import React from 'react';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
+
+const styles = StyleSheet.create({
+  page: { padding: 30, fontFamily: 'Helvetica', backgroundColor: '#FFFFFF' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, borderBottomWidth: 2, borderBottomColor: '#DC2626', paddingBottom: 10 },
+  logoText: { fontSize: 24, fontWeight: 'bold', color: '#DC2626' },
+  logoSub: { fontSize: 12, color: '#333333', marginTop: 4 },
+  reportInfo: { fontSize: 10, textAlign: 'right', color: '#666666' },
+  summaryBox: { padding: 15, borderRadius: 5, marginBottom: 20, borderWidth: 1 },
+  summaryBoxOK: { backgroundColor: '#F0FDF4', borderColor: '#22C55E' },
+  summaryBoxKO: { backgroundColor: '#FEF2F2', borderColor: '#DC2626' },
+  statusText: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
+  metaText: { fontSize: 10, color: '#333333', marginBottom: 3 },
+  justificationBox: { marginTop: 10, padding: 10, backgroundColor: '#FFFFFF', borderLeftWidth: 3, borderLeftColor: '#DC2626' },
+  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 5, marginBottom: 5 },
+  tagBadge: { backgroundColor: '#FEE2E2', color: '#991B1B', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 3, fontSize: 8, fontWeight: 'bold', textTransform: 'uppercase' },
+  
+  // NOUVEAU : Styles pour la grille Avant/Après
+  comparisonRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', paddingBottom: 10 },
+  column: { width: '48%' },
+  colHeader: { fontSize: 10, fontWeight: 'bold', backgroundColor: '#1F2937', color: 'white', padding: 4, textAlign: 'center', marginBottom: 4 },
+  image: { width: '100%', height: 140, objectFit: 'cover', borderRadius: 2, borderWidth: 1, borderColor: '#D1D5DB' },
+  drawerTitle: { fontSize: 12, fontWeight: 'bold', color: '#DC2626', marginBottom: 5, marginTop: 10 },
+  
+  footer: { position: 'absolute', bottom: 30, left: 30, right: 30, textAlign: 'center', fontSize: 8, color: '#9CA3AF', borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 10 },
+});
+
+interface FinDePosteReportProps {
+  data: {
+    profileId: string;
+    profileName: string;
+    timestamp: string;
+    status: 'CONFORME' | 'DEGRADE';
+    tags: string[];
+    justification: string;
+    morningImages: string[]; // Les photos de la Prise de Poste
+    eveningImages: string[]; // Les photos qu'il vient de prendre
+    totalDrawers: number;
+  }
+}
+
+export const FinDePosteReport: React.FC<FinDePosteReportProps> = ({ data }) => {
+  const isOK = data.status === 'CONFORME';
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* EN-TÊTE */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.logoText}>LOCATE GARAGE</Text>
+            <Text style={styles.logoSub}>Protocole FOD / 5S</Text>
+          </View>
+          <View style={styles.reportInfo}>
+            <Text style={{ fontWeight: 'bold', color: '#DC2626' }}>CLÔTURE DE POSTE (AVANT/APRÈS)</Text>
+            <Text>Date : {data.timestamp}</Text>
+            <Text>Opérateur : TECH-M5-001</Text>
+          </View>
+        </View>
+
+        {/* SYNTHÈSE */}
+        <View style={[styles.summaryBox, isOK ? styles.summaryBoxOK : styles.summaryBoxKO]}>
+          <Text style={[styles.statusText, { color: isOK ? '#15803D' : '#B91C1C' }]}>
+            BILAN FIN DE POSTE : {data.status}
+          </Text>
+          <Text style={styles.metaText}>Équipement : {data.profileId}</Text>
+          
+          {!isOK && (data.tags.length > 0 || data.justification) && (
+            <View style={styles.justificationBox}>
+              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#DC2626' }}>Déclaration d'anomalie :</Text>
+              {data.tags.length > 0 && (
+                <View style={styles.tagsContainer}>
+                  {data.tags.map((tag, i) => (
+                    <Text key={i} style={styles.tagBadge}>{tag}</Text>
+                  ))}
+                </View>
+              )}
+              {data.justification && (
+                <Text style={{ fontSize: 10, color: '#333333', marginTop: 4, fontStyle: 'italic' }}>
+                  "{data.justification}"
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* COMPARATEUR VISUEL (La magie opère ici) */}
+        {data.eveningImages.map((eveningImg, idx) => {
+          const isPlateau = idx === data.totalDrawers;
+          // Si on n'a pas l'image du matin (ex: bug système), on met un espace vide, mais normalement on l'a.
+          const morningImg = data.morningImages[idx] || eveningImg; 
+
+          return (
+            <View key={idx} wrap={false}>
+              <Text style={styles.drawerTitle}>
+                {isPlateau ? 'PLATEAU SUPÉRIEUR' : `TIROIR 0${idx + 1}`}
+              </Text>
+              <View style={styles.comparisonRow}>
+                <View style={styles.column}>
+                  <Text style={styles.colHeader}>PRISE DE POSTE (08:00)</Text>
+                  <Image src={morningImg} style={styles.image} />
+                </View>
+                <View style={styles.column}>
+                  <Text style={styles.colHeader}>FIN DE POSTE (MAINTENANT)</Text>
+                  <Image src={eveningImg} style={styles.image} />
+                </View>
+              </View>
+            </View>
+          );
+        })}
+
+        <Text style={styles.footer} fixed>
+          Document généré par le système LOCATE M5. Ce rapport de comparaison Avant/Après sert de preuve irréfutable de l'état de l'outillage entre la prise et la fin de poste.
+        </Text>
+      </Page>
+    </Document>
+  );
+};
 ```
 
 // ==========================================
@@ -3101,21 +3284,352 @@ export const reportService = new ReportService();
 ```
 
 // ==========================================
+// 📂 FICHIER : \src\modules\garage\views\FinDePoste.tsx
+// ==========================================
+
+```tsx
+import React, { useState, useRef, useEffect } from 'react';
+import { QrCode, ArrowLeft, CheckCircle2, Zap, Loader2, RotateCcw, AlertOctagon } from 'lucide-react';
+
+interface FinDePosteProps {
+  onBack: () => void;
+}
+
+interface ServanteProfile {
+  id: string;
+  name: string;
+  totalDrawers: number;
+  foamColor: string;
+}
+
+type Step = 'scan_qr' | 'shooting' | 'analyzing' | 'report';
+type ShiftStatus = 'CONFORME' | 'DEGRADE';
+
+const ANOMALY_TAGS = [
+  "Outil sur chantier",
+  "Rangement chaos",
+  "Outil cassé / rebut",
+  "Outil perdu / volé"
+];
+
+// Image grise de substitution pour simuler la photo du matin si besoin
+const MOCK_MORNING_BASE64 = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
+
+const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
+  const [step, setStep] = useState<Step>('scan_qr');
+  const [profile, setProfile] = useState<ServanteProfile | null>(null);
+  
+  const [currentShot, setCurrentShot] = useState<number>(1);
+  const [flashOn, setFlashOn] = useState(false);
+  const [showFlash, setShowFlash] = useState(false); 
+  
+  const [eveningImages, setEveningImages] = useState<string[]>([]);
+  const [morningImagesMock, setMorningImagesMock] = useState<string[]>([]); // Simulation de la BDD
+  
+  const [shiftStatus, setShiftStatus] = useState<ShiftStatus>('CONFORME');
+  const [justification, setJustification] = useState<string>('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (step === 'shooting') {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
+          if (videoRef.current) videoRef.current.srcObject = stream;
+        })
+        .catch(err => console.error("Erreur caméra:", err));
+    }
+    
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [step]);
+
+  const toggleTorch = async () => {
+    if (!videoRef.current?.srcObject) return;
+    const track = (videoRef.current.srcObject as MediaStream).getVideoTracks()[0];
+    const capabilities = track.getCapabilities() as any;
+    if (capabilities.torch) {
+      try {
+        const newState = !flashOn;
+        await track.applyConstraints({ advanced: [{ torch: newState }] } as any);
+        setFlashOn(newState);
+      } catch (err) { console.error("Erreur Torche:", err); }
+    }
+  };
+
+  const handleSimulateScan = () => {
+    setProfile({
+      id: 'FACOM-JET-001',
+      name: 'Servante Châssis Moteur',
+      totalDrawers: 6,
+      foamColor: 'Rouge'
+    });
+    setEveningImages([]);
+    
+    // NOUVEAU : On fouille dans la mémoire du téléphone pour retrouver les photos du matin
+    const savedMorningShots = localStorage.getItem(`locatem5_morning_FACOM-JET-001`);
+    if (savedMorningShots) {
+      setMorningImagesMock(JSON.parse(savedMorningShots));
+    } else {
+      // Sécurité si le technicien n'avait pas fait sa prise de poste ce matin
+      setMorningImagesMock(Array(7).fill(MOCK_MORNING_BASE64));
+    }
+    
+    setCurrentShot(1);
+    setShiftStatus('CONFORME');
+    setJustification('');
+    setSelectedTags([]);
+    setStep('shooting');
+  };
+
+  const handleCapture = () => {
+    if (!profile || !videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    if (context && video.videoWidth > 0) {
+      const targetWidth = 1280;
+      const targetHeight = (video.videoHeight / video.videoWidth) * targetWidth;
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      context.drawImage(video, 0, 0, targetWidth, targetHeight);
+      
+      const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+      setEveningImages(prev => [...prev, base64Image]);
+    }
+
+    setShowFlash(true);
+    setTimeout(() => setShowFlash(false), 150);
+
+    const maxShots = profile.totalDrawers + 1;
+
+    if (currentShot < maxShots) {
+      setCurrentShot(prev => prev + 1);
+    } else {
+      if (flashOn) toggleTorch();
+      setStep('analyzing');
+      setTimeout(() => setStep('report'), 1500);
+    }
+  };
+
+  const handleUndo = () => {
+    if (eveningImages.length > 0) {
+      setEveningImages(prev => prev.slice(0, -1));
+      setCurrentShot(prev => prev - 1);
+    }
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  // --- VUE 1 : SCAN ---
+  if (step === 'scan_qr') {
+    return (
+      <div className="w-full h-full bg-[#121212] flex flex-col px-[4vw] pt-[2vh] pb-[4vh] font-sans">
+        <div className="h-[10vh] flex items-center shrink-0">
+          <button onClick={onBack} className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 active:scale-90 transition-transform">
+            <ArrowLeft className="text-white" size={24} />
+          </button>
+          <div className="ml-4">
+            <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.1rem,4vw,1.4rem)] leading-none">Fin de Poste</h2>
+            <span className="text-[#00E5FF] font-bold uppercase tracking-widest text-[10px]">Étape 1 : Clôture</span>
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="relative w-[60vw] h-[60vw] max-w-[250px] max-h-[250px] border-2 border-[#00E5FF] rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(0,229,255,0.15)] mb-8">
+            <div className="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-[#00E5FF] rounded-tl-lg"></div>
+            <div className="absolute top-4 right-4 w-6 h-6 border-t-4 border-r-4 border-[#00E5FF] rounded-tr-lg"></div>
+            <div className="absolute bottom-4 left-4 w-6 h-6 border-b-4 border-l-4 border-[#00E5FF] rounded-bl-lg"></div>
+            <div className="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-[#00E5FF] rounded-br-lg"></div>
+            <QrCode size={80} className="text-[#00E5FF] opacity-80 animate-pulse" />
+          </div>
+          <h3 className="text-white font-black text-xl uppercase tracking-widest text-center">Clôturer la servante</h3>
+          <p className="text-gray-400 text-xs text-center mt-2 px-[10vw]">Scannez pour valider l'état final de l'outillage.</p>
+          <button onClick={handleSimulateScan} className="mt-12 bg-[#00E5FF] text-black px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs active:scale-95 transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(0,229,255,0.4)]">
+            <Zap size={16} /> Simuler Détection
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- VUE 2 : MITRAILLAGE ---
+  if (step === 'shooting' && profile) {
+    const isPlateauLibre = currentShot > profile.totalDrawers;
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden font-sans select-none">
+        {showFlash && <div className="absolute inset-0 bg-white z-40 opacity-80 transition-opacity duration-150"></div>}
+        <canvas ref={canvasRef} className="hidden" />
+        <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-80" />
+        
+        <div className="absolute top-0 left-0 w-full p-6 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-start z-10">
+          <div>
+            <span className="text-[#00E5FF] font-black text-[10px] uppercase tracking-widest block mb-1">{profile.id}</span>
+            <h1 className="text-white font-black text-2xl uppercase tracking-wider drop-shadow-md">
+              {isPlateauLibre ? "Plateau Libre" : `Tiroir ${currentShot}/${profile.totalDrawers}`}
+            </h1>
+          </div>
+          <button onClick={() => { if (flashOn) toggleTorch(); setStep('scan_qr'); }} className="w-10 h-10 bg-black/50 border border-white/20 rounded-full flex items-center justify-center backdrop-blur-md active:scale-90">
+            <span className="text-white font-bold text-xl leading-none mb-1">×</span>
+          </button>
+        </div>
+
+        <div className="absolute inset-x-[5vw] top-[20vh] bottom-[25vh] border-2 border-dashed border-[#00E5FF]/40 rounded-2xl flex items-center justify-center pointer-events-none z-10">
+          <p className="text-[#00E5FF]/70 font-bold uppercase tracking-widest text-[10px] bg-black/60 px-4 py-1.5 rounded-full backdrop-blur-sm">
+            Cadrage de Clôture
+          </p>
+        </div>
+
+        {eveningImages.length > 0 && (
+          <div className="absolute bottom-[22vh] left-0 w-full px-[5vw] flex gap-3 overflow-x-auto no-scrollbar z-20 items-end pb-2">
+            {eveningImages.map((img, idx) => (
+              <div key={idx} className="relative w-14 h-14 shrink-0 rounded-lg border-2 border-[#00E5FF] overflow-hidden shadow-lg animate-in fade-in zoom-in duration-200">
+                <img src={img} className="w-full h-full object-cover opacity-90" alt={`Miniature ${idx}`} />
+                <div className="absolute bottom-0 left-0 w-full bg-black/80 text-[8px] text-[#00E5FF] text-center font-black py-0.5">
+                  {idx === profile.totalDrawers ? 'PLAT.' : `T${idx + 1}`}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="absolute bottom-0 left-0 w-full h-[20vh] bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-between z-10 pb-[env(safe-area-inset-bottom)] px-[8vw]">
+          <div className="w-14 flex justify-start">
+            {eveningImages.length > 0 && (
+              <button onClick={handleUndo} className="w-12 h-12 bg-black/60 border border-white/20 rounded-full flex flex-col items-center justify-center active:scale-90 transition-all text-white/70 hover:text-white">
+                <RotateCcw size={18} className="mb-0.5" />
+                <span className="text-[6px] font-black uppercase tracking-widest">Refaire</span>
+              </button>
+            )}
+          </div>
+          <button onClick={handleCapture} className="w-[20vw] h-[20vw] max-w-[80px] max-h-[80px] rounded-full border-[4px] border-white/20 flex items-center justify-center active:scale-90 transition-transform shrink-0 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <div className={`w-[85%] h-[85%] rounded-full transition-colors ${isPlateauLibre ? 'bg-[#FF6600]' : 'bg-[#00E5FF]'}`}></div>
+          </button>
+          <div className="w-14 flex justify-end">
+            <button onClick={toggleTorch} className={`w-14 h-14 rounded-2xl backdrop-blur-md flex items-center justify-center border transition-all active:scale-90 ${flashOn ? 'bg-[#00E5FF]/20 border-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.4)]' : 'bg-black/40 border-white/10'}`}>
+              <Zap size={24} className={flashOn ? 'text-[#00E5FF] fill-[#00E5FF]' : 'text-white/50'} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- VUE 3 : ANALYSE ---
+  if (step === 'analyzing') {
+    return (
+      <div className="w-full h-full bg-[#121212] flex flex-col items-center justify-center px-6 text-center font-sans">
+        <Loader2 size={64} className="text-[#00E5FF] mb-6 animate-spin" />
+        <h2 className="text-white font-black uppercase text-2xl tracking-widest mb-2 animate-pulse">Comparaison...</h2>
+        <p className="text-gray-400 text-xs uppercase tracking-widest mt-4">Traitement croisé Avant/Après en cours.</p>
+      </div>
+    );
+  }
+
+  // --- VUE 4 : RAPPORT ---
+  return (
+    <div className="w-full h-full bg-[#121212] flex flex-col px-[4vw] pt-[2vh] pb-[4vh] font-sans">
+      <div className="h-[10vh] flex items-center shrink-0 border-b border-white/5 mb-4">
+        <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.1rem,4vw,1.4rem)] leading-none">Clôture Servante</h2>
+      </div>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-5 pb-[2vh]">
+        <div className="flex gap-3">
+          <button onClick={() => { setShiftStatus('CONFORME'); setSelectedTags([]); setJustification(''); }} className={`flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-2 border transition-all ${shiftStatus === 'CONFORME' ? 'bg-green-500/20 border-green-500 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-[#1A1A1A] border-white/5 text-gray-500'}`}>
+            <CheckCircle2 size={24} />
+            <span className="font-black text-[10px] uppercase tracking-widest">Conforme</span>
+          </button>
+          <button onClick={() => setShiftStatus('DEGRADE')} className={`flex-1 py-4 rounded-xl flex flex-col items-center justify-center gap-2 border transition-all ${shiftStatus === 'DEGRADE' ? 'bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-[#1A1A1A] border-white/5 text-gray-500'}`}>
+            <AlertOctagon size={24} />
+            <span className="font-black text-[10px] uppercase tracking-widest">Incomplet</span>
+          </button>
+        </div>
+
+        {shiftStatus === 'DEGRADE' && (
+          <div className="bg-red-950/40 border border-red-500/30 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+            <label className="text-red-400 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 mb-3"><AlertOctagon size={14} /> Déclaration d'anomalie</label>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {ANOMALY_TAGS.map(tag => (
+                <button key={tag} onClick={() => toggleTag(tag)} className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${selectedTags.includes(tag) ? 'bg-red-500 text-white border-red-500' : 'bg-black/50 text-red-300/60 border-red-500/20'}`}>{tag}</button>
+              ))}
+            </div>
+            <textarea value={justification} onChange={(e) => setJustification(e.target.value)} placeholder="Précisions..." className="w-full bg-black/50 border border-red-500/20 rounded-lg p-3 text-white text-sm outline-none focus:border-red-500 min-h-[60px] resize-none" />
+          </div>
+        )}
+
+        <h4 className="text-[#D3D3D3] font-bold text-[10px] uppercase tracking-widest pt-2 border-b border-white/10 pb-2">Clichés de Fin de Poste</h4>
+        <div className="grid grid-cols-2 gap-3">
+          {eveningImages.map((img, idx) => (
+            <div key={idx} className="relative aspect-square bg-[#1A1A1A] rounded-xl border border-white/5 overflow-hidden">
+              <img src={img} alt={`Shot ${idx}`} className="w-full h-full object-cover opacity-80" />
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <button 
+        onClick={async () => {
+          if (shiftStatus === 'DEGRADE' && selectedTags.length === 0 && justification.trim() === '') { alert("Saisir un motif."); return; }
+          setIsGenerating(true);
+          try {
+            const { pdf } = await import('@react-pdf/renderer');
+            const { FinDePosteReport } = await import('../components/FinDePosteReport');
+            const reportData = {
+              profileId: profile?.id || 'INCONNU', profileName: profile?.name || 'Servante',
+              timestamp: new Date().toLocaleString('fr-FR'),
+              status: shiftStatus, tags: selectedTags, justification: justification,
+              morningImages: morningImagesMock, eveningImages: eveningImages,
+              totalDrawers: profile?.totalDrawers || 6
+            };
+            const blob = await pdf(<FinDePosteReport data={reportData} />).toBlob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url; link.download = `Cloture_FOD_${profile?.id}_${Date.now()}.pdf`; link.click(); URL.revokeObjectURL(url);
+            onBack();
+          } catch (error) { console.error("Erreur PDF:", error); setIsGenerating(false); }
+        }}
+        disabled={isGenerating}
+        className={`mt-4 w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs active:scale-95 transition-all flex items-center justify-center gap-3 ${shiftStatus === 'CONFORME' ? 'bg-green-600 text-white' : 'bg-[#DC2626] text-white'} ${isGenerating ? 'opacity-70 grayscale' : ''}`}
+      >
+        {isGenerating && <Loader2 size={18} className="animate-spin" />}
+        {isGenerating ? 'Archivage en cours...' : 'Signer & Clôturer'}
+      </button>
+    </div>
+  );
+};
+
+export default FinDePoste;
+```
+
+// ==========================================
 // 📂 FICHIER : \src\modules\garage\views\GarageDashboard.tsx
 // ==========================================
 
 ```tsx
 import React, { useState } from 'react';
-import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Mail, Shield } from 'lucide-react';
+import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Mail, Shield, ShieldAlert } from 'lucide-react';
 import LiveAssistant from '../components/LiveAssistant';
 import { useUserTier } from '../../../core/security/useUserTier';
 import PriseDePoste from './PriseDePoste';
+import TourDeControle from './TourDeControle';
+import FinDePoste from './FinDePoste';
 
 interface GarageDashboardProps {
   onBack?: () => void;
 }
 
-type ViewState = 'home' | 'maintenance_live' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste';
+type ViewState = 'home' | 'maintenance_live' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle';
 
 const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<ViewState>('home');
@@ -3132,6 +3646,16 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   // --- ROUTAGE VERS LA PRISE DE POSTE ---
   if (activeMode === 'prise_poste') {
     return <PriseDePoste onBack={() => setActiveMode('mecanique_menu')} />;
+  }
+
+  // --- ROUTAGE VERS LA TOUR DE CONTRÔLE (CHEF D'ATELIER) ---
+  if (activeMode === 'tour_controle') {
+  return <TourDeControle onBack={() => setActiveMode('home')} />;
+}
+
+// --- ROUTAGE VERS LE RAPPORT DE FIN DE POSTE --- 
+  if (activeMode === 'fin_poste') {
+    return <FinDePoste onBack={() => setActiveMode('home')} />;
   }
 
   // =======================================================================
@@ -3155,6 +3679,26 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
             </span>
           </div>
         </div>
+
+<header className="flex items-center justify-between mb-8">
+  <div className="flex gap-4">
+    <ArrowLeft className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
+    <Settings className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
+    <Mail className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
+    {/* BOUTON TOUR DE CONTRÔLE */}
+    <button 
+      onClick={() => setActiveMode('tour_controle')}
+      className="ml-2 flex items-center justify-center text-[#00E5FF] hover:text-white transition-colors"
+    >
+      <ShieldAlert size={24} />
+    </button>
+  </div>
+
+  <div className="border border-[#FF6600] text-[#FF6600] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+    <Shield size={12} />
+    PRO
+  </div>
+</header>
 
         {/* CONTENEUR 2 : PRISE DE POSTE (Flex-1) */}
         <button 
@@ -3288,6 +3832,7 @@ export default GarageDashboard;
 ```tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { QrCode, ArrowLeft, CheckCircle2, Zap, Loader2, RotateCcw, AlertOctagon } from 'lucide-react';
+import { geminiService } from '../../../core/ai/geminiService';
 
 interface PriseDePosteProps {
   onBack: () => void;
@@ -3337,6 +3882,36 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
         })
         .catch(err => console.error("Erreur caméra:", err));
     }
+
+    // NOUVEAU : DÉCLENCHEUR D'ANALYSE IA
+  useEffect(() => {
+    if (step === 'analyzing' && capturedImages.length > 0) {
+      const runAI = async () => {
+        try {
+          // 1. On envoie les photos à Gemini
+          const analysis = await geminiService.analyzeServanteFOD(capturedImages, profile?.id);
+
+          // 2. Si Gemini répond, on pré-remplit le rapport
+          if (analysis) {
+            setShiftStatus(analysis.status as ShiftStatus);
+            
+            if (analysis.status === 'DEGRADE') {
+              // L'IA a trouvé une anomalie (trou rouge, chaos), elle coche les cases toute seule !
+              if (analysis.tags) setSelectedTags(analysis.tags);
+              if (analysis.justification) setJustification(analysis.justification);
+            }
+          }
+        } catch (error) {
+          console.error("Erreur lors de l'analyse IA:", error);
+        } finally {
+          // 3. Quoi qu'il arrive (succès ou échec réseau), on libère le mécanicien vers le Sas de validation
+          setStep('report');
+        }
+      };
+
+      runAI();
+    }
+  }, [step, capturedImages, profile?.id]);
     
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
@@ -3404,10 +3979,10 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
       setCurrentShot(prev => prev + 1);
     } else {
       if (flashOn) toggleTorch();
-      setStep('analyzing');
-      setTimeout(() => {
-        setStep('report');
-      }, 1500);
+      
+      // On passe en mode 'analyzing'. 
+      // Le useEffect que l'on vient de créer va détecter ça et lancer l'IA automatiquement !
+      setStep('analyzing'); 
     }
   };
 
@@ -3691,6 +4266,9 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
             link.click();
             URL.revokeObjectURL(url);
 
+          // NOUVEAU : On sauvegarde les photos dans le cache du téléphone pour ce soir !
+            localStorage.setItem(`locatem5_morning_${profile?.id}`, JSON.stringify(capturedImages))
+
             onBack();
           } catch (error) {
             console.error("Erreur PDF:", error);
@@ -3713,6 +4291,180 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
 };
 
 export default PriseDePoste;
+```
+
+// ==========================================
+// 📂 FICHIER : \src\modules\garage\views\TourDeControle.tsx
+// ==========================================
+
+```tsx
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, ShieldAlert, CheckCircle2, AlertOctagon, Activity, Wrench, BellRing, Loader2 } from 'lucide-react';
+import { supabase } from '../../../core/security/supabaseClient';
+
+interface TourDeControleProps {
+  onBack: () => void;
+}
+
+interface ServanteStatus {
+  id: string;
+  technician_id: string;
+  technician_name: string;
+  status: 'CONFORME' | 'DEGRADE' | 'EN_ATTENTE';
+  tags: string[];
+  details: string;
+  updated_at: string;
+}
+
+const TourDeControle: React.FC<TourDeControleProps> = ({ onBack }) => {
+  const [activeTab, setActiveTab] = useState<'ALL' | 'ALERTS'>('ALL');
+  const [fleet, setFleet] = useState<ServanteStatus[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // NOUVEAU : Chargement de la BDD et écoute en temps réel
+  useEffect(() => {
+    fetchFleet();
+
+    // On s'abonne aux modifications en direct sur Supabase
+    const channel = supabase
+      .channel('public:servantes_status')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'servantes_status' }, (payload) => {
+        console.log("Mise à jour captée en direct :", payload);
+        fetchFleet(); // On recharge les données à chaque signal
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchFleet = async () => {
+    const { data, error } = await supabase
+      .from('servantes_status')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (!error && data) {
+      setFleet(data as ServanteStatus[]);
+    } else {
+      console.error("Erreur de récupération :", error);
+    }
+    setIsLoading(false);
+  };
+
+  const anomaliesCount = fleet.filter(s => s.status === 'DEGRADE').length;
+  const displayFleet = activeTab === 'ALERTS' ? fleet.filter(s => s.status === 'DEGRADE') : fleet;
+
+  return (
+    <div className="w-full h-full bg-[#121212] flex flex-col font-sans">
+      
+      {/* HEADER TACTIQUE */}
+      <div className="h-[12vh] shrink-0 bg-[#1A1A1A] border-b border-white/10 flex items-center justify-between px-[4vw]">
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center border border-white/5 active:scale-90 transition-transform">
+            <ArrowLeft className="text-white" size={24} />
+          </button>
+          <div>
+            <h2 className="text-white font-black uppercase tracking-widest text-lg leading-none flex items-center gap-2">
+              <Activity size={18} className="text-[#00E5FF]" /> Supervision
+            </h2>
+            <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+              Tour de Contrôle M5 
+              {isLoading ? <Loader2 size={10} className="animate-spin text-[#00E5FF]" /> : <span className="text-green-500">● LIVE</span>}
+            </span>
+          </div>
+        </div>
+        
+        {anomaliesCount > 0 && (
+          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 px-3 py-1.5 rounded-full animate-pulse">
+            <BellRing size={14} className="text-red-500" />
+            <span className="text-red-500 font-black text-[10px] tracking-widest">{anomaliesCount} ALERTE(S)</span>
+          </div>
+        )}
+      </div>
+
+      {/* KPI / FILTRES */}
+      <div className="p-[4vw] flex gap-3">
+        <button onClick={() => setActiveTab('ALL')} className={`flex-1 py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'ALL' ? 'bg-white/10 border-white/20' : 'bg-transparent border-white/5 opacity-50'}`}>
+          <span className="text-white font-black text-lg leading-none">{fleet.length}</span>
+          <span className="text-gray-400 font-bold uppercase tracking-widest text-[8px]">Flotte Totale</span>
+        </button>
+        <button onClick={() => setActiveTab('ALERTS')} className={`flex-1 py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'ALERTS' ? 'bg-red-500/20 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-transparent border-red-500/20 opacity-50'}`}>
+          <span className="text-red-500 font-black text-lg leading-none">{anomaliesCount}</span>
+          <span className="text-red-500 font-bold uppercase tracking-widest text-[8px]">Anomalies FOD</span>
+        </button>
+      </div>
+
+      {/* LISTE DES SERVANTES (Données Réelles) */}
+      <div className="flex-1 overflow-y-auto px-[4vw] space-y-3 pb-6 no-scrollbar">
+        <h3 className="text-[#D3D3D3] font-bold text-[10px] uppercase tracking-widest mb-4 border-b border-white/10 pb-2">
+          État du Parc Outillage
+        </h3>
+
+        {isLoading && fleet.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 opacity-50">
+             <Loader2 size={32} className="text-white animate-spin mb-4" />
+             <span className="text-white text-xs tracking-widest uppercase">Connexion satellite...</span>
+          </div>
+        ) : displayFleet.map((servante) => {
+          
+          // Formatage de l'heure (ex: 08:15)
+          const timeString = new Date(servante.updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+          return (
+            <div key={servante.id} className="bg-[#1A1A1A] border border-white/5 rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden">
+              <div className={`absolute left-0 top-0 bottom-0 w-1 ${servante.status === 'CONFORME' ? 'bg-green-500' : servante.status === 'DEGRADE' ? 'bg-red-500' : 'bg-gray-600'}`} />
+
+              <div className="flex justify-between items-start pl-2">
+                <div>
+                  <h4 className="text-white font-black text-sm uppercase tracking-wider">{servante.id}</h4>
+                  <p className="text-gray-400 text-[10px] uppercase tracking-widest flex items-center gap-1 mt-1">
+                    <Wrench size={10} /> {servante.technician_name || 'Non assigné'}
+                  </p>
+                </div>
+                
+                <div className={`px-2 py-1 rounded border flex items-center gap-1.5 ${servante.status === 'CONFORME' ? 'bg-green-500/10 border-green-500/30 text-green-500' : servante.status === 'DEGRADE' ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-white/5 border-white/10 text-gray-400'}`}>
+                  {servante.status === 'CONFORME' && <CheckCircle2 size={12} />}
+                  {servante.status === 'DEGRADE' && <AlertOctagon size={12} />}
+                  {servante.status === 'EN_ATTENTE' && <ShieldAlert size={12} />}
+                  <span className="font-black text-[9px] tracking-widest">{servante.status}</span>
+                </div>
+              </div>
+
+              {servante.status === 'DEGRADE' && (
+                <div className="mt-2 bg-red-950/30 border border-red-500/20 rounded-lg p-3 pl-4 relative">
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {servante.tags && servante.tags.map(tag => (
+                      <span key={tag} className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  {servante.details && <p className="text-red-200/70 text-xs italic">"{servante.details}"</p>}
+                </div>
+              )}
+              
+              <div className="text-right mt-1">
+                <span className="text-gray-600 font-bold text-[9px] uppercase tracking-widest">
+                  MÀJ : {timeString}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+
+        {!isLoading && displayFleet.length === 0 && (
+          <div className="text-center text-gray-500 text-sm mt-10 font-bold uppercase tracking-widest">
+            Aucune anomalie détectée.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default TourDeControle;
 ```
 
 // ==========================================

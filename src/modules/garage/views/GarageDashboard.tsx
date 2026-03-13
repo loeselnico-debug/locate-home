@@ -4,6 +4,7 @@ import LiveAssistant from '../components/LiveAssistant';
 import { useUserTier } from '../../../core/security/useUserTier';
 import PriseDePoste from './PriseDePoste';
 import TourDeControle from './TourDeControle';
+import FinDePoste from './FinDePoste';
 
 interface GarageDashboardProps {
   onBack?: () => void;
@@ -28,10 +29,15 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
     return <PriseDePoste onBack={() => setActiveMode('mecanique_menu')} />;
   }
 
-  // --- ROUTAGE VERS LA TOUR DE CONTRÔLE (CHEF D'ATELIER)
+  // --- ROUTAGE VERS LA TOUR DE CONTRÔLE (CHEF D'ATELIER) ---
   if (activeMode === 'tour_controle') {
   return <TourDeControle onBack={() => setActiveMode('home')} />;
 }
+
+// --- ROUTAGE VERS LE RAPPORT DE FIN DE POSTE --- 
+  if (activeMode === 'fin_poste') {
+    return <FinDePoste onBack={() => setActiveMode('home')} />;
+  }
 
   // =======================================================================
   // VUE 1 : SOUS-MENU MÉCANIQUE (Refonte 4 Conteneurs Flex)

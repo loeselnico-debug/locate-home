@@ -148,14 +148,19 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
     const context = canvas.getContext('2d');
 
     if (context && video.videoWidth > 0) {
+      // On force un ratio Paysage standard (16:9)
       const targetWidth = 1280;
-      const targetHeight = (video.videoHeight / video.videoWidth) * targetWidth;
+      const targetHeight = 720; 
 
       canvas.width = targetWidth;
       canvas.height = targetHeight;
-      context.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+      // On dessine l'image en forçant le remplissage du rectangle 16:9
+      // (Cela évite les bandes noires si l'écran du tel a un ratio bizarre)
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+      // On compresse légèrement plus (0.6) car les images larges pèsent plus lourd dans le PDF
+      const base64Image = canvas.toDataURL('image/jpeg', 0.6);
       setCapturedImages(prev => [...prev, base64Image]);
     }
 

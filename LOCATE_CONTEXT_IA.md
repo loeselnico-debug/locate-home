@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 13/03/2026 18:26:43
+> 📅 Archive générée le : 14/03/2026 05:48:50
 
 
 // ==========================================
@@ -594,7 +594,7 @@ export const geminiService = {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash", // MIGRATION ROADMAP V4
+        model: "gemini-2.5-flash",
         generationConfig: { responseMimeType: "application/json" }
       });
 
@@ -619,7 +619,7 @@ export const geminiService = {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash", // MIGRATION ROADMAP V4
+        model: "gemini-2.5-flash",
         generationConfig: { responseMimeType: "application/json" }
       });
 
@@ -640,9 +640,8 @@ export const geminiService = {
     }
   },
 
-
- // --- FONCTION SPÉCIALISÉE POUR L'ANALYSE FOD (Foreign Object Debris) SUR LES SERVANTES D'ATELIER ---
- analyzeServanteFOD: async (base64Images: string[], servanteId: string = "INCONNU"): Promise<{status: string, tags: string[], justification: string} | null> => {
+  // --- FONCTION SPÉCIALISÉE POUR L'ANALYSE FOD ---
+  analyzeServanteFOD: async (base64Images: string[], servanteId: string = "INCONNU"): Promise<{status: string, tags: string[], justification: string} | null> => {
     if (!apiKey) {
       console.error("Clé API Gemini introuvable.");
       return null;
@@ -658,10 +657,11 @@ export const geminiService = {
 Tu es l'Expert Vision Industrielle du protocole FOD (Foreign Object Debris) du système LOCATE M5.
 Tu vas analyser ${base64Images.length} clichés consécutifs représentant les tiroirs et le plateau de la servante d'atelier "${servanteId}".
 
-RÈGLE D'ANALYSE (LE STANDARD 5S) :
-- La plupart des tiroirs possèdent des mousses de rangement (souvent bicolores, ex: noir dessus, rouge ou couleur vive au fond).
-- Cherche les "trous" : une empreinte d'outil vide laisse apparaître la couleur de fond de la mousse.
-- Outils en vrac : détecte les zones de "Rangement chaos" où les outils ne sont pas dans leurs empreintes.
+RÈGLE D'ANALYSE (LE STANDARD 5S ET LES MOUSSES BICOLORES) :
+- Les tiroirs possèdent des mousses de rangement bicolores (ex: noir en surface, rouge ou couleur vive au fond).
+- ATTENTION AUX FAUX POSITIFS : Il est normal de voir de petites zones rouges autour des outils présents (ce sont les encoches de préhension pour les doigts). Ignore ces petites zones.
+- LA VRAIE ANOMALIE : Tu dois chercher les "trous complets" (une empreinte d'outil entièrement vide laissant apparaître la silhouette complète de l'outil dans la couleur de fond).
+- Outils en vrac : détecte les zones de "Rangement chaos" où les outils ne sont pas dans leurs empreintes, ou si le plateau supérieur est encombré de pièces non rangées.
 
 INSTRUCTION DE SORTIE :
 Tu dois retourner UNIQUEMENT un objet JSON valide suivant cette structure EXACTE :
@@ -672,10 +672,10 @@ Tu dois retourner UNIQUEMENT un objet JSON valide suivant cette structure EXACTE
 }
 
 Logique de remplissage :
-- Si AUCUN trou n'est visible et que tout est rangé -> "status": "CONFORME", "tags": [], "justification": "Contrôle visuel OK. Aucune anomalie détectée."
-- Si au moins UN trou est visible ou qu'un tiroir est en vrac -> "status": "DEGRADE". 
-  - Dans "tags", inclus les motifs pertinents parmi : ["Outil manquant", "Rangement chaos", "Outil mal placé"].
-  - Dans "justification", sois chirurgical. Ex: "Tiroir 02 : Empreinte de pince vide visible. Tiroir 04 : Clés en vrac."
+- Si AUCUN trou complet n'est visible et que le plateau est propre -> "status": "CONFORME", "tags": [], "justification": "Contrôle visuel OK. Mousses pleines, aucune anomalie détectée."
+- Si au moins UNE empreinte est totalement vide ou qu'un tiroir/plateau est en vrac -> "status": "DEGRADE". 
+  - Dans "tags", inclus les motifs pertinents : ["Outil manquant", "Rangement chaos", "Outil mal placé"].
+  - Dans "justification", sois descriptif. Ex: "Tiroir 02 : Empreinte de pince vide visible au centre. Tiroir 04 : Clés plates en vrac."
 `;
 
       const imageParts = base64Images.map(base64 => ({
@@ -3313,7 +3313,22 @@ const ANOMALY_TAGS = [
   "Outil perdu / volé"
 ];
 
-// Image grise de substitution pour simuler la photo du matin si besoin
+// LE CATALOGUE ISSU DE TES PDF (QR CODES)
+const SERVANTE_CATALOG: Record<string, ServanteProfile> = {
+  "JETM4X-FDW": {
+    id: "JETM4X-FDW",
+    name: "Servante FACOM JET M4 (8 Tiroirs)",
+    totalDrawers: 8,
+    foamColor: "Rouge"
+  },
+  "OPSIAL-MEC": {
+    id: "OPSIAL-MEC",
+    name: "Servante OPSIAL Standard (6 Tiroirs)",
+    totalDrawers: 6,
+    foamColor: "Noir"
+  }
+};
+
 const MOCK_MORNING_BASE64 = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
 
 const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
@@ -3325,7 +3340,7 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
   const [showFlash, setShowFlash] = useState(false); 
   
   const [eveningImages, setEveningImages] = useState<string[]>([]);
-  const [morningImagesMock, setMorningImagesMock] = useState<string[]>([]); // Simulation de la BDD
+  const [morningImagesMock, setMorningImagesMock] = useState<string[]>([]); 
   
   const [shiftStatus, setShiftStatus] = useState<ShiftStatus>('CONFORME');
   const [justification, setJustification] = useState<string>('');
@@ -3366,28 +3381,29 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
   };
 
   const handleSimulateScan = () => {
-    setProfile({
-      id: 'FACOM-JET-001',
-      name: 'Servante Châssis Moteur',
-      totalDrawers: 6,
-      foamColor: 'Rouge'
-    });
-    setEveningImages([]);
-    
-    // NOUVEAU : On fouille dans la mémoire du téléphone pour retrouver les photos du matin
-    const savedMorningShots = localStorage.getItem(`locatem5_morning_FACOM-JET-001`);
-    if (savedMorningShots) {
-      setMorningImagesMock(JSON.parse(savedMorningShots));
-    } else {
-      // Sécurité si le technicien n'avait pas fait sa prise de poste ce matin
-      setMorningImagesMock(Array(7).fill(MOCK_MORNING_BASE64));
-    }
+    // ON SIMULE LE SCAN DU QR CODE FACOM (8 Tiroirs)
+    const scannedCode = "JETM4X-FDW";
+    const foundProfile = SERVANTE_CATALOG[scannedCode];
 
-    setCurrentShot(1);
-    setShiftStatus('CONFORME');
-    setJustification('');
-    setSelectedTags([]);
-    setStep('shooting');
+    if (foundProfile) {
+      setProfile(foundProfile);
+      setEveningImages([]);
+      
+      const savedMorningShots = localStorage.getItem(`locatem5_morning_${scannedCode}`);
+      if (savedMorningShots) {
+        setMorningImagesMock(JSON.parse(savedMorningShots));
+      } else {
+        setMorningImagesMock(Array(foundProfile.totalDrawers + 1).fill(MOCK_MORNING_BASE64));
+      }
+      
+      setCurrentShot(1);
+      setShiftStatus('CONFORME');
+      setJustification('');
+      setSelectedTags([]);
+      setStep('shooting');
+    } else {
+      alert("QR Code inconnu.");
+    }
   };
 
   const handleCapture = () => {
@@ -3398,14 +3414,19 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     const context = canvas.getContext('2d');
 
     if (context && video.videoWidth > 0) {
+      // On force un ratio Paysage standard (16:9)
       const targetWidth = 1280;
-      const targetHeight = (video.videoHeight / video.videoWidth) * targetWidth;
+      const targetHeight = 720; 
 
       canvas.width = targetWidth;
       canvas.height = targetHeight;
-      context.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+      // On dessine l'image en forçant le remplissage du rectangle 16:9
+      // (Cela évite les bandes noires si l'écran du tel a un ratio bizarre)
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+      // On compresse légèrement plus (0.6) car les images larges pèsent plus lourd dans le PDF
+      const base64Image = canvas.toDataURL('image/jpeg', 0.6);
       setEveningImages(prev => [...prev, base64Image]);
     }
 
@@ -3434,7 +3455,6 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-  // --- VUE 1 : SCAN ---
   if (step === 'scan_qr') {
     return (
       <div className="w-full h-full bg-[#121212] flex flex-col px-[4vw] pt-[2vh] pb-[4vh] font-sans">
@@ -3465,7 +3485,6 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     );
   }
 
-  // --- VUE 2 : MITRAILLAGE ---
   if (step === 'shooting' && profile) {
     const isPlateauLibre = currentShot > profile.totalDrawers;
     return (
@@ -3527,7 +3546,6 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     );
   }
 
-  // --- VUE 3 : ANALYSE ---
   if (step === 'analyzing') {
     return (
       <div className="w-full h-full bg-[#121212] flex flex-col items-center justify-center px-6 text-center font-sans">
@@ -3538,7 +3556,6 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     );
   }
 
-  // --- VUE 4 : RAPPORT ---
   return (
     <div className="w-full h-full bg-[#121212] flex flex-col px-[4vw] pt-[2vh] pb-[4vh] font-sans">
       <div className="h-[10vh] flex items-center shrink-0 border-b border-white/5 mb-4">
@@ -3584,9 +3601,7 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
           if (shiftStatus === 'DEGRADE' && selectedTags.length === 0 && justification.trim() === '') { alert("Saisir un motif."); return; }
           setIsGenerating(true);
           try {
-            // =========================================================
-            // NOUVEAU : TRANSMISSION SATELLITE À LA TOUR DE CONTRÔLE
-            // =========================================================
+            // TRANSMISSION SATELLITE À LA TOUR DE CONTRÔLE
             const { error: dbError } = await supabase.from('servantes_status').upsert({
               id: profile?.id || 'FACOM-JET-001',
               technician_id: 'TECH-01',
@@ -3600,7 +3615,7 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
             if (dbError) {
               console.warn("Erreur de transmission :", dbError.message);
             }
-            // =========================================================
+
             const { pdf } = await import('@react-pdf/renderer');
             const { FinDePosteReport } = await import('../components/FinDePosteReport');
             const reportData = {
@@ -3875,6 +3890,22 @@ const ANOMALY_TAGS = [
   "Outil perdu / volé"
 ];
 
+// NOUVEAU : LE CATALOGUE ISSU DE TES PDF
+const SERVANTE_CATALOG: Record<string, ServanteProfile> = {
+  "JETM4X-FDW": {
+    id: "JETM4X-FDW",
+    name: "Servante FACOM JET M4 (8 Tiroirs)",
+    totalDrawers: 8,
+    foamColor: "Rouge"
+  },
+  "OPSIAL-MEC": {
+    id: "OPSIAL-MEC",
+    name: "Servante OPSIAL Standard (6 Tiroirs)",
+    totalDrawers: 6,
+    foamColor: "Noir"
+  }
+};
+
 const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
   const [step, setStep] = useState<Step>('scan_qr');
   const [profile, setProfile] = useState<ServanteProfile | null>(null);
@@ -3957,18 +3988,21 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
   };
 
   const handleSimulateScan = () => {
-    setProfile({
-      id: 'FACOM-JET-001',
-      name: 'Servante Châssis Moteur',
-      totalDrawers: 6,
-      foamColor: 'Rouge'
-    });
-    setCapturedImages([]);
-    setCurrentShot(1);
-    setShiftStatus('CONFORME');
-    setJustification('');
-    setSelectedTags([]); // Reset tags
-    setStep('shooting');
+    // On simule le fait que la caméra vient de lire le QR Code "JETM4X-FDW"
+    const scannedCode = "JETM4X-FDW";
+    const foundProfile = SERVANTE_CATALOG[scannedCode];
+
+    if (foundProfile) {
+      setProfile(foundProfile);
+      setCapturedImages([]);
+      setCurrentShot(1);
+      setShiftStatus('CONFORME');
+      setJustification('');
+      setSelectedTags([]);
+      setStep('shooting');
+    } else {
+      alert("QR Code inconnu au bataillon.");
+    }
   };
 
   const handleCapture = () => {
@@ -3979,14 +4013,19 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
     const context = canvas.getContext('2d');
 
     if (context && video.videoWidth > 0) {
+      // On force un ratio Paysage standard (16:9)
       const targetWidth = 1280;
-      const targetHeight = (video.videoHeight / video.videoWidth) * targetWidth;
+      const targetHeight = 720; 
 
       canvas.width = targetWidth;
       canvas.height = targetHeight;
-      context.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+      // On dessine l'image en forçant le remplissage du rectangle 16:9
+      // (Cela évite les bandes noires si l'écran du tel a un ratio bizarre)
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+      // On compresse légèrement plus (0.6) car les images larges pèsent plus lourd dans le PDF
+      const base64Image = canvas.toDataURL('image/jpeg', 0.6);
       setCapturedImages(prev => [...prev, base64Image]);
     }
 

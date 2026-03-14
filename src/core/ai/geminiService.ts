@@ -52,7 +52,7 @@ export const geminiService = {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash", // MIGRATION ROADMAP V4
+        model: "gemini-2.5-flash",
         generationConfig: { responseMimeType: "application/json" }
       });
 
@@ -77,7 +77,7 @@ export const geminiService = {
     if (!apiKey) return [];
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash", // MIGRATION ROADMAP V4
+        model: "gemini-2.5-flash",
         generationConfig: { responseMimeType: "application/json" }
       });
 
@@ -98,9 +98,8 @@ export const geminiService = {
     }
   },
 
-
- // --- FONCTION SPÉCIALISÉE POUR L'ANALYSE FOD (Foreign Object Debris) SUR LES SERVANTES D'ATELIER ---
- analyzeServanteFOD: async (base64Images: string[], servanteId: string = "INCONNU"): Promise<{status: string, tags: string[], justification: string} | null> => {
+  // --- FONCTION SPÉCIALISÉE POUR L'ANALYSE FOD ---
+  analyzeServanteFOD: async (base64Images: string[], servanteId: string = "INCONNU"): Promise<{status: string, tags: string[], justification: string} | null> => {
     if (!apiKey) {
       console.error("Clé API Gemini introuvable.");
       return null;
@@ -116,10 +115,11 @@ export const geminiService = {
 Tu es l'Expert Vision Industrielle du protocole FOD (Foreign Object Debris) du système LOCATE M5.
 Tu vas analyser ${base64Images.length} clichés consécutifs représentant les tiroirs et le plateau de la servante d'atelier "${servanteId}".
 
-RÈGLE D'ANALYSE (LE STANDARD 5S) :
-- La plupart des tiroirs possèdent des mousses de rangement (souvent bicolores, ex: noir dessus, rouge ou couleur vive au fond).
-- Cherche les "trous" : une empreinte d'outil vide laisse apparaître la couleur de fond de la mousse.
-- Outils en vrac : détecte les zones de "Rangement chaos" où les outils ne sont pas dans leurs empreintes.
+RÈGLE D'ANALYSE (LE STANDARD 5S ET LES MOUSSES BICOLORES) :
+- Les tiroirs possèdent des mousses de rangement bicolores (ex: noir en surface, rouge ou couleur vive au fond).
+- ATTENTION AUX FAUX POSITIFS : Il est normal de voir de petites zones rouges autour des outils présents (ce sont les encoches de préhension pour les doigts). Ignore ces petites zones.
+- LA VRAIE ANOMALIE : Tu dois chercher les "trous complets" (une empreinte d'outil entièrement vide laissant apparaître la silhouette complète de l'outil dans la couleur de fond).
+- Outils en vrac : détecte les zones de "Rangement chaos" où les outils ne sont pas dans leurs empreintes, ou si le plateau supérieur est encombré de pièces non rangées.
 
 INSTRUCTION DE SORTIE :
 Tu dois retourner UNIQUEMENT un objet JSON valide suivant cette structure EXACTE :
@@ -130,10 +130,10 @@ Tu dois retourner UNIQUEMENT un objet JSON valide suivant cette structure EXACTE
 }
 
 Logique de remplissage :
-- Si AUCUN trou n'est visible et que tout est rangé -> "status": "CONFORME", "tags": [], "justification": "Contrôle visuel OK. Aucune anomalie détectée."
-- Si au moins UN trou est visible ou qu'un tiroir est en vrac -> "status": "DEGRADE". 
-  - Dans "tags", inclus les motifs pertinents parmi : ["Outil manquant", "Rangement chaos", "Outil mal placé"].
-  - Dans "justification", sois chirurgical. Ex: "Tiroir 02 : Empreinte de pince vide visible. Tiroir 04 : Clés en vrac."
+- Si AUCUN trou complet n'est visible et que le plateau est propre -> "status": "CONFORME", "tags": [], "justification": "Contrôle visuel OK. Mousses pleines, aucune anomalie détectée."
+- Si au moins UNE empreinte est totalement vide ou qu'un tiroir/plateau est en vrac -> "status": "DEGRADE". 
+  - Dans "tags", inclus les motifs pertinents : ["Outil manquant", "Rangement chaos", "Outil mal placé"].
+  - Dans "justification", sois descriptif. Ex: "Tiroir 02 : Empreinte de pince vide visible au centre. Tiroir 04 : Clés plates en vrac."
 `;
 
       const imageParts = base64Images.map(base64 => ({

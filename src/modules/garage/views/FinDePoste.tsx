@@ -23,7 +23,22 @@ const ANOMALY_TAGS = [
   "Outil perdu / volé"
 ];
 
-// Image grise de substitution pour simuler la photo du matin si besoin
+// LE CATALOGUE ISSU DE TES PDF (QR CODES)
+const SERVANTE_CATALOG: Record<string, ServanteProfile> = {
+  "JETM4X-FDW": {
+    id: "JETM4X-FDW",
+    name: "Servante FACOM JET M4 (8 Tiroirs)",
+    totalDrawers: 8,
+    foamColor: "Rouge"
+  },
+  "OPSIAL-MEC": {
+    id: "OPSIAL-MEC",
+    name: "Servante OPSIAL Standard (6 Tiroirs)",
+    totalDrawers: 6,
+    foamColor: "Noir"
+  }
+};
+
 const MOCK_MORNING_BASE64 = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
 
 const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
@@ -35,7 +50,7 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
   const [showFlash, setShowFlash] = useState(false); 
   
   const [eveningImages, setEveningImages] = useState<string[]>([]);
-  const [morningImagesMock, setMorningImagesMock] = useState<string[]>([]); // Simulation de la BDD
+  const [morningImagesMock, setMorningImagesMock] = useState<string[]>([]); 
   
   const [shiftStatus, setShiftStatus] = useState<ShiftStatus>('CONFORME');
   const [justification, setJustification] = useState<string>('');
@@ -76,28 +91,29 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
   };
 
   const handleSimulateScan = () => {
-    setProfile({
-      id: 'FACOM-JET-001',
-      name: 'Servante Châssis Moteur',
-      totalDrawers: 6,
-      foamColor: 'Rouge'
-    });
-    setEveningImages([]);
-    
-    // NOUVEAU : On fouille dans la mémoire du téléphone pour retrouver les photos du matin
-    const savedMorningShots = localStorage.getItem(`locatem5_morning_FACOM-JET-001`);
-    if (savedMorningShots) {
-      setMorningImagesMock(JSON.parse(savedMorningShots));
-    } else {
-      // Sécurité si le technicien n'avait pas fait sa prise de poste ce matin
-      setMorningImagesMock(Array(7).fill(MOCK_MORNING_BASE64));
-    }
+    // ON SIMULE LE SCAN DU QR CODE FACOM (8 Tiroirs)
+    const scannedCode = "JETM4X-FDW";
+    const foundProfile = SERVANTE_CATALOG[scannedCode];
 
-    setCurrentShot(1);
-    setShiftStatus('CONFORME');
-    setJustification('');
-    setSelectedTags([]);
-    setStep('shooting');
+    if (foundProfile) {
+      setProfile(foundProfile);
+      setEveningImages([]);
+      
+      const savedMorningShots = localStorage.getItem(`locatem5_morning_${scannedCode}`);
+      if (savedMorningShots) {
+        setMorningImagesMock(JSON.parse(savedMorningShots));
+      } else {
+        setMorningImagesMock(Array(foundProfile.totalDrawers + 1).fill(MOCK_MORNING_BASE64));
+      }
+      
+      setCurrentShot(1);
+      setShiftStatus('CONFORME');
+      setJustification('');
+      setSelectedTags([]);
+      setStep('shooting');
+    } else {
+      alert("QR Code inconnu.");
+    }
   };
 
   const handleCapture = () => {
@@ -144,7 +160,6 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-  // --- VUE 1 : SCAN ---
   if (step === 'scan_qr') {
     return (
       <div className="w-full h-full bg-[#121212] flex flex-col px-[4vw] pt-[2vh] pb-[4vh] font-sans">
@@ -175,7 +190,6 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     );
   }
 
-  // --- VUE 2 : MITRAILLAGE ---
   if (step === 'shooting' && profile) {
     const isPlateauLibre = currentShot > profile.totalDrawers;
     return (
@@ -237,7 +251,6 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     );
   }
 
-  // --- VUE 3 : ANALYSE ---
   if (step === 'analyzing') {
     return (
       <div className="w-full h-full bg-[#121212] flex flex-col items-center justify-center px-6 text-center font-sans">
@@ -248,7 +261,6 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
     );
   }
 
-  // --- VUE 4 : RAPPORT ---
   return (
     <div className="w-full h-full bg-[#121212] flex flex-col px-[4vw] pt-[2vh] pb-[4vh] font-sans">
       <div className="h-[10vh] flex items-center shrink-0 border-b border-white/5 mb-4">
@@ -294,9 +306,7 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
           if (shiftStatus === 'DEGRADE' && selectedTags.length === 0 && justification.trim() === '') { alert("Saisir un motif."); return; }
           setIsGenerating(true);
           try {
-            // =========================================================
-            // NOUVEAU : TRANSMISSION SATELLITE À LA TOUR DE CONTRÔLE
-            // =========================================================
+            // TRANSMISSION SATELLITE À LA TOUR DE CONTRÔLE
             const { error: dbError } = await supabase.from('servantes_status').upsert({
               id: profile?.id || 'FACOM-JET-001',
               technician_id: 'TECH-01',
@@ -310,7 +320,7 @@ const FinDePoste: React.FC<FinDePosteProps> = ({ onBack }) => {
             if (dbError) {
               console.warn("Erreur de transmission :", dbError.message);
             }
-            // =========================================================
+
             const { pdf } = await import('@react-pdf/renderer');
             const { FinDePosteReport } = await import('../components/FinDePosteReport');
             const reportData = {

@@ -25,6 +25,22 @@ const ANOMALY_TAGS = [
   "Outil perdu / volé"
 ];
 
+// NOUVEAU : LE CATALOGUE ISSU DE TES PDF
+const SERVANTE_CATALOG: Record<string, ServanteProfile> = {
+  "JETM4X-FDW": {
+    id: "JETM4X-FDW",
+    name: "Servante FACOM JET M4 (8 Tiroirs)",
+    totalDrawers: 8,
+    foamColor: "Rouge"
+  },
+  "OPSIAL-MEC": {
+    id: "OPSIAL-MEC",
+    name: "Servante OPSIAL Standard (6 Tiroirs)",
+    totalDrawers: 6,
+    foamColor: "Noir"
+  }
+};
+
 const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
   const [step, setStep] = useState<Step>('scan_qr');
   const [profile, setProfile] = useState<ServanteProfile | null>(null);
@@ -107,18 +123,21 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
   };
 
   const handleSimulateScan = () => {
-    setProfile({
-      id: 'FACOM-JET-001',
-      name: 'Servante Châssis Moteur',
-      totalDrawers: 6,
-      foamColor: 'Rouge'
-    });
-    setCapturedImages([]);
-    setCurrentShot(1);
-    setShiftStatus('CONFORME');
-    setJustification('');
-    setSelectedTags([]); // Reset tags
-    setStep('shooting');
+    // On simule le fait que la caméra vient de lire le QR Code "JETM4X-FDW"
+    const scannedCode = "JETM4X-FDW";
+    const foundProfile = SERVANTE_CATALOG[scannedCode];
+
+    if (foundProfile) {
+      setProfile(foundProfile);
+      setCapturedImages([]);
+      setCurrentShot(1);
+      setShiftStatus('CONFORME');
+      setJustification('');
+      setSelectedTags([]);
+      setStep('shooting');
+    } else {
+      alert("QR Code inconnu au bataillon.");
+    }
   };
 
   const handleCapture = () => {

@@ -307,7 +307,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const themeColor = mode === 'maintenance' ? '#00E5FF' : '#DC2626'; 
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col overflow-hidden select-none">
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden select-none">
       
       <div className="relative flex-1 bg-[#050505] overflow-hidden">
         <canvas ref={canvasRef} className="hidden" />

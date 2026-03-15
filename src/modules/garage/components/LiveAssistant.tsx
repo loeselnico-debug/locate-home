@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
-import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CameraOff, CheckSquare, LogOut, Lock, Clock, AlertOctagon } from 'lucide-react';
+import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CameraOff, CheckSquare, LogOut, Lock, Clock, AlertOctagon, ArrowRight } from 'lucide-react';
 import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
 import { reportService } from '../services/reportService';
 import { useUserTier } from '../../../core/security/useUserTier';
@@ -11,6 +11,8 @@ interface LiveAssistantProps {
   onExit: () => void;
 }
 
+type SessionPhase = 'AUDIT' | 'DIAGNOSTIC';
+
 const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const { currentTier } = useUserTier();
 
@@ -18,7 +20,8 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   
-  const [showSafety, setShowSafety] = useState(true);
+  // NOUVEAU : Gestion des phases
+  const [sessionPhase, setSessionPhase] = useState<SessionPhase>('AUDIT');
   const [showDegradedConfirm, setShowDegradedConfirm] = useState(false);
   const [isDegradedMode, setIsDegradedMode] = useState(false);
   const [bypassedWarnings, setBypassedWarnings] = useState<string[]>([]);
@@ -26,9 +29,9 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const [sessionClosed, setSessionClosed] = useState(false);
   const [finalReport, setFinalReport] = useState<any>(null);
   
-  const [diagnosticText, setDiagnosticText] = useState(`Terminal ${mode.toUpperCase()} en attente. Sécurisez la zone.`);
+  const [diagnosticText, setDiagnosticText] = useState(`Phase d'Audit ${mode.toUpperCase()} initiée. Analysez la zone.`);
   const [currentDiagnostic, setCurrentDiagnostic] = useState<LiveDiagnostic>({
-    hypothesis: "En attente de transmission...",
+    hypothesis: "Initialisation du tunnel de sécurité...",
     confidence: 0,
     nextStep: "-"
   });
@@ -80,43 +83,33 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         const transcript = event.results[0][0].transcript;
         setDiagnosticText(`🎙️ VOUS : "${transcript.toUpperCase()}"`);
         setIsListening(false);
-        liveService.sendPrompt(transcript);
+        // Ajout du contexte de phase dans le prompt
+        liveService.sendPrompt(`[PHASE: ${sessionPhase}] L'opérateur dit : ${transcript}`);
       };
       
       recognitionRef.current.onerror = () => setIsListening(false);
       recognitionRef.current.onend = () => setIsListening(false);
     }
+  }, [sessionPhase]);
+
+  // DÉMARRAGE AUTOMATIQUE DE LA SESSION EN PHASE AUDIT
+  useEffect(() => {
+    if (currentTier === 'FREE') {
+      const stored = localStorage.getItem('m5_free_usage');
+      if (stored) {
+        const { count, lastUsed } = JSON.parse(stored);
+        const elapsedMin = (Date.now() - lastUsed) / 60000;
+        if (elapsedMin < 24 * 60 && count >= 4) {
+          setCooldownMsg(`Tunnel IA en refroidissement (Limite atteinte).`);
+          return;
+        }
+      }
+      setFreeTimeLeft(120);
+    }
+    startLiveSession(false);
   }, []);
 
-  // --- CHRONOLOGIE PÉDAGOGIQUE (MODE DÉGRADÉ) ---
-  // Déclenchements stricts et uniques à +5 min, +15 min, et +60 min
-  useEffect(() => {
-    const timeouts: number[] = [];
-
-    if (isLive && isDegradedMode && bypassedWarnings.length > 0) {
-      
-      const triggerReminder = (timeLabel: string) => {
-        const randomWarning = bypassedWarnings[Math.floor(Math.random() * bypassedWarnings.length)];
-        setDiagnosticText(`⚠️ RAPPEL SÉCURITÉ (+${timeLabel}) : ${randomWarning.toUpperCase()}`);
-        speak(`Rappel de sécurité. ${randomWarning}`);
-      };
-
-      // Planification des rappels en millisecondes
-      // 5 minutes
-      timeouts.push(window.setTimeout(() => triggerReminder("5 min"), 5 * 60 * 1000));
-      // 15 minutes
-      timeouts.push(window.setTimeout(() => triggerReminder("15 min"), 15 * 60 * 1000));
-      // 60 minutes
-      timeouts.push(window.setTimeout(() => triggerReminder("1h"), 60 * 60 * 1000));
-    }
-
-    // Nettoyage des chronomètres si le technicien quitte ou termine l'intervention avant
-    return () => {
-      timeouts.forEach(t => window.clearTimeout(t));
-    };
-  }, [isLive, isDegradedMode, bypassedWarnings]);
-
-  const getCooldownStatus = () => {
+ const getCooldownStatus = () => {
     const stored = localStorage.getItem('m5_free_usage');
     if (!stored) return { allowed: true, count: 0, waitMin: 0 };
     const { count, lastUsed } = JSON.parse(stored);
@@ -131,24 +124,18 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     return { allowed: true, count };
   };
 
-  const registerFreeUsage = () => {
-    const stored = localStorage.getItem('m5_free_usage');
-    const count = stored ? JSON.parse(stored).count : 0;
-    localStorage.setItem('m5_free_usage', JSON.stringify({ count: count + 1, lastUsed: Date.now() }));
-  };
-
+  // DÉMARRAGE AUTOMATIQUE DE LA SESSION EN PHASE AUDIT
   useEffect(() => {
-    let timer: number;
-    if (isLive && currentTier === 'FREE' && freeTimeLeft !== null) {
-      if (freeTimeLeft <= 0) {
-        registerFreeUsage(); // On sauvegarde l'utilisation avant de fermer
-        closeAndGenerateReport("Temps gratuit écoulé. Mode Premium requis.");
-      } else {
-        timer = window.setInterval(() => setFreeTimeLeft(prev => (prev !== null ? prev - 1 : 0)), 1000);
+    if (currentTier === 'FREE') {
+      const status = getCooldownStatus();
+      if (!status.allowed) {
+        setCooldownMsg(`Tunnel IA en refroidissement. Attendez ${status.waitMin} min.`);
+        return; // Bloque le démarrage si le cooldown n'est pas respecté
       }
+      setFreeTimeLeft(120);
     }
-    return () => clearInterval(timer);
-  }, [isLive, freeTimeLeft, currentTier]);
+    startLiveSession(false);
+  }, [currentTier]);
 
   const captureAndSendFrame = () => {
     if (videoRef.current && canvasRef.current && isVideoActive) {
@@ -185,7 +172,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         speak("Vision activée.");
         setTimeout(() => {
           captureAndSendFrame();
-          liveService.sendPrompt("Je viens d'activer la caméra. Analyse l'image et donne-moi ton premier diagnostic visuel sur ce que tu vois.");
+          liveService.sendPrompt(`[PHASE: ${sessionPhase}] Je viens d'activer la caméra. Décris-moi l'environnement et les points de vigilance liés à la sécurité.`);
         }, 1500);
 
         frameIntervalRef.current = window.setInterval(captureAndSendFrame, 1600);
@@ -195,37 +182,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     }
   };
 
-  const handlePreStart = () => {
-    // FIX : Réactivation de la vérification du mode FREE
-    if (currentTier === 'FREE') {
-      const status = getCooldownStatus();
-      if (!status.allowed) {
-        setCooldownMsg(`Tunnel IA en refroidissement. Attendez ${status.waitMin} min.`);
-        return;
-      }
-      setFreeTimeLeft(120);
-    }
-
-    if (allValidated) {
-      startLiveSession(false);
-    } else {
-      const warnings: string[] = [];
-      checks.forEach(c => {
-        if (!c.validated) {
-          if (c.id === 'loto' || c.id === 'pto') warnings.push("L'énergie mécanique ou pneumatique résiduelle pardonne rarement. Assure-toi que personne ne peut réarmer le système dans ton dos.");
-          if (c.id === 'vat' || c.id === 've') warnings.push("L'électricité est un mal invisible. Une VAT prend 10 secondes et te garantit de rentrer chez toi ce soir.");
-          if (c.id === 'h2s') warnings.push("Dans une fosse ou un espace confiné, les gaz ne préviennent pas. Garde une extraction d'air active.");
-          if (c.id === 'levage') warnings.push("L'hydraulique peut lâcher à tout moment. Sécurise toujours avec des chandelles mécaniques.");
-        }
-      });
-      setBypassedWarnings(warnings);
-      setShowSafety(false);
-      setShowDegradedConfirm(true);
-    }
-  };
-
   const startLiveSession = async (degraded: boolean) => {
-    setShowSafety(false);
     setShowDegradedConfirm(false);
     setIsDegradedMode(degraded);
     
@@ -236,19 +193,38 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       startTimeRef.current = new Date();
       await liveService.connect(mode, (data) => {
         setDiagnosticText(data.hypothesis);
-        // FIX : Sauvegarde de la réponse IA pour le PDF !
         setCurrentDiagnostic(data); 
         speak(data.hypothesis);
       });
       
       const msg = degraded 
-        ? "Tunnel ouvert en MODE DÉGRADÉ. Prudence maximale. Appuyez sur PTT pour parler."
-        : "Tunnel crypté ouvert. Mode Radio actif. Appuyez sur PTT pour parler.";
+        ? "Tunnel ouvert en MODE DÉGRADÉ. Prudence maximale."
+        : "Phase d'Audit Sécurité en cours. Validez vos consignations.";
       
       setDiagnosticText(msg);
       
     } catch (err) { 
       setDiagnosticText("Erreur d'ouverture du Tunnel IA."); 
+    }
+  };
+
+  const handleTransitionToDiagnostic = () => {
+    if (allValidated) {
+      setSessionPhase('DIAGNOSTIC');
+      speak("Sécurité validée. Passage en mode diagnostic.");
+      liveService.sendPrompt("[SYSTEM] L'opérateur a validé toutes les procédures de sécurité. Passage en mode DIAGNOSTIC. Quel est ton premier conseil d'investigation ?");
+    } else {
+      const warnings: string[] = [];
+      checks.forEach(c => {
+        if (!c.validated) {
+          if (c.id === 'loto' || c.id === 'pto') warnings.push("L'énergie mécanique ou pneumatique résiduelle pardonne rarement.");
+          if (c.id === 'vat' || c.id === 've') warnings.push("Une VAT prend 10 secondes et te garantit de rentrer chez toi ce soir.");
+          if (c.id === 'h2s') warnings.push("Dans un espace confiné, les gaz ne préviennent pas.");
+          if (c.id === 'levage') warnings.push("Sécurise toujours avec des chandelles mécaniques.");
+        }
+      });
+      setBypassedWarnings(warnings);
+      setShowDegradedConfirm(true);
     }
   };
 
@@ -274,7 +250,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     
     let finalHypothesis = currentDiagnostic.hypothesis;
     if (isDegradedMode) {
-      finalHypothesis = `[MODE DÉGRADÉ ENGAGÉ PAR LE TECHNICIEN] - ${finalHypothesis}`;
+      finalHypothesis = `[MODE DÉGRADÉ ENGAGÉ] - ${finalHypothesis}`;
     }
 
     const reportData = {
@@ -315,6 +291,17 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     );
   }
 
+  if (cooldownMsg) {
+    return (
+      <div className="fixed inset-0 bg-[#050505] z-50 flex flex-col items-center justify-center p-6 text-center">
+         <AlertTriangle className="text-[#FF6600] w-16 h-16 mb-4 animate-pulse" />
+         <h2 className="text-white font-black uppercase tracking-widest text-xl mb-2">Refroidissement IA</h2>
+         <p className="text-gray-400 text-sm">{cooldownMsg}</p>
+         <button onClick={onExit} className="mt-8 bg-white/10 text-white px-8 py-3 rounded-lg font-bold uppercase tracking-widest text-xs">Retour</button>
+      </div>
+    );
+  }
+
   const themeColor = mode === 'maintenance' ? '#00E5FF' : '#DC2626'; 
 
   return (
@@ -323,7 +310,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       <div className="relative flex-1 bg-[#050505] overflow-hidden">
         <canvas ref={canvasRef} className="hidden" />
 
-        <video ref={videoRef} autoPlay playsInline className={`absolute inset-0 w-full h-full object-cover opacity-70 ${isVideoActive ? 'block' : 'hidden'}`} />
+        <video ref={videoRef} autoPlay playsInline className={`absolute inset-0 w-full h-full object-cover ${sessionPhase === 'AUDIT' ? 'opacity-40' : 'opacity-70'} ${isVideoActive ? 'block' : 'hidden'}`} />
         
         {isVideoActive && (
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:5vw_5vw]"></div>
@@ -338,9 +325,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
                     <Mic size={48} className={isListening ? `text-[${themeColor}]` : 'text-gray-600'} />
                   </div>
                 </div>
-                <p className={`mt-8 font-mono text-xs uppercase tracking-widest ${isListening ? `text-[${themeColor}]` : 'text-gray-500'}`}>
-                  {isListening ? "Écoute en cours..." : "Canal Audio Ouvert (Cliquer PTT)"}
-                </p>
               </div>
             ) : (
               <Shield size={64} className="text-white/10" />
@@ -348,19 +332,22 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
           </div>
         )}
         
+        {/* HUD SUPÉRIEUR */}
         <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-30">
           <div className="bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10">
             <h1 className="text-white font-black text-[12px] uppercase tracking-[0.3em]">LOCATE {mode.toUpperCase()}</h1>
-            
-            {/* FIX : Réintégration du chrono FREE */}
-            {currentTier === 'FREE' && freeTimeLeft !== null && (
-              <div className="flex items-center gap-1 mt-1 text-[#FF6600]">
-                <Clock size={10} /><span className="font-mono text-[10px] font-black">{Math.floor(freeTimeLeft / 60)}:{(freeTimeLeft % 60).toString().padStart(2, '0')}</span>
-              </div>
-            )}
-
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${sessionPhase === 'AUDIT' ? 'bg-orange-500/20 text-orange-500 border border-orange-500/30' : `bg-[${themeColor}]/20 text-[${themeColor}] border border-[${themeColor}]/30`}`}>
+                PHASE: {sessionPhase}
+              </span>
+              {currentTier === 'FREE' && freeTimeLeft !== null && (
+                <div className="flex items-center gap-1 text-gray-400">
+                  <Clock size={10} /><span className="font-mono text-[10px] font-black">{Math.floor(freeTimeLeft / 60)}:{(freeTimeLeft % 60).toString().padStart(2, '0')}</span>
+                </div>
+              )}
+            </div>
             {isDegradedMode && (
-              <div className="text-red-500 font-black text-[9px] uppercase tracking-widest mt-1 animate-pulse flex items-center gap-1">
+              <div className="text-red-500 font-black text-[9px] uppercase tracking-widest mt-2 animate-pulse flex items-center gap-1">
                 <AlertOctagon size={10} /> MODE DÉGRADÉ
               </div>
             )}
@@ -374,33 +361,33 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
           )}
         </div>
 
-        {showSafety && !showDegradedConfirm && (
-          <div className="absolute inset-0 z-50 bg-[#050505]/95 backdrop-blur-2xl p-8 flex flex-col justify-center">
-            <div className="max-w-md mx-auto w-full space-y-6">
-              <div className="text-center">
-                <AlertTriangle className={`mx-auto mb-4 text-[${themeColor}]`} size={40} />
-                <h2 className="text-white font-black text-lg uppercase">Validation Sécurité</h2>
-                {/* FIX : Réintégration du message d'erreur de refroidissement */}
-                {cooldownMsg && <p className="text-[#FF6600] text-xs font-bold mt-2 animate-pulse">{cooldownMsg}</p>}
-              </div>
+        {/* HUD LATÉRAL : CHECKLIST DE SÉCURITÉ (Uniquement en phase AUDIT) */}
+        {sessionPhase === 'AUDIT' && !showDegradedConfirm && (
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 w-[45vw] max-w-[220px] flex flex-col gap-2 z-30">
+            <div className="bg-black/80 backdrop-blur-md border border-orange-500/30 rounded-xl p-3 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
+              <h3 className="text-orange-500 font-black text-[9px] uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <Shield size={12} /> Check-list Sécurité
+              </h3>
               <div className="space-y-2">
                 {checks.map(check => (
                   <button key={check.id} onClick={() => setChecks(prev => prev.map(c => c.id === check.id ? {...c, validated: !c.validated} : c))}
-                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${check.validated ? `bg-[${themeColor}]/10 border-[${themeColor}] text-white` : 'bg-white/5 border-white/5 text-gray-500'}`}>
-                    <div className="flex items-center gap-4">{check.icon}<span className="text-[10px] font-black uppercase">{check.label}</span></div>
-                    {check.validated && <CheckCircle2 size={18} className={`text-[${themeColor}]`} />}
+                    className={`w-full flex items-center justify-between p-2 rounded-lg border transition-all text-left ${check.validated ? 'bg-green-500/20 border-green-500/50 text-green-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>
+                    <span className="text-[9px] font-bold uppercase leading-tight pr-2">{check.label}</span>
+                    {check.validated && <CheckCircle2 size={14} className="text-green-400 shrink-0" />}
                   </button>
                 ))}
               </div>
-              
-              <button disabled={cooldownMsg !== null} onClick={handlePreStart}
-                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all ${cooldownMsg ? 'bg-gray-900 text-gray-700' : allValidated ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]' : 'bg-[#DC2626]/20 text-[#DC2626] border border-[#DC2626]/50'}`}>
-                {allValidated ? 'Ouvrir Tunnel Expertise' : 'Forcer Intervention (Dégradé)'}
+              <button 
+                onClick={handleTransitionToDiagnostic}
+                className={`w-full mt-4 py-2.5 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-1 ${allValidated ? `bg-[${themeColor}] text-black shadow-[0_0_15px_${themeColor}80]` : 'bg-red-900/50 text-red-400 border border-red-500/30'}`}
+              >
+                {allValidated ? <>Ouvrir Diagnostic <ArrowRight size={12} /></> : 'Forcer Mode Dégradé'}
               </button>
             </div>
           </div>
         )}
 
+        {/* MODALE DE CONFIRMATION DÉGRADÉE */}
         {showDegradedConfirm && (
           <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-3xl p-6 flex flex-col justify-center">
             <div className="max-w-md mx-auto w-full bg-[#1A0505] border border-[#DC2626] rounded-2xl p-6 shadow-[0_0_50px_rgba(220,38,38,0.2)]">
@@ -411,7 +398,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
               
               <div className="space-y-4 mb-8">
                 {bypassedWarnings.map((warning, idx) => (
-                  <div key={idx} className="bg-black/50 p-4 rounded-lg border-l-4 border-[#FF6600]">
+                  <div key={idx} className="bg-black/50 p-4 rounded-lg border-l-4 border-orange-500">
                     <p className="text-white/80 text-xs italic leading-relaxed">"{warning}"</p>
                   </div>
                 ))}
@@ -424,10 +411,10 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
               </div>
 
               <div className="flex gap-3">
-                <button onClick={() => { setShowDegradedConfirm(false); setShowSafety(true); }} className="flex-1 py-4 bg-gray-900 text-gray-400 rounded-xl font-black text-[10px] uppercase tracking-widest">
+                <button onClick={() => setShowDegradedConfirm(false)} className="flex-1 py-4 bg-gray-900 text-gray-400 rounded-xl font-black text-[10px] uppercase tracking-widest">
                   Annuler
                 </button>
-                <button onClick={() => startLiveSession(true)} className="flex-[2] py-4 bg-[#DC2626] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
+                <button onClick={() => { setSessionPhase('DIAGNOSTIC'); startLiveSession(true); }} className="flex-[2] py-4 bg-[#DC2626] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
                   J'y vais quand même
                 </button>
               </div>
@@ -437,11 +424,12 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
       </div>
 
+      {/* CONSOLE INFÉRIEURE */}
       <div className="h-[30vh] bg-[#050505] border-t border-white/5 p-6 flex flex-col items-center justify-between z-40 relative">
         
         <div className="w-full bg-black/60 rounded-xl border border-white/10 p-4 min-h-[80px] flex items-center shadow-inner">
-          <p className={`font-mono text-[10px] uppercase tracking-wider leading-relaxed ${currentDiagnostic.safetyAlert ? 'text-red-500 font-bold animate-pulse' : 'text-[#FF6600]'}`}>
-            {">"} {diagnosticText}
+          <p className={`font-mono text-[10px] uppercase tracking-wider leading-relaxed ${currentDiagnostic.safetyAlert ? 'text-red-500 font-bold animate-pulse' : 'text-gray-300'}`}>
+            <span className={`text-[${themeColor}]`}>{">"}</span> {diagnosticText}
           </p>
         </div>
 
@@ -468,8 +456,8 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
                   !isLive 
                     ? 'bg-gray-900 border-black opacity-50' 
                     : isListening 
-                      ? 'bg-[#FF6600] border-orange-900 scale-95 translate-y-[4px] animate-pulse' 
-                      : 'bg-[#FF6600] border-orange-800 active:scale-95 hover:bg-[#ff7b24]'
+                      ? 'bg-orange-600 border-orange-900 scale-95 translate-y-[4px] animate-pulse' 
+                      : 'bg-orange-500 border-orange-800 active:scale-95 hover:bg-[#ff7b24]'
                 }`}
               >
                 <Mic size={32} className="text-white drop-shadow-md" />

@@ -90,3 +90,98 @@ L'interface doit visuellement refléter le bridage selon l'abonnement :
 * **Session Live :** Compteur visuel (120s max pour le Tier FREE).
 * **Cooldown :** Affichage progressif du délai (5min > 20min > 60min > 24h) sur l'interface de scan.
 * **Verrouillage :** Bouton d'export PDF grisé ou affublé d'une icône de cadenas (Locked) pour les comptes non éligibles.
+
+
+🧭 ⚛️ 🇫🇷 MANIFESTE MAÎTRE LOCATE SYSTEMS (M1) | SOURCE DE VÉRITÉ V4.1
+Date mise à jour : 15 Mars 2026
+Statut : RÉFÉRENTIEL MAÎTRE - ARCHITECTURE MONOREPO UNIFIÉE 🟢 Vision : "L'homme ne parle pas à l'IA pour l'écouter, mais pour qu'elle devienne le prolongement de son expertise terrain."
+
+📂 1. ORGANIGRAMME TECHNIQUE (STRUCTURE M5 DÉTAILLÉE)
+📦 LOCATE-SYSTEMS
+└── 📂 src/modules/garage/
+├── 📂 components/
+│   ├── 📄 LiveAssistant.tsx   # HUD immersif (z-200), cockpit de réalité augmentée.
+│   ├── 📄 PassportScanner.tsx  # Capture IA OCR des habilitations (BR, BC, CACES).
+│   └── 📄 GaragePdfButton.tsx  # Générateur de rapports certifiés (AFNOR/OBD2).
+└── 📂 views/
+├── 📄 GarageDashboard.tsx  # Aiguilleur métier scindé (Maintenance / Mécanique).
+├── 📄 TechProfile.tsx      # Vestiaire numérique (Identité & Habilitations).
+├── 📄 PreparationChantier.tsx # Analyse prédictive des risques & outillage.
+└── 📄 TourDeControle.tsx    # Supervision Realtime via Supabase WebSockets.
+
+🎨 2. DESIGN TACTIQUE DU MODULE GARAGE (M5)
+Le design du module Garage répond aux contraintes des environnements sévères (basse luminosité, port de gants, besoin d'immersion totale).
+
+⚙️ 2.1 Maintenance Industrielle (M5-INDUS)
+Code Couleur : Cyan Électrique (#00E5FF).
+
+Ambiance Visuelle : Interface "High-Tech Lab". Fond noir pur pour maximiser le contraste.
+
+Composants Spécifiques :
+
+Préparation de Chantier : Cartes de risques en dégradés de rouge/orange.
+
+Assistant IA : Mode "Audit" avec pilules de consignation clignotantes en Cyan tant qu'elles ne sont pas validées.
+
+Phasage : Transition visuelle nette (Flash blanc) lors du passage de l'Audit au Diagnostic.
+
+🚛 2.2 Mécanique Auto & P.L. (M5-MECA)
+Code Couleur : Rouge Compétition (#DC2626).
+
+Ambiance Visuelle : Interface "Dashboard Performance". Utilisation de typographies mono-espacées pour les codes erreurs.
+
+Composants Spécifiques :
+
+Module FOD : Grille de comparaison "Matin/Soir" côte à côte avec surlignage des anomalies en rouge néon.
+
+Assistant IA : Intégration de jauges de pression et de couples de serrage en superposition vidéo.
+
+Quick Tags : Boutons tactiles géants pour une saisie rapide sans retirer les gants.
+
+👁️ 3. L'INTERFACE IMMERSIVE (HUD Z-200)
+La force du design M5 réside dans son HUD (Heads-Up Display) filigrane appliqué au LiveAssistant.
+
+Immersion Totale : Utilisation d'un z-index: 200 pour recouvrir le Logo et la navigation globale. La caméra devient le fond d'écran de l'application.
+
+Bandeau Filigrane (Top Bar) :
+
+Ligne 1 (Identité) : Rappel permanent du nom du technicien et de ses habilitations scannées (Badges verts/rouges).
+
+Ligne 2 (Sécurité) : Checklist horizontale de "Pilules" (LOTO, VAT, Chandelles). Une pilule validée devient luminescente.
+
+Console de Commande (Bottom Bar) :
+
+Bouton PTT (Push-To-Talk) central, format 3D Orange, réagissant dynamiquement au volume de la voix.
+
+Bouton Vision Bionique pour activer/désactiver le flux HDR de Gemini.
+
+⚡ 4. LOGIQUE MÉTIER IA (INTÉGRATION V29)
+A. Le Veto IA (Habilitations)
+Le design ne se contente pas d'afficher, il protège. Si l'IA identifie une source de tension électrique et que le TechProfile ne comporte pas l'habilitation BR, le HUD affiche une alerte critique plein écran et bloque le tunnel de diagnostic.
+
+B. Analyse Métallurgique HDR
+Le moteur de rendu visuel traite les nuances de couleurs de l'acier (Zones 1 à 5). En cas de détection d'une Zone 4 (Bleu), l'interface mécanique force l'affichage de l'instruction : "Remplacement obligatoire : Acier détrempé".
+
+⚖️ 5. JURIDIQUE, INFRASTRUCTURE & BUSINESS (ACQUIS V4)
+Identité Légale : Nicolas Loesel EI - Locate Systems. SIRET en cours.
+
+Privacy by Design : Stockage local IndexedDB. Buffer vidéo détruit après chaque session "Live".
+
+Modèle de Tiers :
+
+FREE : 15 outils, sessions 120s, cooldown progressif.
+
+PREMIUM/PRO : Inventaire illimité, PDF certifiés (AFNOR/Assurances), Tour de contrôle Temps Réel.
+
+🟢 6. ACQUIS TECHNIQUES (TERMINÉ SESSION V29)
+[X] Segmentation Symétrique : Sous-menus Maintenance (Cyan) et Mécanique (Rouge) indépendants.
+
+[X] TechProfile & OCR : Lecture automatique des habilitations via PassportScanner.
+
+[X] HUD Filigrane : Intégration du bandeau de sécurité z-200 dans le Live Assistant.
+
+[X] Préparation de Chantier : Génération IA de plans de prévention croisés avec l'inventaire local.
+
+[X] Realtime Supabase : Remontée des alertes de fin de poste vers la Tour de Contrôle via WebSockets.
+
+Fin du Manifeste Maître V4.1. Ce document fait foi pour tout futur développement des interfaces M5.

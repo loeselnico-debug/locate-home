@@ -1,6 +1,6 @@
 # 🔧 🏭 LOCATE GARAGE | RÉFÉRENTIEL MAINTENANCE 5.0 (M5)
 
-**Date mise à jours :** *06 Mars 2026*
+**Date mise à jours :** *15 Mars 2026*
 **Statut :** BIBLE MÉTIER - ARCHITECTURE "LIVE ASSISTANT" 🟢
 **Vision :** *"L'IA ne remplace pas le technicien, elle est son exosquelette cognitif."*
 
@@ -15,15 +15,17 @@
     │   └── 📄 liveService.ts          # Système Nerveux (WebSocket Gemini Multimodal Partitionné)
     └── 📂 modules/garage/             # 🔧 M5 : LA MAINTENANCE (Industry)
         ├── 📁 components/             # Interface utilisateur tactique (HUD)
-        │   ├── 📄 LiveAssistant.tsx   # Cockpit Tactique "Industry" (Cyan) avec PTT & Chrono 120s
-        │   └── 📄 GaragePdfButton.tsx # Export PDF (Verrouillé en Tier FREE)
+        │   ├── 📄 LiveAssistant.tsx   # Cockpit Tactique "Industry" (HUD Filigrane, Phases Audit/Diag)
+        │   ├── 📄 GaragePdfButton.tsx # Export PDF (Verrouillé en Tier FREE)
+        │   └── 📄 PassportScanner.tsx # Scanner IA OCR pour Passeport Sécurité/Habilitations
         ├── 📁 services/               # Logique métier spécifique
         │   └── 📄 reportService.ts    # Générateur de Rapports (Norme AFNOR, White Label)
         └── 📁 views/                  # Écrans principaux du module
-            └── 📄 GarageDashboard.tsx # Aiguilleur Métier (Routeur déverrouillé)
+            ├── 📄 GarageDashboard.tsx # Aiguilleur Métier (Routage scindé Maintenance Cyan / Mécanique Rouge)
+            ├── 📄 TechProfile.tsx     # Fiche Technicien (Vestiaire, Habilitations)
+            └── 📄 PreparationChantier.tsx # Générateur IA de plan de prévention croisé inventaire
 
 ---------------------------------------------------------------------------------------------------------
-
 
 ✅ 1. ACQUIS TECHNIQUES - SESSION V20
 L'architecture a été consolidée pour permettre une exploitation commerciale immédiate :
@@ -40,6 +42,19 @@ Tier FREE : Session limitée à 120 secondes avec système de refroidissement (C
 
 Export PDF : Bouton d'export certifié réservé aux comptes PREMIUM/PRO.
 
+✅ 1.B. ACQUIS TECHNIQUES - SESSION V29 (HUD TACTIQUE & PRÉPARATION)
+L'architecture a évolué pour séparer strictement l'administratif de l'opérationnel et introduire des outils préventifs :
+
+Segmentation Forfaits PRO : Cloisonnement total entre la "Maintenance Industrielle" (thème Cyan) et la "Mécanique Auto & P.L." (thème Rouge) au sein du `GarageDashboard`.
+
+Profil Technicien & OCR Sécurité : Création du `TechProfile`. L'IA lit et extrait automatiquement les habilitations (BR, B0, CACES, etc.) via le scan du passeport sécurité de l'opérateur.
+
+HUD Tactique (Filigrane) : Refonte du `LiveAssistant` pour une immersion totale. Les consignations (LOTO, VAT) et les habilitations de l'opérateur apparaissent en surimpression (HUD) sans masquer la caméra.
+
+Phases d'Intervention : Le Live Assistant est désormais divisé en "Phase d'Audit" (sécurisation de la zone avec check-list) et "Phase de Diagnostic" (débloquée une fois les habilitations et consignations validées).
+
+Préparation de Chantier : Module préventif générant une analyse des risques, les EPI requis et croisant l'outillage recommandé par l'IA avec l'inventaire réel de l'utilisateur (`LOCATE HOME`).
+
 ⚙️ 2. MOTEUR DE RÈGLES & SÉCURITÉ (MAINTENANCE)
 Logique de Diagnostic : Application stricte des méthodes AMDEC et Ishikawa pour isoler la cause racine.
 
@@ -52,7 +67,7 @@ Architecture "Zéro-Trace" : Le buffer vidéo est intégralement détruit à la 
 
 Rapport "Generic Pro" : Moteur PDF prêt pour le co-branding (ex: Veolia), mais configuré par défaut en mode neutre pour les démos commerciales (DÉPARTEMENT MAINTENANCE INDUSTRIELLE).
 
-Fin de la mise à jour V20 - Ce document est la nouvelle source de vérité pour le développement M5.
+Fin de la mise à jour V20/V29 - Ce document est la nouvelle source de vérité pour le développement M5.
 
 -------------------------------------------------------------------------------------------------------------------
 
@@ -244,116 +259,6 @@ MTTR (Mean Time To Repair) : Temps moyen de réparation (Maintenabilité).
 
 TRS (Taux de Rendement Synthétique) : Taux de disponibilité x Taux de performance x Taux de qualité.
 
-
-
-                       # 📘 BIBLE ULTIME : ARCHITECTURE ET BASE DE CONNAISSANCES IA - MAINTENANCE 5.0
-
-
-
-**Rôle du document :** Ce fichier constitue la source de vérité absolue (Master Knowledge Base) pour le développement de l'Assistant IA Live (Vidéo HDR / Audio) dédié à la maintenance industrielle pluridisciplinaire. L'IA doit s'y référer pour tout choix architectural, méthodologique, ou diagnostic métier.
-
----
-
-## 🏗️ 1. PARADIGME ET ARCHITECTURE GLOBALE (MAINTENANCE 5.0)
-
-L'application s'inscrit dans le paradigme de la **Maintenance 5.0** (collaboration Homme-Machine repensée, interfaces intuitives via mobilité et assistants vocaux, réalité augmentée) [1]. 
-
-### 1.1 Modèle OSA/CBM (Open System Architecture for Condition Based Maintenance)
-L'architecture de traitement des flux en direct (vidéo/audio) doit respecter la norme OSA/CBM [2, 3] :
-1. **Acquisition des données :** Récupération des flux vidéo HDR, audio, et capteurs IoT [2].
-2. **Traitement des données :** Filtrage, nettoyage, conversion (CAN/CNA) [4, 5].
-3. **Surveillance :** Comparaison des données avec les modèles sains ou les seuils prédéfinis [5].
-4. **Diagnostic :** Identification et isolation des causes de défaillance [5].
-5. **Pronostic :** Calcul du RUL (Remaining Useful Life / Temps restant avant panne) [5, 6].
-6. **Aide à la Décision :** Suggestions d'interventions, délais et priorisation [7].
-7. **IHM :** Synthèse visuelle en Réalité Augmentée pour l'opérateur [7].
-
-### 1.2 Topologie Réseau & Sécurité
-* **Cybersécurité industrielle :** Utilisation obligatoire d'un VPN (Virtual Private Network) pour connecter de manière sécurisée les terminaux d'assistance aux serveurs/machines distantes via des clés d'identification uniques [8].
-
----
-
-## 🧠 2. PIPELINE DATA & MACHINE LEARNING (LE CERVEAU IA)
-
-L'IA s'appuie sur le *Machine Learning* pour transformer les signaux (audio, vidéo) en diagnostics [9].
-
-### 2.1 Types de détections et paramètres surveillés
-* **Acoustique / Ultrasons :** Détection de fuites de fluides (air comprimé, eau, gaz) et usures de roulements [10, 11].
-* **Vibrations :** Défauts d'alignement, balourd, usure sur machines tournantes [10, 11].
-* **Inspection visuelle (Vidéo HDR) :** Corrosions, fuites externes, détection de corps étrangers, vérification de l'environnement, état de surface [12, 13].
-* **Thermographie (si caméra thermique couplée) :** Détection de fuites, mauvais raccordements électriques, frottements mécaniques anormaux [14, 15].
-
-### 2.2 Algorithmes préconisés selon la maturité des données [16-21]
-* **Apprentissage Non-Supervisé (Détection d'anomalies sans historique) :** `K-Means`, `CAH` (Classification Ascendante Hiérarchique), `DBSCAN`.
-* **Apprentissage Supervisé (Suivi temporel d'un écart sur modèle sain) :** `KNN`, `Régression linéaire / polynomiale`.
-* **Apprentissage Supervisé (Calcul de risque et classification de panne avec historique) :** `Random Forest`, `XGBoost`, `SVM`, `Régression logistique`.
-
----
-
-## 🔧 3. EXPERTISE MÉTIER : DIAGNOSTIC ET MÉTHODOLOGIE
-
-L'IA doit structurer ses instructions vocales et visuelles en respectant les standards industriels.
-
-### 3.1 Stratégies de Maintenance [22, 23]
-L'IA doit différencier et appliquer la bonne approche :
-* **Corrective / Curative :** Remise en état après une panne avérée [22].
-* **Préventive Systématique :** Interventions planifiées à l'avance (ex: tous les 25 000 km) [23].
-* **Préventive Conditionnelle :** Interventions déclenchées par le franchissement d'un seuil d'usure [23].
-* **Prédictive (Prévisionnelle) :** Anticipation par algorithmes de l'évolution de la dégradation [23, 24].
-
-### 3.2 Démarche de diagnostic pas-à-pas [25-28]
-1. Connaissance parfaite du système (schémas, cycle de fonctionnement) [27].
-2. Collecte des infos (GMAO, données capteurs) et observation de la situation réelle [25].
-3. Formulation d'hypothèses via outils qualité (`QQOQCCP`, diagramme d'`Ishikawa`, méthode `FAST/SADT` pour l'analyse fonctionnelle) [25, 29, 30].
-4. Vérification et établissement de la chaîne causale (aller du test le plus simple/visuel au plus intrusif) [25].
-
-### 3.3 Niveaux de maintenance (Classification AFNOR) [31-33]
-* **Niveau 1 :** Réglages simples, vérifications visuelles (par l'opérateur de production).
-* **Niveau 2 :** Dépannages par échange standard, opérations simples (Technicien habilité).
-* **Niveau 3 :** Identification des origines de pannes, échanges de composants (Technicien spécialisé).
-* **Niveau 4 :** Travaux importants, révisions complètes (Équipe en atelier).
-* **Niveau 5 :** Rénovation, reconstruction (Constructeur ou sous-traitant).
-
----
-
-## ⚡ 4. INGÉNIERIE SPÉCIFIQUE : ÉLECTRICITÉ & MÉCANIQUE
-
-### 4.1 Modélisation Électrique et Automatismes
-* **Principes :** L'IA doit pouvoir lire des schémas unifilaires, multifilaires et des cartes d'automates (API) [34, 35].
-* **Standards :** Respect des normes CEI, ISO, EN 61082-1 et IEC 60072-1 [36-38].
-* **Lecture de plans :** Identifier la page de présentation, la nomenclature des composants, les références croisées et les borniers [34, 37, 39]. L'IA doit connaître les schémas classiques comme le démarrage "Étoile-Triangle" des moteurs asynchrones [40, 41].
-* **Écosystème Logiciels CAO Électrique :** Connaissance des formats issus de EPLAN Electric P8, AutoCAD Electrical, Solidworks Electrical, SEE Electrical Expert, QElectroTech (Open Source) [42-45].
-
-### 4.2 Modélisation Mécanique & Tolérancement (GD&T)
-* **Système de cotation GD&T :** (Geometric Dimensioning and Tolerancing). Un modèle 3D est insuffisant pour la fabrication ou le diagnostic de précision ; il manque les tolérances (±), la rugosité (finition de surface, ex: Ra 3.2), et les matériaux [46, 47]. L'IA doit exiger et lire le dessin technique 2D en complément du 3D [48, 49].
-* **Normes de lecture :** ISO 1101 (Spécification géométrique des produits) [50, 51].
-* **Écosystème Logiciels CAO Mécanique :** Catia, Siemens NX, SolidWorks, PTC Creo, Fusion 360, Inventor, FreeCAD (Open Source) [52-58].
-
----
-
-## 🏭 5. OPÉRATIONNEL : CONNECTIVITÉ ET GMAO
-
-La **GMAO (Gestion de Maintenance Assistée par Ordinateur)** est l'épine dorsale de l'application. L'IA doit s'y interfacer de manière bidirectionnelle [35, 59, 60].
-
-### 5.1 Modules obligatoires de la GMAO [60, 61]
-1. **Gestion des interventions :** Création des OT (Ordre de Travail) ou BT (Bon de Travail) [35].
-2. **Gestion des équipements :** Arborescence technique, historique des pannes [62].
-3. **Gestion des pièces détachées :** Mise à jour des stocks et nomenclature lors d'une intervention [37, 60].
-4. **Gestion documentaire :** Accès aux notices constructeurs, plans de perçage, carnets de câbles [61, 63].
-
-### 5.2 Le Compte-Rendu Automatisé par l'IA
-Grâce à la capture de l'intervention (Audio/Vidéo), l'IA doit rédiger automatiquement un rapport comprenant au minimum [64] :
-* Référence de la machine.
-* Nature de l'intervention et identification de l'auteur.
-* Date, heure et durée de l'intervention.
-* Pièces changées.
-
-### 5.3 Indicateurs de performance (KPI) [65, 66]
-L'IA doit aider les managers à calculer et améliorer :
-* **MTBF** (Mean Time Between Failures) : Temps moyen entre pannes (Fiabilité).
-* **MTTR** (Mean Time To Repair) : Temps moyen de réparation (Maintenabilité).
-* **TRS** (Taux de Rendement Synthétique) : Taux de disponibilité x Taux de performance x Taux de qualité.
-
 6.6 EXPERTISE MÉTALLURGIQUE : ANALYSE THERMIQUE (COLORIMÉTRIE DE L'ACIER)
 Rôle de l'IA : Exploiter la capacité HDR de la caméra pour analyser les oxydes de surface de l'acier (les couleurs de revenu). L'objectif est double : valider le traitement thermique d'un outil (contrôle qualité) OU diagnostiquer une surchauffe anormale sur un organe mécanique (freinage, usinage, transmission).
 
@@ -406,4 +311,3 @@ Instruction de sécurité : "L'acier est détrempé. Le composant a perdu sa ré
 
 ---
 *Fin du document de contexte système.*
-

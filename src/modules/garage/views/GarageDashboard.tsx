@@ -70,7 +70,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
               Maintenance Indus.
             </h2>
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#00E5FF] mt-1">
-              Terminal Opérateur M5
+              Terminal Opérateur
             </span>
           </div>
         </div>

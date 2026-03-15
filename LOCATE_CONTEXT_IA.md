@@ -1,5 +1,5 @@
 # 🧠 CONTEXTE CODE SOURCE LOCATE
-> 📅 Archive générée le : 15/03/2026 11:53:07
+> 📅 Archive générée le : 15/03/2026 14:56:09
 
 
 // ==========================================
@@ -687,6 +687,87 @@ Logique de remplissage :
       
     } catch (error) {
       console.error("Erreur Gemini (Analyse FOD):", error);
+      return null;
+    }
+  },
+
+  // --- FONCTION SPÉCIALISÉE : LECTURE DU PASSEPORT SÉCURITÉ ---
+  analyzePasseportSecurite: async (base64Image: string): Promise<{fullName: string, company: string, techId: string, habilitations: string[]} | null> => {
+    if (!apiKey) {
+      console.error("Clé API Gemini introuvable.");
+      return null;
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
+      });
+
+      const prompt = `
+Tu es l'Expert de Conformité et Sécurité du système LOCATE M5.
+Analyse cette photo qui représente un passeport sécurité, une carte d'habilitation électrique, un CACES ou un badge professionnel.
+
+INSTRUCTION DE SORTIE :
+Tu dois retourner UNIQUEMENT un objet JSON valide suivant cette structure EXACTE :
+{
+  "fullName": "Nom et Prénom du technicien",
+  "company": "Nom de l'entreprise ou de l'employeur (si visible, sinon vide)",
+  "techId": "Numéro de matricule, numéro de titre ou identifiant (si visible, sinon vide)",
+  "habilitations": ["Liste", "des", "habilitations", "visibles", "ex: BR, B0, CACES R489, H1V..."]
+}
+
+Règles : 
+- Cherche minutieusement les symboles d'habilitation électrique française (B0, B1V, BR, BC, H0, etc.).
+- Ne retourne pas de Markdown, uniquement le JSON brut.
+`;
+
+      const imagePart = {
+        inlineData: { data: base64Image.split(',')[1], mimeType: "image/jpeg" }
+      };
+
+      const result = await model.generateContent([prompt, imagePart]);
+      return JSON.parse(result.response.text());
+      
+    } catch (error) {
+      console.error("Erreur Gemini (Analyse Passeport):", error);
+      return null;
+    }
+  },
+
+  // --- FONCTION SPÉCIALISÉE : PRÉPARATION DE CHANTIER (M5) ---
+  generateChantierPrep: async (intervention: string, inventoryStr: string): Promise<any | null> => {
+    if (!apiKey) return null;
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
+      });
+
+      const prompt = `
+Tu es l'Expert de Préparation de Chantier M5 (Maintenance Industrielle et Mécanique).
+Le technicien va réaliser l'intervention suivante : "${intervention}".
+
+Voici la liste des outils dont il dispose actuellement dans son inventaire (séparés par des virgules) : 
+[${inventoryStr}]
+
+Génère une fiche de préparation complète et sécurisée.
+RÈGLE ABSOLUE : Tu dois retourner UNIQUEMENT un objet JSON valide suivant cette structure EXACTE :
+{
+  "titre": "Titre reformulé et professionnel de l'intervention",
+  "analyseRisques": ["Risque 1", "Risque 2", "Risque 3"],
+  "epiRequis": ["EPI 1", "EPI 2"],
+  "outillageRecommande": [
+    { "nom": "Nom de l'outil", "possede": true (si présent dans l'inventaire) ou false (s'il ne l'a pas) }
+  ],
+  "piecesRechange": ["Pièce 1", "Pièce 2 (Consommables probables)"]
+}
+`;
+      const result = await model.generateContent([prompt]);
+      return JSON.parse(result.response.text());
+    } catch (error) {
+      console.error("Erreur Gemini (Préparation Chantier):", error);
       return null;
     }
   }
@@ -1663,11 +1744,13 @@ export type UnitSystem = 'METRIC' | 'IMPERIAL';
 
 const SETTINGS_KEY = 'locate_app_settings';
 
-// NOUVEAU : On définit la structure de l'identité pour le PDF
+// NOUVEAU : On enrichit la structure de l'identité pour inclure les habilitations M5
 export interface UserProfile {
   fullName: string;
   company: string;
   address: string;
+  techId?: string; // Matricule / N° de badge
+  habilitations?: string[]; // Ex: ["BR", "B0", "CACES R489", "H1V"]
 }
 
 export interface AppSettings {
@@ -2590,10 +2673,11 @@ export const GarageReport: React.FC<GarageReportProps> = ({ reportData }) => {
 
 ```tsx
 import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
-import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CameraOff, CheckSquare, LogOut, Lock, Clock, AlertOctagon } from 'lucide-react';
+import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CameraOff, CheckSquare, LogOut, Lock, Clock, AlertOctagon, User } from 'lucide-react';
 import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
 import { reportService } from '../services/reportService';
 import { useUserTier } from '../../../core/security/useUserTier';
+import { useAppSettings } from '../../../core/storage/useAppSettings'; // <-- NOUVEAU: Import du Cerveau Local
 
 const GaragePdfButton = lazy(() => import('./GaragePdfButton'));
 
@@ -2602,14 +2686,18 @@ interface LiveAssistantProps {
   onExit: () => void;
 }
 
+type SessionPhase = 'AUDIT' | 'DIAGNOSTIC';
+
 const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const { currentTier } = useUserTier();
+  const { settings } = useAppSettings(); // <-- NOUVEAU: Récupération du profil
+  const profile = settings.userProfile;
 
   const [isLive, setIsLive] = useState(false);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   
-  const [showSafety, setShowSafety] = useState(true);
+  const [sessionPhase, setSessionPhase] = useState<SessionPhase>('AUDIT');
   const [showDegradedConfirm, setShowDegradedConfirm] = useState(false);
   const [isDegradedMode, setIsDegradedMode] = useState(false);
   const [bypassedWarnings, setBypassedWarnings] = useState<string[]>([]);
@@ -2617,9 +2705,9 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const [sessionClosed, setSessionClosed] = useState(false);
   const [finalReport, setFinalReport] = useState<any>(null);
   
-  const [diagnosticText, setDiagnosticText] = useState(`Terminal ${mode.toUpperCase()} en attente. Sécurisez la zone.`);
+  const [diagnosticText, setDiagnosticText] = useState(`Phase d'Audit ${mode.toUpperCase()} initiée. Analysez la zone.`);
   const [currentDiagnostic, setCurrentDiagnostic] = useState<LiveDiagnostic>({
-    hypothesis: "En attente de transmission...",
+    hypothesis: "Initialisation du tunnel de sécurité...",
     confidence: 0,
     nextStep: "-"
   });
@@ -2636,14 +2724,14 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const [checks, setChecks] = useState(
     mode === 'maintenance'
       ? [
-          { id: 'loto', label: 'Consignation LOTO effectuée', icon: <Power size={18} />, validated: false },
-          { id: 'vat', label: 'VAT (Absence Tension)', icon: <Zap size={18} />, validated: false },
-          { id: 'h2s', label: 'Détecteur H2S & Gaz actif', icon: <Wind size={18} />, validated: false },
+          { id: 'loto', label: 'Consignation LOTO', icon: <Power size={14} />, validated: false },
+          { id: 'vat', label: 'Absence Tension (VAT)', icon: <Zap size={14} />, validated: false },
+          { id: 'h2s', label: 'Détecteur Gaz', icon: <Wind size={14} />, validated: false },
         ]
       : [
-          { id: 'levage', label: 'Chandelles / Béquilles en place', icon: <Shield size={18} />, validated: false },
-          { id: 'pto', label: 'Consignation PTO', icon: <Power size={18} />, validated: false },
-          { id: 've', label: 'EPI Haute Tension (VE)', icon: <Zap size={18} />, validated: false },
+          { id: 'levage', label: 'Chandelles Sécurité', icon: <Shield size={14} />, validated: false },
+          { id: 'pto', label: 'Consignation PTO', icon: <Power size={14} />, validated: false },
+          { id: 've', label: 'EPI Haute Tension', icon: <Zap size={14} />, validated: false },
         ]
   );
 
@@ -2671,41 +2759,13 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         const transcript = event.results[0][0].transcript;
         setDiagnosticText(`🎙️ VOUS : "${transcript.toUpperCase()}"`);
         setIsListening(false);
-        liveService.sendPrompt(transcript);
+        liveService.sendPrompt(`[PHASE: ${sessionPhase}] L'opérateur dit : ${transcript}`);
       };
       
       recognitionRef.current.onerror = () => setIsListening(false);
       recognitionRef.current.onend = () => setIsListening(false);
     }
-  }, []);
-
-  // --- CHRONOLOGIE PÉDAGOGIQUE (MODE DÉGRADÉ) ---
-  // Déclenchements stricts et uniques à +5 min, +15 min, et +60 min
-  useEffect(() => {
-    const timeouts: number[] = [];
-
-    if (isLive && isDegradedMode && bypassedWarnings.length > 0) {
-      
-      const triggerReminder = (timeLabel: string) => {
-        const randomWarning = bypassedWarnings[Math.floor(Math.random() * bypassedWarnings.length)];
-        setDiagnosticText(`⚠️ RAPPEL SÉCURITÉ (+${timeLabel}) : ${randomWarning.toUpperCase()}`);
-        speak(`Rappel de sécurité. ${randomWarning}`);
-      };
-
-      // Planification des rappels en millisecondes
-      // 5 minutes
-      timeouts.push(window.setTimeout(() => triggerReminder("5 min"), 5 * 60 * 1000));
-      // 15 minutes
-      timeouts.push(window.setTimeout(() => triggerReminder("15 min"), 15 * 60 * 1000));
-      // 60 minutes
-      timeouts.push(window.setTimeout(() => triggerReminder("1h"), 60 * 60 * 1000));
-    }
-
-    // Nettoyage des chronomètres si le technicien quitte ou termine l'intervention avant
-    return () => {
-      timeouts.forEach(t => window.clearTimeout(t));
-    };
-  }, [isLive, isDegradedMode, bypassedWarnings]);
+  }, [sessionPhase]);
 
   const getCooldownStatus = () => {
     const stored = localStorage.getItem('m5_free_usage');
@@ -2722,6 +2782,18 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     return { allowed: true, count };
   };
 
+  useEffect(() => {
+    if (currentTier === 'FREE') {
+      const status = getCooldownStatus();
+      if (!status.allowed) {
+        setCooldownMsg(`Tunnel IA en refroidissement. Attendez ${status.waitMin} min.`);
+        return; 
+      }
+      setFreeTimeLeft(120);
+    }
+    startLiveSession(false);
+  }, [currentTier]);
+
   const registerFreeUsage = () => {
     const stored = localStorage.getItem('m5_free_usage');
     const count = stored ? JSON.parse(stored).count : 0;
@@ -2732,7 +2804,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     let timer: number;
     if (isLive && currentTier === 'FREE' && freeTimeLeft !== null) {
       if (freeTimeLeft <= 0) {
-        registerFreeUsage(); // On sauvegarde l'utilisation avant de fermer
+        registerFreeUsage();
         closeAndGenerateReport("Temps gratuit écoulé. Mode Premium requis.");
       } else {
         timer = window.setInterval(() => setFreeTimeLeft(prev => (prev !== null ? prev - 1 : 0)), 1000);
@@ -2776,7 +2848,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         speak("Vision activée.");
         setTimeout(() => {
           captureAndSendFrame();
-          liveService.sendPrompt("Je viens d'activer la caméra. Analyse l'image et donne-moi ton premier diagnostic visuel sur ce que tu vois.");
+          liveService.sendPrompt(`[PHASE: ${sessionPhase}] Je viens d'activer la caméra. Décris-moi l'environnement et les points de vigilance liés à la sécurité.`);
         }, 1500);
 
         frameIntervalRef.current = window.setInterval(captureAndSendFrame, 1600);
@@ -2786,37 +2858,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     }
   };
 
-  const handlePreStart = () => {
-    // FIX : Réactivation de la vérification du mode FREE
-    if (currentTier === 'FREE') {
-      const status = getCooldownStatus();
-      if (!status.allowed) {
-        setCooldownMsg(`Tunnel IA en refroidissement. Attendez ${status.waitMin} min.`);
-        return;
-      }
-      setFreeTimeLeft(120);
-    }
-
-    if (allValidated) {
-      startLiveSession(false);
-    } else {
-      const warnings: string[] = [];
-      checks.forEach(c => {
-        if (!c.validated) {
-          if (c.id === 'loto' || c.id === 'pto') warnings.push("L'énergie mécanique ou pneumatique résiduelle pardonne rarement. Assure-toi que personne ne peut réarmer le système dans ton dos.");
-          if (c.id === 'vat' || c.id === 've') warnings.push("L'électricité est un mal invisible. Une VAT prend 10 secondes et te garantit de rentrer chez toi ce soir.");
-          if (c.id === 'h2s') warnings.push("Dans une fosse ou un espace confiné, les gaz ne préviennent pas. Garde une extraction d'air active.");
-          if (c.id === 'levage') warnings.push("L'hydraulique peut lâcher à tout moment. Sécurise toujours avec des chandelles mécaniques.");
-        }
-      });
-      setBypassedWarnings(warnings);
-      setShowSafety(false);
-      setShowDegradedConfirm(true);
-    }
-  };
-
   const startLiveSession = async (degraded: boolean) => {
-    setShowSafety(false);
     setShowDegradedConfirm(false);
     setIsDegradedMode(degraded);
     
@@ -2827,19 +2869,38 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       startTimeRef.current = new Date();
       await liveService.connect(mode, (data) => {
         setDiagnosticText(data.hypothesis);
-        // FIX : Sauvegarde de la réponse IA pour le PDF !
         setCurrentDiagnostic(data); 
         speak(data.hypothesis);
       });
       
       const msg = degraded 
-        ? "Tunnel ouvert en MODE DÉGRADÉ. Prudence maximale. Appuyez sur PTT pour parler."
-        : "Tunnel crypté ouvert. Mode Radio actif. Appuyez sur PTT pour parler.";
+        ? "Tunnel ouvert en MODE DÉGRADÉ. Prudence maximale."
+        : "Phase d'Audit Sécurité en cours. Validez vos consignations dans le bandeau supérieur.";
       
       setDiagnosticText(msg);
       
     } catch (err) { 
       setDiagnosticText("Erreur d'ouverture du Tunnel IA."); 
+    }
+  };
+
+  const handleTransitionToDiagnostic = () => {
+    if (allValidated) {
+      setSessionPhase('DIAGNOSTIC');
+      speak("Sécurité validée. Passage en mode diagnostic.");
+      liveService.sendPrompt(`[SYSTEM] L'opérateur (Habilitations: ${profile?.habilitations?.join(', ') || 'Aucune'}) a validé toutes les procédures de sécurité. Passage en mode DIAGNOSTIC. Quel est ton premier conseil d'investigation ?`);
+    } else {
+      const warnings: string[] = [];
+      checks.forEach(c => {
+        if (!c.validated) {
+          if (c.id === 'loto' || c.id === 'pto') warnings.push("L'énergie mécanique ou pneumatique résiduelle pardonne rarement.");
+          if (c.id === 'vat' || c.id === 've') warnings.push("Une VAT prend 10 secondes et te garantit de rentrer chez toi ce soir.");
+          if (c.id === 'h2s') warnings.push("Dans un espace confiné, les gaz ne préviennent pas.");
+          if (c.id === 'levage') warnings.push("Sécurise toujours avec des chandelles mécaniques.");
+        }
+      });
+      setBypassedWarnings(warnings);
+      setShowDegradedConfirm(true);
     }
   };
 
@@ -2865,11 +2926,11 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     
     let finalHypothesis = currentDiagnostic.hypothesis;
     if (isDegradedMode) {
-      finalHypothesis = `[MODE DÉGRADÉ ENGAGÉ PAR LE TECHNICIEN] - ${finalHypothesis}`;
+      finalHypothesis = `[MODE DÉGRADÉ ENGAGÉ] - ${finalHypothesis}`;
     }
 
     const reportData = {
-      mode, technicianId: "TECH-M5-001", location: "Zone Opérationnelle", equipmentId: "EQ-INCONNU",
+      mode, technicianId: profile?.techId || "TECH-INCONNU", location: "Zone Opérationnelle", equipmentId: "EQ-INCONNU",
       safetyChecks: checks, 
       diagnostic: forcedReason ? { ...currentDiagnostic, hypothesis: forcedReason } : { ...currentDiagnostic, hypothesis: finalHypothesis },
       startTime: startTimeRef.current || new Date(), endTime: new Date()
@@ -2906,15 +2967,26 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     );
   }
 
+  if (cooldownMsg) {
+    return (
+      <div className="fixed inset-0 bg-[#050505] z-50 flex flex-col items-center justify-center p-6 text-center">
+         <AlertTriangle className="text-[#FF6600] w-16 h-16 mb-4 animate-pulse" />
+         <h2 className="text-white font-black uppercase tracking-widest text-xl mb-2">Refroidissement IA</h2>
+         <p className="text-gray-400 text-sm">{cooldownMsg}</p>
+         <button onClick={onExit} className="mt-8 bg-white/10 text-white px-8 py-3 rounded-lg font-bold uppercase tracking-widest text-xs">Retour</button>
+      </div>
+    );
+  }
+
   const themeColor = mode === 'maintenance' ? '#00E5FF' : '#DC2626'; 
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col overflow-hidden select-none">
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden select-none">
       
       <div className="relative flex-1 bg-[#050505] overflow-hidden">
         <canvas ref={canvasRef} className="hidden" />
 
-        <video ref={videoRef} autoPlay playsInline className={`absolute inset-0 w-full h-full object-cover opacity-70 ${isVideoActive ? 'block' : 'hidden'}`} />
+        <video ref={videoRef} autoPlay playsInline className={`absolute inset-0 w-full h-full object-cover ${sessionPhase === 'AUDIT' ? 'opacity-40' : 'opacity-70'} ${isVideoActive ? 'block' : 'hidden'}`} />
         
         {isVideoActive && (
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:5vw_5vw]"></div>
@@ -2929,9 +3001,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
                     <Mic size={48} className={isListening ? `text-[${themeColor}]` : 'text-gray-600'} />
                   </div>
                 </div>
-                <p className={`mt-8 font-mono text-xs uppercase tracking-widest ${isListening ? `text-[${themeColor}]` : 'text-gray-500'}`}>
-                  {isListening ? "Écoute en cours..." : "Canal Audio Ouvert (Cliquer PTT)"}
-                </p>
               </div>
             ) : (
               <Shield size={64} className="text-white/10" />
@@ -2939,59 +3008,100 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
           </div>
         )}
         
-        <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-30">
-          <div className="bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10">
-            <h1 className="text-white font-black text-[12px] uppercase tracking-[0.3em]">LOCATE {mode.toUpperCase()}</h1>
-            
-            {/* FIX : Réintégration du chrono FREE */}
-            {currentTier === 'FREE' && freeTimeLeft !== null && (
-              <div className="flex items-center gap-1 mt-1 text-[#FF6600]">
-                <Clock size={10} /><span className="font-mono text-[10px] font-black">{Math.floor(freeTimeLeft / 60)}:{(freeTimeLeft % 60).toString().padStart(2, '0')}</span>
-              </div>
-            )}
-
-            {isDegradedMode && (
-              <div className="text-red-500 font-black text-[9px] uppercase tracking-widest mt-1 animate-pulse flex items-center gap-1">
-                <AlertOctagon size={10} /> MODE DÉGRADÉ
-              </div>
-            )}
-          </div>
+        {/* ========================================================= */}
+        {/* NOUVEAU : HUD TACTIQUE (FILIGRANE SUPÉRIEUR)              */}
+        {/* ========================================================= */}
+        <div className="absolute top-4 left-4 right-4 z-40 flex flex-col gap-2">
           
-          {isLive && (
-             <div className={`px-3 py-1.5 rounded-full border backdrop-blur-md flex items-center gap-2 ${isVideoActive ? `bg-[${themeColor}]/20 border-[${themeColor}] text-[${themeColor}]` : 'bg-white/10 border-white/20 text-gray-300'}`}>
-               {isVideoActive ? <Camera size={12} /> : <Mic size={12} />}
-               <span className="text-[9px] font-black uppercase tracking-widest">{isVideoActive ? 'VISION' : 'RADIO'}</span>
-             </div>
-          )}
-        </div>
-
-        {showSafety && !showDegradedConfirm && (
-          <div className="absolute inset-0 z-50 bg-[#050505]/95 backdrop-blur-2xl p-8 flex flex-col justify-center">
-            <div className="max-w-md mx-auto w-full space-y-6">
-              <div className="text-center">
-                <AlertTriangle className={`mx-auto mb-4 text-[${themeColor}]`} size={40} />
-                <h2 className="text-white font-black text-lg uppercase">Validation Sécurité</h2>
-                {/* FIX : Réintégration du message d'erreur de refroidissement */}
-                {cooldownMsg && <p className="text-[#FF6600] text-xs font-bold mt-2 animate-pulse">{cooldownMsg}</p>}
+          {/* LIGNE 1 : PROFIL & ÉTATS */}
+          <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-2.5 flex items-center justify-between shadow-lg">
+            
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#1A1A1A] rounded-full border border-white/20 flex items-center justify-center">
+                <User size={16} className="text-gray-400" />
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col">
+                <span className="text-white font-black text-[10px] uppercase tracking-widest leading-none mb-1">
+                  {profile?.fullName || 'OPÉRATEUR INCONNU'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold text-[8px] uppercase tracking-widest leading-none text-[${themeColor}]`}>
+                    {profile?.techId || 'ID N/A'}
+                  </span>
+                  {/* REINTÉGRATION DU CHRONO FREE ICI */}
+                  {currentTier === 'FREE' && freeTimeLeft !== null && (
+                    <span className="flex items-center gap-1 text-gray-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
+                      <Clock size={8} />
+                      <span className="font-mono text-[8px] font-black">{Math.floor(freeTimeLeft / 60)}:{(freeTimeLeft % 60).toString().padStart(2, '0')}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-1.5 items-center">
+              {profile?.habilitations?.map(hab => (
+                <span key={hab} className="bg-green-500/20 border border-green-500/50 text-green-400 px-2 py-0.5 rounded text-[8px] font-black tracking-wider uppercase">
+                  {hab}
+                </span>
+              ))}
+              {(!profile?.habilitations || profile.habilitations.length === 0) && (
+                <span className="bg-red-500/20 border border-red-500/50 text-red-400 px-2 py-0.5 rounded text-[8px] font-black tracking-wider uppercase">
+                  ⚠️ SANS HABILITATION
+                </span>
+              )}
+            </div>
+
+          </div>
+
+          {/* LIGNE 2 : PILULES DE CONSIGNATION (Phase Audit Uniquement) */}
+          {sessionPhase === 'AUDIT' && !showDegradedConfirm && (
+            <div className="bg-black/60 backdrop-blur-md border border-orange-500/30 rounded-xl p-2 flex items-center justify-between shadow-[0_0_15px_rgba(249,115,22,0.1)]">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 {checks.map(check => (
-                  <button key={check.id} onClick={() => setChecks(prev => prev.map(c => c.id === check.id ? {...c, validated: !c.validated} : c))}
-                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${check.validated ? `bg-[${themeColor}]/10 border-[${themeColor}] text-white` : 'bg-white/5 border-white/5 text-gray-500'}`}>
-                    <div className="flex items-center gap-4">{check.icon}<span className="text-[10px] font-black uppercase">{check.label}</span></div>
-                    {check.validated && <CheckCircle2 size={18} className={`text-[${themeColor}]`} />}
+                  <button 
+                    key={check.id} 
+                    onClick={() => setChecks(prev => prev.map(c => c.id === check.id ? {...c, validated: !c.validated} : c))}
+                    className={`px-3 py-1.5 rounded-full border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                      check.validated 
+                        ? `bg-[${themeColor}]/20 border-[${themeColor}] text-[${themeColor}] shadow-[0_0_10px_${themeColor}40]` 
+                        : 'bg-black/50 border-white/10 text-gray-500 hover:text-white'
+                    }`}
+                  >
+                    {check.validated ? <CheckCircle2 size={12} /> : check.icon}
+                    <span className="text-[9px] font-black uppercase tracking-widest">{check.label}</span>
                   </button>
                 ))}
               </div>
               
-              <button disabled={cooldownMsg !== null} onClick={handlePreStart}
-                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all ${cooldownMsg ? 'bg-gray-900 text-gray-700' : allValidated ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]' : 'bg-[#DC2626]/20 text-[#DC2626] border border-[#DC2626]/50'}`}>
-                {allValidated ? 'Ouvrir Tunnel Expertise' : 'Forcer Intervention (Dégradé)'}
+              <button 
+                onClick={handleTransitionToDiagnostic}
+                className={`ml-2 px-3 py-1.5 rounded-full font-black text-[9px] uppercase tracking-widest transition-all shrink-0 flex items-center gap-1 ${
+                  allValidated 
+                    ? `bg-[${themeColor}] text-black shadow-[0_0_15px_${themeColor}80]` 
+                    : 'bg-red-900/50 text-red-400 border border-red-500/30'
+                }`}
+              >
+                {allValidated ? 'DIAGNOSTIC' : 'FORCER'}
               </button>
             </div>
-          </div>
-        )}
+          )}
 
+          {/* LIGNE 2 (Alternative) : PHASE DIAGNOSTIC ACTUELLE */}
+          {sessionPhase === 'DIAGNOSTIC' && (
+            <div className="flex justify-end mt-1">
+              <span className={`px-3 py-1 rounded-full border bg-[${themeColor}]/20 border-[${themeColor}]/50 text-[${themeColor}] text-[8px] font-black uppercase tracking-widest shadow-[0_0_10px_${themeColor}40] flex items-center gap-1`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                Phase Diagnostic Active
+              </span>
+            </div>
+          )}
+
+        </div>
+        {/* ========================================================= */}
+
+
+        {/* MODALE DE CONFIRMATION DÉGRADÉE */}
         {showDegradedConfirm && (
           <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-3xl p-6 flex flex-col justify-center">
             <div className="max-w-md mx-auto w-full bg-[#1A0505] border border-[#DC2626] rounded-2xl p-6 shadow-[0_0_50px_rgba(220,38,38,0.2)]">
@@ -3002,7 +3112,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
               
               <div className="space-y-4 mb-8">
                 {bypassedWarnings.map((warning, idx) => (
-                  <div key={idx} className="bg-black/50 p-4 rounded-lg border-l-4 border-[#FF6600]">
+                  <div key={idx} className="bg-black/50 p-4 rounded-lg border-l-4 border-orange-500">
                     <p className="text-white/80 text-xs italic leading-relaxed">"{warning}"</p>
                   </div>
                 ))}
@@ -3015,10 +3125,10 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
               </div>
 
               <div className="flex gap-3">
-                <button onClick={() => { setShowDegradedConfirm(false); setShowSafety(true); }} className="flex-1 py-4 bg-gray-900 text-gray-400 rounded-xl font-black text-[10px] uppercase tracking-widest">
+                <button onClick={() => setShowDegradedConfirm(false)} className="flex-1 py-4 bg-gray-900 text-gray-400 rounded-xl font-black text-[10px] uppercase tracking-widest">
                   Annuler
                 </button>
-                <button onClick={() => startLiveSession(true)} className="flex-[2] py-4 bg-[#DC2626] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
+                <button onClick={() => { setSessionPhase('DIAGNOSTIC'); startLiveSession(true); }} className="flex-[2] py-4 bg-[#DC2626] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
                   J'y vais quand même
                 </button>
               </div>
@@ -3028,11 +3138,12 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 
       </div>
 
+      {/* CONSOLE INFÉRIEURE */}
       <div className="h-[30vh] bg-[#050505] border-t border-white/5 p-6 flex flex-col items-center justify-between z-40 relative">
         
         <div className="w-full bg-black/60 rounded-xl border border-white/10 p-4 min-h-[80px] flex items-center shadow-inner">
-          <p className={`font-mono text-[10px] uppercase tracking-wider leading-relaxed ${currentDiagnostic.safetyAlert ? 'text-red-500 font-bold animate-pulse' : 'text-[#FF6600]'}`}>
-            {">"} {diagnosticText}
+          <p className={`font-mono text-[10px] uppercase tracking-wider leading-relaxed ${currentDiagnostic.safetyAlert ? 'text-red-500 font-bold animate-pulse' : 'text-gray-300'}`}>
+            <span className={`text-[${themeColor}]`}>{">"}</span> {diagnosticText}
           </p>
         </div>
 
@@ -3059,8 +3170,8 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
                   !isLive 
                     ? 'bg-gray-900 border-black opacity-50' 
                     : isListening 
-                      ? 'bg-[#FF6600] border-orange-900 scale-95 translate-y-[4px] animate-pulse' 
-                      : 'bg-[#FF6600] border-orange-800 active:scale-95 hover:bg-[#ff7b24]'
+                      ? 'bg-orange-600 border-orange-900 scale-95 translate-y-[4px] animate-pulse' 
+                      : 'bg-orange-500 border-orange-800 active:scale-95 hover:bg-[#ff7b24]'
                 }`}
               >
                 <Mic size={32} className="text-white drop-shadow-md" />
@@ -3086,6 +3197,114 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
 };
 
 export default LiveAssistant;
+```
+
+// ==========================================
+// 📂 FICHIER : \src\modules\garage\components\PassportScanner.tsx
+// ==========================================
+
+```tsx
+import React, { useRef, useEffect, useState } from 'react';
+import { Camera, X, Loader2, } from 'lucide-react';
+import { geminiService } from '../../../core/ai/geminiService';
+
+interface PassportScannerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: (data: { fullName: string; company: string; techId: string; habilitations: string[] }) => void;
+}
+
+const PassportScanner: React.FC<PassportScannerProps> = ({ isOpen, onClose, onSuccess }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    if (isOpen) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(s => {
+          stream = s;
+          if (videoRef.current) videoRef.current.srcObject = stream;
+        })
+        .catch(err => console.error("Erreur caméra:", err));
+    }
+    return () => {
+      if (stream) stream.getTracks().forEach(track => track.stop());
+    };
+  }, [isOpen]);
+
+  const handleCapture = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    if (context && video.videoWidth > 0) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+      setIsAnalyzing(true);
+      
+      // Appel à notre nouvelle fonction métier
+      const result = await geminiService.analyzePasseportSecurite(base64Image);
+      
+      setIsAnalyzing(false);
+      if (result) {
+        onSuccess(result);
+      } else {
+        alert("L'IA n'a pas réussi à lire les données. Veuillez réessayer avec un meilleur éclairage.");
+      }
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col font-sans">
+      {isAnalyzing && (
+        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center">
+          <Loader2 size={64} className="text-[#FF6600] mb-4 animate-spin" />
+          <h2 className="text-white font-black uppercase tracking-widest animate-pulse">Lecture OCR en cours...</h2>
+          <p className="text-gray-400 text-xs mt-2">Extraction des habilitations de sécurité</p>
+        </div>
+      )}
+
+      <canvas ref={canvasRef} className="hidden" />
+      <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-80" />
+
+      {/* HUD Scanner */}
+      <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/80 to-transparent">
+        <div>
+          <h1 className="text-[#FF6600] font-black text-xl uppercase tracking-widest">SCAN PASSEPORT</h1>
+          <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Acquisition Sécurité M5</p>
+        </div>
+        <button onClick={onClose} className="w-12 h-12 bg-black/50 border border-white/20 rounded-full flex items-center justify-center backdrop-blur-md active:scale-90">
+          <X className="text-white" size={24} />
+        </button>
+      </div>
+
+      {/* Cadre de visée */}
+      <div className="absolute inset-x-[10vw] top-[25vh] bottom-[30vh] border-2 border-[#FF6600] border-dashed rounded-xl flex items-center justify-center pointer-events-none z-10 shadow-[0_0_20px_rgba(255,102,0,0.3)]">
+        <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full border border-[#FF6600]/30">
+          <span className="text-[#FF6600] font-bold text-[10px] uppercase tracking-widest">Cadrer la carte ici</span>
+        </div>
+      </div>
+
+      <div className="absolute bottom-0 left-0 w-full h-[25vh] bg-gradient-to-t from-black to-transparent flex items-center justify-center z-10 pb-[env(safe-area-inset-bottom)]">
+        <button onClick={handleCapture} disabled={isAnalyzing} className="w-20 h-20 bg-[#FF6600] rounded-full border-4 border-black ring-2 ring-[#FF6600] flex items-center justify-center active:scale-90 transition-transform shadow-[0_0_30px_rgba(255,102,0,0.6)]">
+          <Camera size={32} className="text-black" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default PassportScanner;
+
 ```
 
 // ==========================================
@@ -3651,132 +3870,121 @@ export default FinDePoste;
 
 ```tsx
 import React, { useState } from 'react';
-import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Mail, Shield, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Shield, ShieldAlert, HardHat, User } from 'lucide-react';
 import LiveAssistant from '../components/LiveAssistant';
 import { useUserTier } from '../../../core/security/useUserTier';
 import PriseDePoste from './PriseDePoste';
 import TourDeControle from './TourDeControle';
 import FinDePoste from './FinDePoste';
+import TechProfile from './TechProfile';
+import PreparationChantier from './PreparationChantier';
 
 interface GarageDashboardProps {
   onBack?: () => void;
 }
 
-type ViewState = 'home' | 'maintenance_live' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle';
+type ViewState = 'home' | 'maintenance_menu' | 'maintenance_live' | 'prepa_chantier' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle_maint' | 'tour_controle_mec' | 'tech_profile_maint' | 'tech_profile_mec' | 'admin_settings';
 
 const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<ViewState>('home');
   const { currentTier } = useUserTier();
 
-  // --- ROUTAGE VERS LE LIVE ASSISTANT ---
-  if (activeMode === 'maintenance_live') {
-    return <LiveAssistant mode="maintenance" onExit={() => setActiveMode('home')} />;
-  }
-  if (activeMode === 'mecanique_live') {
-    return <LiveAssistant mode="mecanique" onExit={() => setActiveMode('mecanique_menu')} />;
-  }
-
-  // --- ROUTAGE VERS LA PRISE DE POSTE ---
-  if (activeMode === 'prise_poste') {
-    return <PriseDePoste onBack={() => setActiveMode('mecanique_menu')} />;
-  }
-
-  // --- ROUTAGE VERS LA TOUR DE CONTRÔLE (CHEF D'ATELIER) ---
-  if (activeMode === 'tour_controle') {
-  return <TourDeControle onBack={() => setActiveMode('home')} />;
-}
-
-// --- ROUTAGE VERS LE RAPPORT DE FIN DE POSTE --- 
-  if (activeMode === 'fin_poste') {
-    return <FinDePoste onBack={() => setActiveMode('home')} />;
+  // =======================================================================
+  // ROUTAGE DES VUES GLOBALES & ADMINISTRATIVES
+  // =======================================================================
+  if (activeMode === 'admin_settings') {
+    return (
+      <div className="w-full h-full bg-[#121212] flex flex-col p-6 justify-center items-center text-center font-sans">
+         <Settings size={64} className="text-gray-500 mb-6 animate-[spin_10s_linear_infinite]" />
+         <h2 className="text-white font-black uppercase tracking-widest text-xl mb-3">Zone Administrative</h2>
+         <p className="text-gray-400 text-xs mb-8 leading-relaxed max-w-sm">
+           Gestion des abonnements PRO, facturation, CGU, CGV et Politique de confidentialité. (En cours de développement).
+         </p>
+         <button onClick={() => setActiveMode('home')} className="px-8 py-4 bg-white/10 text-white rounded-xl font-black uppercase text-xs tracking-widest active:scale-95 transition-transform border border-white/20">
+           Retour au Hub
+         </button>
+      </div>
+    );
   }
 
   // =======================================================================
-  // VUE 1 : SOUS-MENU MÉCANIQUE (Refonte 4 Conteneurs Flex)
+  // ROUTAGE UNIVERS MAINTENANCE (M5)
   // =======================================================================
-  if (activeMode === 'mecanique_menu') {
+  if (activeMode === 'tech_profile_maint') return <TechProfile onBack={() => setActiveMode('maintenance_menu')} />;
+  if (activeMode === 'tour_controle_maint') return <TourDeControle onBack={() => setActiveMode('maintenance_menu')} />;
+  if (activeMode === 'prepa_chantier') return <PreparationChantier onBack={() => setActiveMode('maintenance_menu')} />;
+  if (activeMode === 'maintenance_live') return <LiveAssistant mode="maintenance" onExit={() => setActiveMode('maintenance_menu')} />;
+
+  // =======================================================================
+  // ROUTAGE UNIVERS MÉCANIQUE AUTO / PL
+  // =======================================================================
+  if (activeMode === 'tech_profile_mec') return <TechProfile onBack={() => setActiveMode('mecanique_menu')} />;
+  if (activeMode === 'tour_controle_mec') return <TourDeControle onBack={() => setActiveMode('mecanique_menu')} />;
+  if (activeMode === 'prise_poste') return <PriseDePoste onBack={() => setActiveMode('mecanique_menu')} />;
+  if (activeMode === 'fin_poste') return <FinDePoste onBack={() => setActiveMode('mecanique_menu')} />;
+  if (activeMode === 'mecanique_live') return <LiveAssistant mode="mecanique" onExit={() => setActiveMode('mecanique_menu')} />;
+
+  // =======================================================================
+  // VUE 1 : SOUS-MENU MAINTENANCE INDUSTRIELLE (Thème Cyan)
+  // =======================================================================
+  if (activeMode === 'maintenance_menu') {
     return (
       <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
         
-        {/* CONTENEUR 1 : HEADER (10vh) */}
-        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#D3D3D3] rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg">
+        {/* HEADER MAINTENANCE */}
+        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#00E5FF]/30 rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg mb-2">
           <button onClick={() => setActiveMode('home')} className="mr-4 active:scale-90 transition-transform">
-            <ArrowLeft className="text-[#D3D3D3]" size={24} />
+            <ArrowLeft className="text-[#00E5FF]" size={24} />
           </button>
           <div className="flex flex-col min-w-0">
             <h2 className="text-[clamp(1.1rem,4vw,1.4rem)] font-black uppercase tracking-widest text-white leading-none whitespace-nowrap truncate">
-              Mécanique Auto & P.L.
+              Maintenance Indus.
             </h2>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#00E5FF] mt-1">
               Terminal Opérateur
             </span>
           </div>
         </div>
 
-<header className="flex items-center justify-between mb-8">
-  <div className="flex gap-4">
-    <ArrowLeft className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
-    <Settings className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
-    <Mail className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
-    {/* BOUTON TOUR DE CONTRÔLE */}
-    <button 
-      onClick={() => setActiveMode('tour_controle')}
-      className="ml-2 flex items-center justify-center text-[#00E5FF] hover:text-white transition-colors"
-    >
-      <ShieldAlert size={24} />
-    </button>
-  </div>
+        {/* HEADER OUTILS RAPIDES (MAINTENANCE) */}
+        <header className="flex items-center justify-between mb-2 px-2 shrink-0">
+          <div className="flex gap-3">
+            <button onClick={() => setActiveMode('tech_profile_maint')} className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors active:scale-90 bg-white/5 px-3 py-2 rounded-lg border border-white/10">
+              <User size={16} /> <span className="text-[9px] font-bold uppercase tracking-widest">Fiche Tech</span>
+            </button>
+            <button onClick={() => setActiveMode('tour_controle_maint')} className="flex items-center gap-2 text-[#00E5FF] hover:text-white transition-colors active:scale-90 bg-[#00E5FF]/10 px-3 py-2 rounded-lg border border-[#00E5FF]/30">
+              <ShieldAlert size={16} /> <span className="text-[9px] font-bold uppercase tracking-widest">Supervision</span>
+            </button>
+          </div>
+        </header>
 
-  <div className="border border-[#FF6600] text-[#FF6600] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
-    <Shield size={12} />
-    PRO
-  </div>
-</header>
-
-        {/* CONTENEUR 2 : PRISE DE POSTE (Flex-1) */}
+        {/* BOUTON PRÉPARATION CHANTIER */}
         <button 
-          onClick={() => setActiveMode('prise_poste')}
-          className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
+          onClick={() => setActiveMode('prepa_chantier')}
+          className="flex-1 relative overflow-hidden bg-black border border-[#00E5FF]/50 hover:border-[#00E5FF] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
         >
-          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
-          <ScanQrCode className="text-[#DC2626] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(0,229,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <HardHat className="text-[#00E5FF] mb-4 relative z-10 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(0,229,255,0.5)]" size={56} />
           <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">
-            Prise de Poste
+            Prépa. Chantier
           </h3>
           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">
-            Contrôle Outillage
+            Plan de Prévention IA & Inventaire
           </span>
         </button>
 
-        {/* CONTENEUR 3 : ASSISTANT IA (Flex-1, Thème Gris #D3D3D3) */}
+        {/* BOUTON ASSISTANT IA LIVE */}
         <button 
-          onClick={() => setActiveMode('mecanique_live')}
+          onClick={() => setActiveMode('maintenance_live')}
           className="flex-1 relative overflow-hidden bg-black border border-[#D3D3D3]/50 hover:border-[#D3D3D3] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group hover:shadow-[0_0_30px_rgba(211,211,211,0.15)]"
         >
-          {/* Quadrillage Gris */}
           <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(211,211,211,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(211,211,211,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
-          
-          <Mic className="text-[#D3D3D3] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <Mic className="text-[#D3D3D3] mb-4 relative z-10 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(211,211,211,0.3)]" size={56} />
           <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">
             Assistant IA
           </h3>
           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">
-            Diagnostic Vidéo & Audio
-          </span>
-        </button>
-
-        {/* CONTENEUR 4 : FIN DE POSTE (Flex-1) */}
-        <button 
-          onClick={() => setActiveMode('fin_poste')}
-          className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
-        >
-          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
-          <ClipboardCheck className="text-[#DC2626] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
-          <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">
-            Fin de Poste
-          </h3>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">
-            Rapport Anti-Perte (FOD)
+            Diagnostic & Guidage Vidéo
           </span>
         </button>
 
@@ -3785,12 +3993,74 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   }
 
   // =======================================================================
-  // VUE 0 : MENU PRINCIPAL (AIGUILLEUR)
+  // VUE 2 : SOUS-MENU MÉCANIQUE AUTO / PL (Thème Rouge)
+  // =======================================================================
+  if (activeMode === 'mecanique_menu') {
+    return (
+      <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
+        
+        {/* HEADER MÉCANIQUE */}
+        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#DC2626]/30 rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg mb-2">
+          <button onClick={() => setActiveMode('home')} className="mr-4 active:scale-90 transition-transform">
+            <ArrowLeft className="text-[#DC2626]" size={24} />
+          </button>
+          <div className="flex flex-col min-w-0">
+            <h2 className="text-[clamp(1.1rem,4vw,1.4rem)] font-black uppercase tracking-widest text-white leading-none whitespace-nowrap truncate">
+              Mécanique Auto & P.L.
+            </h2>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#DC2626] mt-1">
+              Terminal Opérateur
+            </span>
+          </div>
+        </div>
+
+        {/* HEADER OUTILS RAPIDES (MÉCANIQUE) */}
+        <header className="flex items-center justify-between mb-2 px-2 shrink-0">
+          <div className="flex gap-3">
+            <button onClick={() => setActiveMode('tech_profile_mec')} className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors active:scale-90 bg-white/5 px-3 py-2 rounded-lg border border-white/10">
+              <User size={16} /> <span className="text-[9px] font-bold uppercase tracking-widest">Fiche Tech</span>
+            </button>
+            <button onClick={() => setActiveMode('tour_controle_mec')} className="flex items-center gap-2 text-[#DC2626] hover:text-white transition-colors active:scale-90 bg-[#DC2626]/10 px-3 py-2 rounded-lg border border-[#DC2626]/30">
+              <ShieldAlert size={16} /> <span className="text-[9px] font-bold uppercase tracking-widest">Supervision</span>
+            </button>
+          </div>
+        </header>
+
+        {/* BOUTON PRISE DE POSTE */}
+        <button onClick={() => setActiveMode('prise_poste')} className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group">
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <ScanQrCode className="text-[#DC2626] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">Prise de Poste</h3>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">Contrôle Outillage FOD</span>
+        </button>
+
+        {/* BOUTON ASSISTANT IA */}
+        <button onClick={() => setActiveMode('mecanique_live')} className="flex-1 relative overflow-hidden bg-black border border-[#D3D3D3]/50 hover:border-[#D3D3D3] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group hover:shadow-[0_0_30px_rgba(211,211,211,0.15)]">
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(211,211,211,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(211,211,211,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <Mic className="text-[#D3D3D3] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">Assistant IA</h3>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">Diagnostic OBD2 & Guidage</span>
+        </button>
+
+        {/* BOUTON FIN DE POSTE */}
+        <button onClick={() => setActiveMode('fin_poste')} className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group">
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <ClipboardCheck className="text-[#DC2626] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">Fin de Poste</h3>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">Rapport Anti-Perte (FOD)</span>
+        </button>
+
+      </div>
+    );
+  }
+
+  // =======================================================================
+  // VUE 0 : MENU PRINCIPAL (AIGUILLEUR RACINE)
   // =======================================================================
   return (
     <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
       
-      {/* HEADER (10vh) */}
+      {/* HEADER RACINE */}
       <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#D3D3D3] rounded-2xl flex items-center justify-between px-[4vw] shrink-0 shadow-lg">
         <div className="flex items-center gap-4">
           {onBack && (
@@ -3798,11 +4068,8 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
               <ArrowLeft className="text-[#D3D3D3]" size={24} />
             </button>
           )}
-          <button className="active:scale-90 transition-transform">
-            <Settings className="text-[#D3D3D3]" size={22} />
-          </button>
-          <button className="active:scale-90 transition-transform">
-            <Mail className="text-[#D3D3D3]" size={22} />
+          <button onClick={() => setActiveMode('admin_settings')} className="active:scale-90 transition-transform group">
+            <Settings className="text-[#D3D3D3] group-hover:rotate-90 transition-transform duration-500" size={22} />
           </button>
         </div>
         <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D3D3D3]/30 bg-black">
@@ -3813,9 +4080,9 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* BLOC 1 : MAINTENANCE INDUSTRIELLE (CYAN #00E5FF) */}
+      {/* BLOC 1 : MAINTENANCE INDUSTRIELLE */}
       <button
-        onClick={() => setActiveMode('maintenance_live')}
+        onClick={() => setActiveMode('maintenance_menu')}
         className="flex-1 relative overflow-hidden bg-black border border-[#00E5FF]/50 hover:border-[#00E5FF] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
       >
         <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(0,229,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
@@ -3832,7 +4099,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         </div>
       </button>
 
-      {/* BLOC 2 : MÉCANIQUE AUTO & P.L. (ROUGE #DC2626) */}
+      {/* BLOC 2 : MÉCANIQUE AUTO & P.L. */}
       <button
         onClick={() => setActiveMode('mecanique_menu')}
         className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
@@ -3856,6 +4123,164 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
 };
 
 export default GarageDashboard;
+```
+
+// ==========================================
+// 📂 FICHIER : \src\modules\garage\views\PreparationChantier.tsx
+// ==========================================
+
+```tsx
+import React, { useState } from 'react';
+import { ArrowLeft, HardHat, AlertTriangle, Hammer, Wrench, ShieldAlert, Loader2, Send } from 'lucide-react';
+import { geminiService } from '../../../core/ai/geminiService';
+import { getInventory } from '../../../core/storage/memoryService';
+
+interface PreparationChantierProps {
+  onBack: () => void;
+}
+
+const PreparationChantier: React.FC<PreparationChantierProps> = ({ onBack }) => {
+  const [prompt, setPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [prepData, setPrepData] = useState<any>(null);
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+    setIsGenerating(true);
+    setPrepData(null);
+
+    // On récupère l'inventaire actuel pour que l'IA sache ce qu'on possède
+    const tools = getInventory().map(t => t.toolName).join(', ');
+
+    const result = await geminiService.generateChantierPrep(prompt, tools);
+    setPrepData(result);
+    setIsGenerating(false);
+  };
+
+  return (
+    <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[4vh]">
+      
+      {/* HEADER */}
+      <div className="h-[10vh] flex items-center shrink-0 border-b border-white/5 mb-6">
+        <button onClick={onBack} className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 active:scale-90 transition-transform">
+          <ArrowLeft className="text-white" size={24} />
+        </button>
+        <div className="ml-4 flex flex-col">
+          <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.1rem,4vw,1.4rem)] leading-none">
+            Prépa. Chantier
+          </h2>
+          <span className="text-[#00E5FF] font-bold uppercase tracking-widest text-[10px] mt-1">
+            Analyse IA & Outillage
+          </span>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
+        
+        {/* ZONE DE SAISIE */}
+        <div className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/10 shadow-inner">
+          <label className="flex items-center gap-2 text-[#00E5FF] text-[10px] font-black uppercase tracking-widest mb-3">
+            <Wrench size={14} /> Description de l'intervention
+          </label>
+          <textarea 
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Ex: Remplacement du moteur de la pompe de relevage P2 (400V)..."
+            className="w-full bg-[#0A0A0A] border border-white/10 text-white rounded-xl p-4 focus:border-[#00E5FF] outline-none transition-colors text-sm min-h-[100px] resize-none"
+          />
+          <button 
+            onClick={handleGenerate}
+            disabled={isGenerating || !prompt.trim()}
+            className={`w-full mt-4 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all ${
+              isGenerating || !prompt.trim() 
+                ? 'bg-white/5 text-gray-500 cursor-not-allowed' 
+                : 'bg-[#00E5FF] text-black shadow-[0_0_20px_rgba(0,229,255,0.3)] active:scale-95'
+            }`}
+          >
+            {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            {isGenerating ? 'Analyse IA en cours...' : 'Générer le Plan de Prévention'}
+          </button>
+        </div>
+
+        {/* RÉSULTAT IA */}
+        {prepData && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+            
+            <div className="bg-[#00E5FF]/10 border border-[#00E5FF]/30 p-4 rounded-xl">
+              <h3 className="text-[#00E5FF] font-black uppercase text-sm">{prepData.titre}</h3>
+            </div>
+
+            {/* RISQUES & EPI */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-red-950/30 border border-red-500/20 p-4 rounded-xl">
+                <h4 className="text-red-400 font-bold uppercase text-[10px] tracking-widest mb-3 flex items-center gap-2">
+                  <AlertTriangle size={14} /> Analyse des Risques
+                </h4>
+                <ul className="space-y-2">
+                  {prepData.analyseRisques.map((risque: string, i: number) => (
+                    <li key={i} className="text-white/80 text-xs flex items-start gap-2">
+                      <span className="text-red-500 mt-0.5">•</span> {risque}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-orange-950/30 border border-orange-500/20 p-4 rounded-xl">
+                <h4 className="text-orange-400 font-bold uppercase text-[10px] tracking-widest mb-3 flex items-center gap-2">
+                  <HardHat size={14} /> EPI Obligatoires
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {prepData.epiRequis.map((epi: string, i: number) => (
+                    <span key={i} className="bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2 py-1 rounded text-[10px] font-bold uppercase">
+                      {epi}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* OUTILLAGE */}
+            <div className="bg-[#1A1A1A] border border-white/10 p-4 rounded-xl">
+              <h4 className="text-white font-bold uppercase text-[10px] tracking-widest mb-3 flex items-center gap-2">
+                <Hammer size={14} className="text-[#00E5FF]" /> Outillage Recommandé
+              </h4>
+              <div className="space-y-2">
+                {prepData.outillageRecommande.map((outil: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between bg-black/50 p-2.5 rounded-lg border border-white/5">
+                    <span className="text-white/90 text-xs font-bold">{outil.nom}</span>
+                    {outil.possede ? (
+                      <span className="text-green-500 text-[9px] font-black uppercase tracking-widest bg-green-500/10 px-2 py-1 rounded border border-green-500/20">En stock</span>
+                    ) : (
+                      <span className="text-red-400 text-[9px] font-black uppercase tracking-widest bg-red-500/10 px-2 py-1 rounded border border-red-500/20">À préparer</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* PIÈCES */}
+            {prepData.piecesRechange && prepData.piecesRechange.length > 0 && (
+              <div className="bg-[#1A1A1A] border border-white/10 p-4 rounded-xl">
+                <h4 className="text-white font-bold uppercase text-[10px] tracking-widest mb-3 flex items-center gap-2">
+                  <ShieldAlert size={14} className="text-yellow-500" /> Pièces & Consommables
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {prepData.piecesRechange.map((piece: string, i: number) => (
+                    <span key={i} className="text-gray-300 text-xs bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/10">
+                      {piece}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default PreparationChantier;
 ```
 
 // ==========================================
@@ -4367,6 +4792,141 @@ const PriseDePoste: React.FC<PriseDePosteProps> = ({ onBack }) => {
 };
 
 export default PriseDePoste;
+```
+
+// ==========================================
+// 📂 FICHIER : \src\modules\garage\views\TechProfile.tsx
+// ==========================================
+
+```tsx
+import React, { useState } from 'react';
+import { ArrowLeft, Camera, Zap, ShieldCheck, HardHat } from 'lucide-react';
+import { useAppSettings } from '../../../core/storage/useAppSettings';
+import PassportScanner from '../components/PassportScanner';
+
+interface TechProfileProps {
+  onBack: () => void;
+}
+
+const TechProfile: React.FC<TechProfileProps> = ({ onBack }) => {
+  const { settings, updateSettings } = useAppSettings();
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  return (
+    <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[4vh]">
+      
+      {/* HEADER */}
+      <div className="h-[10vh] flex items-center shrink-0 border-b border-white/5 mb-6">
+        <button onClick={onBack} className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 active:scale-90 transition-transform">
+          <ArrowLeft className="text-white" size={24} />
+        </button>
+        <div className="ml-4 flex flex-col">
+          <h2 className="text-white font-black uppercase tracking-widest text-[clamp(1.1rem,4vw,1.4rem)] leading-none">
+            Fiche Technicien
+          </h2>
+          <span className="text-[#00E5FF] font-bold uppercase tracking-widest text-[10px] mt-1">
+            Habilitations & Sécurité M5
+          </span>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
+        
+        {/* BOUTON IA SCANNER */}
+        <button 
+          onClick={() => setIsScannerOpen(true)}
+          className="w-full bg-[#00E5FF]/10 border border-[#00E5FF]/50 text-[#00E5FF] py-6 rounded-2xl flex flex-col items-center justify-center gap-3 active:scale-95 transition-all hover:bg-[#00E5FF] hover:text-black shadow-[0_0_20px_rgba(0,229,255,0.15)] group"
+        >
+          <div className="flex items-center gap-3">
+            <Camera size={28} />
+            <span className="font-black uppercase tracking-widest text-sm">Scanner Passeport Sécurité</span>
+            <Zap size={20} className="animate-pulse" />
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest opacity-70 group-hover:opacity-100">
+            Extraction OCR Automatique (CACES, BR, B0...)
+          </span>
+        </button>
+
+        {/* AFFICHAGE DES BADGES */}
+        <div className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/10 shadow-inner">
+          <h3 className="text-gray-500 text-[10px] uppercase tracking-widest font-black mb-4 flex items-center gap-2">
+            <ShieldCheck size={14} className="text-green-500" /> Habilitations Actives
+          </h3>
+          
+          {settings.userProfile?.habilitations && settings.userProfile.habilitations.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {settings.userProfile.habilitations.map((hab, idx) => (
+                <span key={idx} className="bg-green-500/20 border border-green-500/50 text-green-400 px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider uppercase shadow-[0_0_10px_rgba(34,197,94,0.1)] flex items-center gap-1.5">
+                  <HardHat size={12} /> {hab}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 border-2 border-dashed border-white/10 rounded-xl">
+              <span className="text-gray-600 text-xs font-bold uppercase tracking-widest">Aucune habilitation enregistrée</span>
+            </div>
+          )}
+        </div>
+
+        {/* FORMULAIRE IDENTITÉ */}
+        <div className="bg-[#1A1A1A] rounded-2xl p-5 border border-white/10 flex flex-col gap-4">
+          <div>
+            <label className="block text-[#00E5FF] text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Identité Opérateur</label>
+            <input 
+              type="text" 
+              value={settings.userProfile?.fullName || ''} 
+              onChange={(e) => updateSettings({ userProfile: { ...(settings.userProfile || { fullName: '', company: '', address: '' }), fullName: e.target.value } })}
+              placeholder="Nom et Prénom"
+              className="w-full bg-[#0A0A0A] border border-white/10 text-white rounded-xl p-4 focus:border-[#00E5FF] outline-none transition-colors text-sm font-bold"
+            />
+          </div>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-[#00E5FF] text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Entreprise</label>
+              <input 
+                type="text" 
+                value={settings.userProfile?.company || ''} 
+                onChange={(e) => updateSettings({ userProfile: { ...(settings.userProfile || { fullName: '', company: '', address: '' }), company: e.target.value } })}
+                placeholder="Employeur"
+                className="w-full bg-[#0A0A0A] border border-white/10 text-white rounded-xl p-4 focus:border-[#00E5FF] outline-none transition-colors text-sm"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-[#00E5FF] text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Matricule</label>
+              <input 
+                type="text" 
+                value={settings.userProfile?.techId || ''} 
+                onChange={(e) => updateSettings({ userProfile: { ...(settings.userProfile || { fullName: '', company: '', address: '' }), techId: e.target.value } })}
+                placeholder="TECH-001"
+                className="w-full bg-[#0A0A0A] border border-[#00E5FF]/30 text-[#00E5FF] rounded-xl p-4 focus:border-[#00E5FF] outline-none transition-colors text-sm font-mono font-black"
+              />
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <PassportScanner 
+        isOpen={isScannerOpen} 
+        onClose={() => setIsScannerOpen(false)} 
+        onSuccess={(data) => {
+          updateSettings({ 
+            userProfile: { 
+              ...(settings.userProfile || { address: '' }), 
+              fullName: data.fullName || settings.userProfile?.fullName || '',
+              company: data.company || settings.userProfile?.company || '',
+              techId: data.techId || settings.userProfile?.techId || '',
+              habilitations: data.habilitations || []
+            } 
+          });
+          setIsScannerOpen(false);
+        }} 
+      />
+    </div>
+  );
+};
+
+export default TechProfile;
 ```
 
 // ==========================================

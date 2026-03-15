@@ -6,11 +6,13 @@ export type UnitSystem = 'METRIC' | 'IMPERIAL';
 
 const SETTINGS_KEY = 'locate_app_settings';
 
-// NOUVEAU : On définit la structure de l'identité pour le PDF
+// NOUVEAU : On enrichit la structure de l'identité pour inclure les habilitations M5
 export interface UserProfile {
   fullName: string;
   company: string;
   address: string;
+  techId?: string; // Matricule / N° de badge
+  habilitations?: string[]; // Ex: ["BR", "B0", "CACES R489", "H1V"]
 }
 
 export interface AppSettings {

@@ -5,12 +5,13 @@ import { useUserTier } from '../../../core/security/useUserTier';
 import PriseDePoste from './PriseDePoste';
 import TourDeControle from './TourDeControle';
 import FinDePoste from './FinDePoste';
+import TechProfile from './TechProfile';
 
 interface GarageDashboardProps {
   onBack?: () => void;
 }
 
-type ViewState = 'home' | 'maintenance_live' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle';
+type ViewState = 'home' | 'maintenance_live' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle' | 'tech_profile'
 
 const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<ViewState>('home');
@@ -37,6 +38,11 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
 // --- ROUTAGE VERS LE RAPPORT DE FIN DE POSTE --- 
   if (activeMode === 'fin_poste') {
     return <FinDePoste onBack={() => setActiveMode('home')} />;
+  }
+
+  // --- ROUTAGE VERS LA FICHE TECHNICIEN ---
+  if (activeMode === 'tech_profile') {
+    return <TechProfile onBack={() => setActiveMode('home')} />;
   }
 
   // =======================================================================
@@ -146,7 +152,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
               <ArrowLeft className="text-[#D3D3D3]" size={24} />
             </button>
           )}
-          <button className="active:scale-90 transition-transform">
+          <button onClick={() => setActiveMode('tech_profile')} className="active:scale-90 transition-transform">
             <Settings className="text-[#D3D3D3]" size={22} />
           </button>
           <button className="active:scale-90 transition-transform">

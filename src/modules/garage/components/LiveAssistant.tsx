@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
-import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CameraOff, CheckSquare, LogOut, Lock, Clock, AlertOctagon, ArrowRight } from 'lucide-react';
+import { Shield, Zap, Wind, Mic, Power, X, CheckCircle2, AlertTriangle, Camera, CameraOff, CheckSquare, LogOut, Lock, Clock, AlertOctagon, User } from 'lucide-react';
 import { liveService, type LiveDiagnostic } from '../../../core/ai/liveService';
 import { reportService } from '../services/reportService';
 import { useUserTier } from '../../../core/security/useUserTier';
+import { useAppSettings } from '../../../core/storage/useAppSettings'; // <-- NOUVEAU: Import du Cerveau Local
 
 const GaragePdfButton = lazy(() => import('./GaragePdfButton'));
 
@@ -15,12 +16,13 @@ type SessionPhase = 'AUDIT' | 'DIAGNOSTIC';
 
 const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const { currentTier } = useUserTier();
+  const { settings } = useAppSettings(); // <-- NOUVEAU: Récupération du profil
+  const profile = settings.userProfile;
 
   const [isLive, setIsLive] = useState(false);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   
-  // NOUVEAU : Gestion des phases
   const [sessionPhase, setSessionPhase] = useState<SessionPhase>('AUDIT');
   const [showDegradedConfirm, setShowDegradedConfirm] = useState(false);
   const [isDegradedMode, setIsDegradedMode] = useState(false);
@@ -48,14 +50,14 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
   const [checks, setChecks] = useState(
     mode === 'maintenance'
       ? [
-          { id: 'loto', label: 'Consignation LOTO effectuée', icon: <Power size={18} />, validated: false },
-          { id: 'vat', label: 'VAT (Absence Tension)', icon: <Zap size={18} />, validated: false },
-          { id: 'h2s', label: 'Détecteur H2S & Gaz actif', icon: <Wind size={18} />, validated: false },
+          { id: 'loto', label: 'Consignation LOTO', icon: <Power size={14} />, validated: false },
+          { id: 'vat', label: 'Absence Tension (VAT)', icon: <Zap size={14} />, validated: false },
+          { id: 'h2s', label: 'Détecteur Gaz', icon: <Wind size={14} />, validated: false },
         ]
       : [
-          { id: 'levage', label: 'Chandelles / Béquilles en place', icon: <Shield size={18} />, validated: false },
-          { id: 'pto', label: 'Consignation PTO', icon: <Power size={18} />, validated: false },
-          { id: 've', label: 'EPI Haute Tension (VE)', icon: <Zap size={18} />, validated: false },
+          { id: 'levage', label: 'Chandelles Sécurité', icon: <Shield size={14} />, validated: false },
+          { id: 'pto', label: 'Consignation PTO', icon: <Power size={14} />, validated: false },
+          { id: 've', label: 'EPI Haute Tension', icon: <Zap size={14} />, validated: false },
         ]
   );
 
@@ -83,7 +85,6 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
         const transcript = event.results[0][0].transcript;
         setDiagnosticText(`🎙️ VOUS : "${transcript.toUpperCase()}"`);
         setIsListening(false);
-        // Ajout du contexte de phase dans le prompt
         liveService.sendPrompt(`[PHASE: ${sessionPhase}] L'opérateur dit : ${transcript}`);
       };
       
@@ -92,24 +93,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     }
   }, [sessionPhase]);
 
-  // DÉMARRAGE AUTOMATIQUE DE LA SESSION EN PHASE AUDIT
-  useEffect(() => {
-    if (currentTier === 'FREE') {
-      const stored = localStorage.getItem('m5_free_usage');
-      if (stored) {
-        const { count, lastUsed } = JSON.parse(stored);
-        const elapsedMin = (Date.now() - lastUsed) / 60000;
-        if (elapsedMin < 24 * 60 && count >= 4) {
-          setCooldownMsg(`Tunnel IA en refroidissement (Limite atteinte).`);
-          return;
-        }
-      }
-      setFreeTimeLeft(120);
-    }
-    startLiveSession(false);
-  }, []);
-
- const getCooldownStatus = () => {
+  const getCooldownStatus = () => {
     const stored = localStorage.getItem('m5_free_usage');
     if (!stored) return { allowed: true, count: 0, waitMin: 0 };
     const { count, lastUsed } = JSON.parse(stored);
@@ -124,18 +108,36 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     return { allowed: true, count };
   };
 
-  // DÉMARRAGE AUTOMATIQUE DE LA SESSION EN PHASE AUDIT
   useEffect(() => {
     if (currentTier === 'FREE') {
       const status = getCooldownStatus();
       if (!status.allowed) {
         setCooldownMsg(`Tunnel IA en refroidissement. Attendez ${status.waitMin} min.`);
-        return; // Bloque le démarrage si le cooldown n'est pas respecté
+        return; 
       }
       setFreeTimeLeft(120);
     }
     startLiveSession(false);
   }, [currentTier]);
+
+  const registerFreeUsage = () => {
+    const stored = localStorage.getItem('m5_free_usage');
+    const count = stored ? JSON.parse(stored).count : 0;
+    localStorage.setItem('m5_free_usage', JSON.stringify({ count: count + 1, lastUsed: Date.now() }));
+  };
+
+  useEffect(() => {
+    let timer: number;
+    if (isLive && currentTier === 'FREE' && freeTimeLeft !== null) {
+      if (freeTimeLeft <= 0) {
+        registerFreeUsage();
+        closeAndGenerateReport("Temps gratuit écoulé. Mode Premium requis.");
+      } else {
+        timer = window.setInterval(() => setFreeTimeLeft(prev => (prev !== null ? prev - 1 : 0)), 1000);
+      }
+    }
+    return () => clearInterval(timer);
+  }, [isLive, freeTimeLeft, currentTier]);
 
   const captureAndSendFrame = () => {
     if (videoRef.current && canvasRef.current && isVideoActive) {
@@ -199,7 +201,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
       
       const msg = degraded 
         ? "Tunnel ouvert en MODE DÉGRADÉ. Prudence maximale."
-        : "Phase d'Audit Sécurité en cours. Validez vos consignations.";
+        : "Phase d'Audit Sécurité en cours. Validez vos consignations dans le bandeau supérieur.";
       
       setDiagnosticText(msg);
       
@@ -212,7 +214,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     if (allValidated) {
       setSessionPhase('DIAGNOSTIC');
       speak("Sécurité validée. Passage en mode diagnostic.");
-      liveService.sendPrompt("[SYSTEM] L'opérateur a validé toutes les procédures de sécurité. Passage en mode DIAGNOSTIC. Quel est ton premier conseil d'investigation ?");
+      liveService.sendPrompt(`[SYSTEM] L'opérateur (Habilitations: ${profile?.habilitations?.join(', ') || 'Aucune'}) a validé toutes les procédures de sécurité. Passage en mode DIAGNOSTIC. Quel est ton premier conseil d'investigation ?`);
     } else {
       const warnings: string[] = [];
       checks.forEach(c => {
@@ -254,7 +256,7 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
     }
 
     const reportData = {
-      mode, technicianId: "TECH-M5-001", location: "Zone Opérationnelle", equipmentId: "EQ-INCONNU",
+      mode, technicianId: profile?.techId || "TECH-INCONNU", location: "Zone Opérationnelle", equipmentId: "EQ-INCONNU",
       safetyChecks: checks, 
       diagnostic: forcedReason ? { ...currentDiagnostic, hypothesis: forcedReason } : { ...currentDiagnostic, hypothesis: finalHypothesis },
       startTime: startTimeRef.current || new Date(), endTime: new Date()
@@ -332,60 +334,98 @@ const LiveAssistant: React.FC<LiveAssistantProps> = ({ mode, onExit }) => {
           </div>
         )}
         
-        {/* HUD SUPÉRIEUR */}
-        <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-30">
-          <div className="bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10">
-            <h1 className="text-white font-black text-[12px] uppercase tracking-[0.3em]">LOCATE {mode.toUpperCase()}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${sessionPhase === 'AUDIT' ? 'bg-orange-500/20 text-orange-500 border border-orange-500/30' : `bg-[${themeColor}]/20 text-[${themeColor}] border border-[${themeColor}]/30`}`}>
-                PHASE: {sessionPhase}
-              </span>
-              {currentTier === 'FREE' && freeTimeLeft !== null && (
-                <div className="flex items-center gap-1 text-gray-400">
-                  <Clock size={10} /><span className="font-mono text-[10px] font-black">{Math.floor(freeTimeLeft / 60)}:{(freeTimeLeft % 60).toString().padStart(2, '0')}</span>
+        {/* ========================================================= */}
+        {/* NOUVEAU : HUD TACTIQUE (FILIGRANE SUPÉRIEUR)              */}
+        {/* ========================================================= */}
+        <div className="absolute top-4 left-4 right-4 z-40 flex flex-col gap-2">
+          
+          {/* LIGNE 1 : PROFIL & ÉTATS */}
+          <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-2.5 flex items-center justify-between shadow-lg">
+            
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#1A1A1A] rounded-full border border-white/20 flex items-center justify-center">
+                <User size={16} className="text-gray-400" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-white font-black text-[10px] uppercase tracking-widest leading-none mb-1">
+                  {profile?.fullName || 'OPÉRATEUR INCONNU'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold text-[8px] uppercase tracking-widest leading-none text-[${themeColor}]`}>
+                    {profile?.techId || 'ID N/A'}
+                  </span>
+                  {/* REINTÉGRATION DU CHRONO FREE ICI */}
+                  {currentTier === 'FREE' && freeTimeLeft !== null && (
+                    <span className="flex items-center gap-1 text-gray-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
+                      <Clock size={8} />
+                      <span className="font-mono text-[8px] font-black">{Math.floor(freeTimeLeft / 60)}:{(freeTimeLeft % 60).toString().padStart(2, '0')}</span>
+                    </span>
+                  )}
                 </div>
+              </div>
+            </div>
+
+            <div className="flex gap-1.5 items-center">
+              {profile?.habilitations?.map(hab => (
+                <span key={hab} className="bg-green-500/20 border border-green-500/50 text-green-400 px-2 py-0.5 rounded text-[8px] font-black tracking-wider uppercase">
+                  {hab}
+                </span>
+              ))}
+              {(!profile?.habilitations || profile.habilitations.length === 0) && (
+                <span className="bg-red-500/20 border border-red-500/50 text-red-400 px-2 py-0.5 rounded text-[8px] font-black tracking-wider uppercase">
+                  ⚠️ SANS HABILITATION
+                </span>
               )}
             </div>
-            {isDegradedMode && (
-              <div className="text-red-500 font-black text-[9px] uppercase tracking-widest mt-2 animate-pulse flex items-center gap-1">
-                <AlertOctagon size={10} /> MODE DÉGRADÉ
-              </div>
-            )}
-          </div>
-          
-          {isLive && (
-             <div className={`px-3 py-1.5 rounded-full border backdrop-blur-md flex items-center gap-2 ${isVideoActive ? `bg-[${themeColor}]/20 border-[${themeColor}] text-[${themeColor}]` : 'bg-white/10 border-white/20 text-gray-300'}`}>
-               {isVideoActive ? <Camera size={12} /> : <Mic size={12} />}
-               <span className="text-[9px] font-black uppercase tracking-widest">{isVideoActive ? 'VISION' : 'RADIO'}</span>
-             </div>
-          )}
-        </div>
 
-        {/* HUD LATÉRAL : CHECKLIST DE SÉCURITÉ (Uniquement en phase AUDIT) */}
-        {sessionPhase === 'AUDIT' && !showDegradedConfirm && (
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 w-[45vw] max-w-[220px] flex flex-col gap-2 z-30">
-            <div className="bg-black/80 backdrop-blur-md border border-orange-500/30 rounded-xl p-3 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
-              <h3 className="text-orange-500 font-black text-[9px] uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <Shield size={12} /> Check-list Sécurité
-              </h3>
-              <div className="space-y-2">
+          </div>
+
+          {/* LIGNE 2 : PILULES DE CONSIGNATION (Phase Audit Uniquement) */}
+          {sessionPhase === 'AUDIT' && !showDegradedConfirm && (
+            <div className="bg-black/60 backdrop-blur-md border border-orange-500/30 rounded-xl p-2 flex items-center justify-between shadow-[0_0_15px_rgba(249,115,22,0.1)]">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 {checks.map(check => (
-                  <button key={check.id} onClick={() => setChecks(prev => prev.map(c => c.id === check.id ? {...c, validated: !c.validated} : c))}
-                    className={`w-full flex items-center justify-between p-2 rounded-lg border transition-all text-left ${check.validated ? 'bg-green-500/20 border-green-500/50 text-green-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>
-                    <span className="text-[9px] font-bold uppercase leading-tight pr-2">{check.label}</span>
-                    {check.validated && <CheckCircle2 size={14} className="text-green-400 shrink-0" />}
+                  <button 
+                    key={check.id} 
+                    onClick={() => setChecks(prev => prev.map(c => c.id === check.id ? {...c, validated: !c.validated} : c))}
+                    className={`px-3 py-1.5 rounded-full border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                      check.validated 
+                        ? `bg-[${themeColor}]/20 border-[${themeColor}] text-[${themeColor}] shadow-[0_0_10px_${themeColor}40]` 
+                        : 'bg-black/50 border-white/10 text-gray-500 hover:text-white'
+                    }`}
+                  >
+                    {check.validated ? <CheckCircle2 size={12} /> : check.icon}
+                    <span className="text-[9px] font-black uppercase tracking-widest">{check.label}</span>
                   </button>
                 ))}
               </div>
+              
               <button 
                 onClick={handleTransitionToDiagnostic}
-                className={`w-full mt-4 py-2.5 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-1 ${allValidated ? `bg-[${themeColor}] text-black shadow-[0_0_15px_${themeColor}80]` : 'bg-red-900/50 text-red-400 border border-red-500/30'}`}
+                className={`ml-2 px-3 py-1.5 rounded-full font-black text-[9px] uppercase tracking-widest transition-all shrink-0 flex items-center gap-1 ${
+                  allValidated 
+                    ? `bg-[${themeColor}] text-black shadow-[0_0_15px_${themeColor}80]` 
+                    : 'bg-red-900/50 text-red-400 border border-red-500/30'
+                }`}
               >
-                {allValidated ? <>Ouvrir Diagnostic <ArrowRight size={12} /></> : 'Forcer Mode Dégradé'}
+                {allValidated ? 'DIAGNOSTIC' : 'FORCER'}
               </button>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* LIGNE 2 (Alternative) : PHASE DIAGNOSTIC ACTUELLE */}
+          {sessionPhase === 'DIAGNOSTIC' && (
+            <div className="flex justify-end mt-1">
+              <span className={`px-3 py-1 rounded-full border bg-[${themeColor}]/20 border-[${themeColor}]/50 text-[${themeColor}] text-[8px] font-black uppercase tracking-widest shadow-[0_0_10px_${themeColor}40] flex items-center gap-1`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                Phase Diagnostic Active
+              </span>
+            </div>
+          )}
+
+        </div>
+        {/* ========================================================= */}
+
 
         {/* MODALE DE CONFIRMATION DÉGRADÉE */}
         {showDegradedConfirm && (

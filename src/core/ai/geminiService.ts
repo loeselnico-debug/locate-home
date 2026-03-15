@@ -147,5 +147,49 @@ Logique de remplissage :
       console.error("Erreur Gemini (Analyse FOD):", error);
       return null;
     }
+  },
+  
+  // --- FONCTION SPÉCIALISÉE : LECTURE DU PASSEPORT SÉCURITÉ ---
+  analyzePasseportSecurite: async (base64Image: string): Promise<{fullName: string, company: string, techId: string, habilitations: string[]} | null> => {
+    if (!apiKey) {
+      console.error("Clé API Gemini introuvable.");
+      return null;
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
+      });
+
+      const prompt = `
+Tu es l'Expert de Conformité et Sécurité du système LOCATE M5.
+Analyse cette photo qui représente un passeport sécurité, une carte d'habilitation électrique, un CACES ou un badge professionnel.
+
+INSTRUCTION DE SORTIE :
+Tu dois retourner UNIQUEMENT un objet JSON valide suivant cette structure EXACTE :
+{
+  "fullName": "Nom et Prénom du technicien",
+  "company": "Nom de l'entreprise ou de l'employeur (si visible, sinon vide)",
+  "techId": "Numéro de matricule, numéro de titre ou identifiant (si visible, sinon vide)",
+  "habilitations": ["Liste", "des", "habilitations", "visibles", "ex: BR, B0, CACES R489, H1V..."]
+}
+
+Règles : 
+- Cherche minutieusement les symboles d'habilitation électrique française (B0, B1V, BR, BC, H0, etc.).
+- Ne retourne pas de Markdown, uniquement le JSON brut.
+`;
+
+      const imagePart = {
+        inlineData: { data: base64Image.split(',')[1], mimeType: "image/jpeg" }
+      };
+
+      const result = await model.generateContent([prompt, imagePart]);
+      return JSON.parse(result.response.text());
+      
+    } catch (error) {
+      console.error("Erreur Gemini (Analyse Passeport):", error);
+      return null;
+    }
   }
 };

@@ -148,7 +148,7 @@ Logique de remplissage :
       return null;
     }
   },
-  
+
   // --- FONCTION SPÉCIALISÉE : LECTURE DU PASSEPORT SÉCURITÉ ---
   analyzePasseportSecurite: async (base64Image: string): Promise<{fullName: string, company: string, techId: string, habilitations: string[]} | null> => {
     if (!apiKey) {
@@ -189,6 +189,43 @@ Règles :
       
     } catch (error) {
       console.error("Erreur Gemini (Analyse Passeport):", error);
+      return null;
+    }
+  },
+
+  // --- FONCTION SPÉCIALISÉE : PRÉPARATION DE CHANTIER (M5) ---
+  generateChantierPrep: async (intervention: string, inventoryStr: string): Promise<any | null> => {
+    if (!apiKey) return null;
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
+      });
+
+      const prompt = `
+Tu es l'Expert de Préparation de Chantier M5 (Maintenance Industrielle et Mécanique).
+Le technicien va réaliser l'intervention suivante : "${intervention}".
+
+Voici la liste des outils dont il dispose actuellement dans son inventaire (séparés par des virgules) : 
+[${inventoryStr}]
+
+Génère une fiche de préparation complète et sécurisée.
+RÈGLE ABSOLUE : Tu dois retourner UNIQUEMENT un objet JSON valide suivant cette structure EXACTE :
+{
+  "titre": "Titre reformulé et professionnel de l'intervention",
+  "analyseRisques": ["Risque 1", "Risque 2", "Risque 3"],
+  "epiRequis": ["EPI 1", "EPI 2"],
+  "outillageRecommande": [
+    { "nom": "Nom de l'outil", "possede": true (si présent dans l'inventaire) ou false (s'il ne l'a pas) }
+  ],
+  "piecesRechange": ["Pièce 1", "Pièce 2 (Consommables probables)"]
+}
+`;
+      const result = await model.generateContent([prompt]);
+      return JSON.parse(result.response.text());
+    } catch (error) {
+      console.error("Erreur Gemini (Préparation Chantier):", error);
       return null;
     }
   }

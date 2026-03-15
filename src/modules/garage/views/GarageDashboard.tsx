@@ -1,136 +1,92 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Mail, Shield, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Mail, Shield, ShieldAlert, HardHat } from 'lucide-react';
 import LiveAssistant from '../components/LiveAssistant';
 import { useUserTier } from '../../../core/security/useUserTier';
 import PriseDePoste from './PriseDePoste';
 import TourDeControle from './TourDeControle';
 import FinDePoste from './FinDePoste';
 import TechProfile from './TechProfile';
+import PreparationChantier from './PreparationChantier';
 
 interface GarageDashboardProps {
   onBack?: () => void;
 }
 
-type ViewState = 'home' | 'maintenance_live' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle' | 'tech_profile'
+type ViewState = 'home' | 'maintenance_menu' | 'maintenance_live' | 'prepa_chantier' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle' | 'tech_profile';
 
 const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<ViewState>('home');
   const { currentTier } = useUserTier();
 
-  // --- ROUTAGE VERS LE LIVE ASSISTANT ---
-  if (activeMode === 'maintenance_live') {
-    return <LiveAssistant mode="maintenance" onExit={() => setActiveMode('home')} />;
-  }
-  if (activeMode === 'mecanique_live') {
-    return <LiveAssistant mode="mecanique" onExit={() => setActiveMode('mecanique_menu')} />;
-  }
-
-  // --- ROUTAGE VERS LA PRISE DE POSTE ---
-  if (activeMode === 'prise_poste') {
-    return <PriseDePoste onBack={() => setActiveMode('mecanique_menu')} />;
-  }
-
-  // --- ROUTAGE VERS LA TOUR DE CONTRÔLE (CHEF D'ATELIER) ---
-  if (activeMode === 'tour_controle') {
-  return <TourDeControle onBack={() => setActiveMode('home')} />;
-}
-
-// --- ROUTAGE VERS LE RAPPORT DE FIN DE POSTE --- 
-  if (activeMode === 'fin_poste') {
-    return <FinDePoste onBack={() => setActiveMode('home')} />;
-  }
-
-  // --- ROUTAGE VERS LA FICHE TECHNICIEN ---
-  if (activeMode === 'tech_profile') {
-    return <TechProfile onBack={() => setActiveMode('home')} />;
-  }
+  // =======================================================================
+  // ROUTAGE DES VUES GLOBALES
+  // =======================================================================
+  if (activeMode === 'tech_profile') return <TechProfile onBack={() => setActiveMode('home')} />;
+  if (activeMode === 'tour_controle') return <TourDeControle onBack={() => setActiveMode('home')} />;
 
   // =======================================================================
-  // VUE 1 : SOUS-MENU MÉCANIQUE (Refonte 4 Conteneurs Flex)
+  // ROUTAGE UNIVERS MAINTENANCE (M5)
   // =======================================================================
-  if (activeMode === 'mecanique_menu') {
+  if (activeMode === 'prepa_chantier') return <PreparationChantier onBack={() => setActiveMode('maintenance_menu')} />;
+  if (activeMode === 'maintenance_live') return <LiveAssistant mode="maintenance" onExit={() => setActiveMode('maintenance_menu')} />;
+
+  // =======================================================================
+  // ROUTAGE UNIVERS MÉCANIQUE AUTO / PL
+  // =======================================================================
+  if (activeMode === 'prise_poste') return <PriseDePoste onBack={() => setActiveMode('mecanique_menu')} />;
+  if (activeMode === 'fin_poste') return <FinDePoste onBack={() => setActiveMode('mecanique_menu')} />;
+  if (activeMode === 'mecanique_live') return <LiveAssistant mode="mecanique" onExit={() => setActiveMode('mecanique_menu')} />;
+
+
+  // =======================================================================
+  // VUE 1 : SOUS-MENU MAINTENANCE INDUSTRIELLE (Thème Cyan / Blanc)
+  // =======================================================================
+  if (activeMode === 'maintenance_menu') {
     return (
       <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
         
-        {/* CONTENEUR 1 : HEADER (10vh) */}
-        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#D3D3D3] rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg">
+        {/* HEADER MAINTENANCE */}
+        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#00E5FF]/30 rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg mb-4">
           <button onClick={() => setActiveMode('home')} className="mr-4 active:scale-90 transition-transform">
-            <ArrowLeft className="text-[#D3D3D3]" size={24} />
+            <ArrowLeft className="text-[#00E5FF]" size={24} />
           </button>
           <div className="flex flex-col min-w-0">
             <h2 className="text-[clamp(1.1rem,4vw,1.4rem)] font-black uppercase tracking-widest text-white leading-none whitespace-nowrap truncate">
-              Mécanique Auto & P.L.
+              Maintenance Indus.
             </h2>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">
-              Terminal Opérateur
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#00E5FF] mt-1">
+              Terminal Opérateur M5
             </span>
           </div>
         </div>
 
-<header className="flex items-center justify-between mb-8">
-  <div className="flex gap-4">
-    <ArrowLeft className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
-    <Settings className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
-    <Mail className="text-gray-400 cursor-pointer hover:text-white transition-colors" size={24} />
-    {/* BOUTON TOUR DE CONTRÔLE */}
-    <button 
-      onClick={() => setActiveMode('tour_controle')}
-      className="ml-2 flex items-center justify-center text-[#00E5FF] hover:text-white transition-colors"
-    >
-      <ShieldAlert size={24} />
-    </button>
-  </div>
-
-  <div className="border border-[#FF6600] text-[#FF6600] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
-    <Shield size={12} />
-    PRO
-  </div>
-</header>
-
-        {/* CONTENEUR 2 : PRISE DE POSTE (Flex-1) */}
+        {/* BOUTON PRÉPARATION CHANTIER (Cyan) */}
         <button 
-          onClick={() => setActiveMode('prise_poste')}
-          className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
+          onClick={() => setActiveMode('prepa_chantier')}
+          className="flex-1 relative overflow-hidden bg-black border border-[#00E5FF]/50 hover:border-[#00E5FF] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
         >
-          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
-          <ScanQrCode className="text-[#DC2626] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(0,229,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <HardHat className="text-[#00E5FF] mb-4 relative z-10 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(0,229,255,0.5)]" size={56} />
           <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">
-            Prise de Poste
+            Prépa. Chantier
           </h3>
           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">
-            Contrôle Outillage
+            Plan de Prévention IA & Inventaire
           </span>
         </button>
 
-        {/* CONTENEUR 3 : ASSISTANT IA (Flex-1, Thème Gris #D3D3D3) */}
+        {/* BOUTON ASSISTANT IA LIVE (Blanc) */}
         <button 
-          onClick={() => setActiveMode('mecanique_live')}
-          className="flex-1 relative overflow-hidden bg-black border border-[#D3D3D3]/50 hover:border-[#D3D3D3] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group hover:shadow-[0_0_30px_rgba(211,211,211,0.15)]"
+          onClick={() => setActiveMode('maintenance_live')}
+          className="flex-1 relative overflow-hidden bg-black border border-[#D3D3D3]/50 hover:border-[#D3D3D3] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
         >
-          {/* Quadrillage Gris */}
-          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(211,211,211,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(211,211,211,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
-          
-          <Mic className="text-[#D3D3D3] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <Mic className="text-white mb-4 relative z-10 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" size={56} />
           <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">
-            Assistant IA
+            Assistant IA Live
           </h3>
           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">
-            Diagnostic Vidéo & Audio
-          </span>
-        </button>
-
-        {/* CONTENEUR 4 : FIN DE POSTE (Flex-1) */}
-        <button 
-          onClick={() => setActiveMode('fin_poste')}
-          className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
-        >
-          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
-          <ClipboardCheck className="text-[#DC2626] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
-          <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">
-            Fin de Poste
-          </h3>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">
-            Rapport Anti-Perte (FOD)
+            Diagnostic & Guidage Vidéo
           </span>
         </button>
 
@@ -139,12 +95,78 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   }
 
   // =======================================================================
-  // VUE 0 : MENU PRINCIPAL (AIGUILLEUR)
+  // VUE 2 : SOUS-MENU MÉCANIQUE AUTO / PL (Thème Rouge)
+  // =======================================================================
+  if (activeMode === 'mecanique_menu') {
+    return (
+      <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
+        
+        {/* HEADER MÉCANIQUE */}
+        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#DC2626]/30 rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg">
+          <button onClick={() => setActiveMode('home')} className="mr-4 active:scale-90 transition-transform">
+            <ArrowLeft className="text-[#DC2626]" size={24} />
+          </button>
+          <div className="flex flex-col min-w-0">
+            <h2 className="text-[clamp(1.1rem,4vw,1.4rem)] font-black uppercase tracking-widest text-white leading-none whitespace-nowrap truncate">
+              Mécanique Auto & P.L.
+            </h2>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#DC2626] mt-1">
+              Terminal Opérateur
+            </span>
+          </div>
+        </div>
+
+        {/* HEADER OUTILS RAPIDES */}
+        <header className="flex items-center justify-between mb-2 px-2">
+          <div className="flex gap-4">
+            <button onClick={() => setActiveMode('tech_profile')} className="text-gray-400 hover:text-white transition-colors active:scale-90">
+              <Settings size={24} />
+            </button>
+            <Mail className="text-gray-400 cursor-not-allowed opacity-50" size={24} />
+            <button onClick={() => setActiveMode('tour_controle')} className="ml-2 flex items-center justify-center text-[#DC2626] hover:text-red-400 transition-colors active:scale-90">
+              <ShieldAlert size={24} />
+            </button>
+          </div>
+          <div className="border border-[#FF6600] text-[#FF6600] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+            <Shield size={12} /> PRO
+          </div>
+        </header>
+
+        {/* BOUTON PRISE DE POSTE */}
+        <button onClick={() => setActiveMode('prise_poste')} className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group">
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <ScanQrCode className="text-[#DC2626] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">Prise de Poste</h3>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">Contrôle Outillage FOD</span>
+        </button>
+
+        {/* BOUTON ASSISTANT IA */}
+        <button onClick={() => setActiveMode('mecanique_live')} className="flex-1 relative overflow-hidden bg-black border border-[#D3D3D3]/50 hover:border-[#D3D3D3] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group hover:shadow-[0_0_30px_rgba(211,211,211,0.15)]">
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(211,211,211,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(211,211,211,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <Mic className="text-[#D3D3D3] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">Assistant IA</h3>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">Diagnostic OBD2 & Guidage</span>
+        </button>
+
+        {/* BOUTON FIN DE POSTE */}
+        <button onClick={() => setActiveMode('fin_poste')} className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group">
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(220,38,38,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <ClipboardCheck className="text-[#DC2626] mb-4 relative z-10 group-hover:scale-110 transition-transform" size={56} />
+          <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">Fin de Poste</h3>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">Rapport Anti-Perte (FOD)</span>
+        </button>
+
+      </div>
+    );
+  }
+
+  // =======================================================================
+  // VUE 0 : MENU PRINCIPAL (AIGUILLEUR RACINE)
   // =======================================================================
   return (
     <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
       
-      {/* HEADER (10vh) */}
+      {/* HEADER RACINE */}
       <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#D3D3D3] rounded-2xl flex items-center justify-between px-[4vw] shrink-0 shadow-lg">
         <div className="flex items-center gap-4">
           {onBack && (
@@ -156,7 +178,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
             <Settings className="text-[#D3D3D3]" size={22} />
           </button>
           <button className="active:scale-90 transition-transform">
-            <Mail className="text-[#D3D3D3]" size={22} />
+            <Mail className="text-gray-600 cursor-not-allowed" size={22} />
           </button>
         </div>
         <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D3D3D3]/30 bg-black">
@@ -167,9 +189,9 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* BLOC 1 : MAINTENANCE INDUSTRIELLE (CYAN #00E5FF) */}
+      {/* BLOC 1 : MAINTENANCE INDUSTRIELLE */}
       <button
-        onClick={() => setActiveMode('maintenance_live')}
+        onClick={() => setActiveMode('maintenance_menu')}
         className="flex-1 relative overflow-hidden bg-black border border-[#00E5FF]/50 hover:border-[#00E5FF] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
       >
         <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(0,229,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
@@ -186,7 +208,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
         </div>
       </button>
 
-      {/* BLOC 2 : MÉCANIQUE AUTO & P.L. (ROUGE #DC2626) */}
+      {/* BLOC 2 : MÉCANIQUE AUTO & P.L. */}
       <button
         onClick={() => setActiveMode('mecanique_menu')}
         className="flex-1 relative overflow-hidden bg-black border border-[#DC2626]/50 hover:border-[#DC2626] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Mail, Shield, ShieldAlert, HardHat } from 'lucide-react';
+import { ArrowLeft, ScanQrCode, Mic, ClipboardCheck, Factory, Wrench, Settings, Shield, ShieldAlert, HardHat, User } from 'lucide-react';
 import LiveAssistant from '../components/LiveAssistant';
 import { useUserTier } from '../../../core/security/useUserTier';
 import PriseDePoste from './PriseDePoste';
@@ -12,41 +12,56 @@ interface GarageDashboardProps {
   onBack?: () => void;
 }
 
-type ViewState = 'home' | 'maintenance_menu' | 'maintenance_live' | 'prepa_chantier' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle' | 'tech_profile';
+type ViewState = 'home' | 'maintenance_menu' | 'maintenance_live' | 'prepa_chantier' | 'mecanique_menu' | 'mecanique_live' | 'prise_poste' | 'fin_poste' | 'tour_controle_maint' | 'tour_controle_mec' | 'tech_profile_maint' | 'tech_profile_mec' | 'admin_settings';
 
 const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
   const [activeMode, setActiveMode] = useState<ViewState>('home');
   const { currentTier } = useUserTier();
 
   // =======================================================================
-  // ROUTAGE DES VUES GLOBALES
+  // ROUTAGE DES VUES GLOBALES & ADMINISTRATIVES
   // =======================================================================
-  if (activeMode === 'tech_profile') return <TechProfile onBack={() => setActiveMode('home')} />;
-  if (activeMode === 'tour_controle') return <TourDeControle onBack={() => setActiveMode('home')} />;
+  if (activeMode === 'admin_settings') {
+    return (
+      <div className="w-full h-full bg-[#121212] flex flex-col p-6 justify-center items-center text-center font-sans">
+         <Settings size={64} className="text-gray-500 mb-6 animate-[spin_10s_linear_infinite]" />
+         <h2 className="text-white font-black uppercase tracking-widest text-xl mb-3">Zone Administrative</h2>
+         <p className="text-gray-400 text-xs mb-8 leading-relaxed max-w-sm">
+           Gestion des abonnements PRO, facturation, CGU, CGV et Politique de confidentialité. (En cours de développement).
+         </p>
+         <button onClick={() => setActiveMode('home')} className="px-8 py-4 bg-white/10 text-white rounded-xl font-black uppercase text-xs tracking-widest active:scale-95 transition-transform border border-white/20">
+           Retour au Hub
+         </button>
+      </div>
+    );
+  }
 
   // =======================================================================
   // ROUTAGE UNIVERS MAINTENANCE (M5)
   // =======================================================================
+  if (activeMode === 'tech_profile_maint') return <TechProfile onBack={() => setActiveMode('maintenance_menu')} />;
+  if (activeMode === 'tour_controle_maint') return <TourDeControle onBack={() => setActiveMode('maintenance_menu')} />;
   if (activeMode === 'prepa_chantier') return <PreparationChantier onBack={() => setActiveMode('maintenance_menu')} />;
   if (activeMode === 'maintenance_live') return <LiveAssistant mode="maintenance" onExit={() => setActiveMode('maintenance_menu')} />;
 
   // =======================================================================
   // ROUTAGE UNIVERS MÉCANIQUE AUTO / PL
   // =======================================================================
+  if (activeMode === 'tech_profile_mec') return <TechProfile onBack={() => setActiveMode('mecanique_menu')} />;
+  if (activeMode === 'tour_controle_mec') return <TourDeControle onBack={() => setActiveMode('mecanique_menu')} />;
   if (activeMode === 'prise_poste') return <PriseDePoste onBack={() => setActiveMode('mecanique_menu')} />;
   if (activeMode === 'fin_poste') return <FinDePoste onBack={() => setActiveMode('mecanique_menu')} />;
   if (activeMode === 'mecanique_live') return <LiveAssistant mode="mecanique" onExit={() => setActiveMode('mecanique_menu')} />;
 
-
   // =======================================================================
-  // VUE 1 : SOUS-MENU MAINTENANCE INDUSTRIELLE (Thème Cyan / Blanc)
+  // VUE 1 : SOUS-MENU MAINTENANCE INDUSTRIELLE (Thème Cyan)
   // =======================================================================
   if (activeMode === 'maintenance_menu') {
     return (
       <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
         
         {/* HEADER MAINTENANCE */}
-        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#00E5FF]/30 rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg mb-4">
+        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#00E5FF]/30 rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg mb-2">
           <button onClick={() => setActiveMode('home')} className="mr-4 active:scale-90 transition-transform">
             <ArrowLeft className="text-[#00E5FF]" size={24} />
           </button>
@@ -60,7 +75,19 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* BOUTON PRÉPARATION CHANTIER (Cyan) */}
+        {/* HEADER OUTILS RAPIDES (MAINTENANCE) */}
+        <header className="flex items-center justify-between mb-2 px-2 shrink-0">
+          <div className="flex gap-3">
+            <button onClick={() => setActiveMode('tech_profile_maint')} className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors active:scale-90 bg-white/5 px-3 py-2 rounded-lg border border-white/10">
+              <User size={16} /> <span className="text-[9px] font-bold uppercase tracking-widest">Fiche Tech</span>
+            </button>
+            <button onClick={() => setActiveMode('tour_controle_maint')} className="flex items-center gap-2 text-[#00E5FF] hover:text-white transition-colors active:scale-90 bg-[#00E5FF]/10 px-3 py-2 rounded-lg border border-[#00E5FF]/30">
+              <ShieldAlert size={16} /> <span className="text-[9px] font-bold uppercase tracking-widest">Supervision</span>
+            </button>
+          </div>
+        </header>
+
+        {/* BOUTON PRÉPARATION CHANTIER */}
         <button 
           onClick={() => setActiveMode('prepa_chantier')}
           className="flex-1 relative overflow-hidden bg-black border border-[#00E5FF]/50 hover:border-[#00E5FF] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
@@ -75,15 +102,15 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
           </span>
         </button>
 
-        {/* BOUTON ASSISTANT IA LIVE (Blanc) */}
+        {/* BOUTON ASSISTANT IA LIVE */}
         <button 
           onClick={() => setActiveMode('maintenance_live')}
-          className="flex-1 relative overflow-hidden bg-black border border-[#D3D3D3]/50 hover:border-[#D3D3D3] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group"
+          className="flex-1 relative overflow-hidden bg-black border border-[#D3D3D3]/50 hover:border-[#D3D3D3] rounded-2xl flex flex-col justify-center items-center active:scale-[0.98] transition-all group hover:shadow-[0_0_30px_rgba(211,211,211,0.15)]"
         >
-          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
-          <Mic className="text-white mb-4 relative z-10 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" size={56} />
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(211,211,211,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(211,211,211,0.05)_1px,transparent_1px)] bg-[size:4vw_4vw]"></div>
+          <Mic className="text-[#D3D3D3] mb-4 relative z-10 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(211,211,211,0.3)]" size={56} />
           <h3 className="text-[clamp(1.5rem,5vw,2rem)] font-black uppercase tracking-widest text-white leading-none relative z-10 text-center">
-            Assistant IA Live
+            Assistant IA
           </h3>
           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 relative z-10">
             Diagnostic & Guidage Vidéo
@@ -102,7 +129,7 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
       <div className="w-full h-full bg-[#121212] flex flex-col font-sans px-[4vw] pt-[2vh] pb-[1.5vh] gap-[2vh]">
         
         {/* HEADER MÉCANIQUE */}
-        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#DC2626]/30 rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg">
+        <div className="h-[10vh] min-h-[64px] bg-[#121212] border border-[#DC2626]/30 rounded-2xl flex items-center px-[4vw] shrink-0 shadow-lg mb-2">
           <button onClick={() => setActiveMode('home')} className="mr-4 active:scale-90 transition-transform">
             <ArrowLeft className="text-[#DC2626]" size={24} />
           </button>
@@ -116,19 +143,15 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* HEADER OUTILS RAPIDES */}
-        <header className="flex items-center justify-between mb-2 px-2">
-          <div className="flex gap-4">
-            <button onClick={() => setActiveMode('tech_profile')} className="text-gray-400 hover:text-white transition-colors active:scale-90">
-              <Settings size={24} />
+        {/* HEADER OUTILS RAPIDES (MÉCANIQUE) */}
+        <header className="flex items-center justify-between mb-2 px-2 shrink-0">
+          <div className="flex gap-3">
+            <button onClick={() => setActiveMode('tech_profile_mec')} className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors active:scale-90 bg-white/5 px-3 py-2 rounded-lg border border-white/10">
+              <User size={16} /> <span className="text-[9px] font-bold uppercase tracking-widest">Fiche Tech</span>
             </button>
-            <Mail className="text-gray-400 cursor-not-allowed opacity-50" size={24} />
-            <button onClick={() => setActiveMode('tour_controle')} className="ml-2 flex items-center justify-center text-[#DC2626] hover:text-red-400 transition-colors active:scale-90">
-              <ShieldAlert size={24} />
+            <button onClick={() => setActiveMode('tour_controle_mec')} className="flex items-center gap-2 text-[#DC2626] hover:text-white transition-colors active:scale-90 bg-[#DC2626]/10 px-3 py-2 rounded-lg border border-[#DC2626]/30">
+              <ShieldAlert size={16} /> <span className="text-[9px] font-bold uppercase tracking-widest">Supervision</span>
             </button>
-          </div>
-          <div className="border border-[#FF6600] text-[#FF6600] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
-            <Shield size={12} /> PRO
           </div>
         </header>
 
@@ -174,11 +197,8 @@ const GarageDashboard: React.FC<GarageDashboardProps> = ({ onBack }) => {
               <ArrowLeft className="text-[#D3D3D3]" size={24} />
             </button>
           )}
-          <button onClick={() => setActiveMode('tech_profile')} className="active:scale-90 transition-transform">
-            <Settings className="text-[#D3D3D3]" size={22} />
-          </button>
-          <button className="active:scale-90 transition-transform">
-            <Mail className="text-gray-600 cursor-not-allowed" size={22} />
+          <button onClick={() => setActiveMode('admin_settings')} className="active:scale-90 transition-transform group">
+            <Settings className="text-[#D3D3D3] group-hover:rotate-90 transition-transform duration-500" size={22} />
           </button>
         </div>
         <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D3D3D3]/30 bg-black">
